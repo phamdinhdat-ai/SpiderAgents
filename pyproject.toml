@@ -66,6 +66,16 @@ include-package-data = true
     "security/skill_scanner/rules/**",
     "security/skill_scanner/data/**",
 ]
+# OpenSpider shares the same console build output.
+"openspider" = [
+    "console/**",
+    "agents/md_files/**",
+    "agents/skills/**",
+    "tokenizer/**",
+    "security/tool_guard/rules/**",
+    "security/skill_scanner/rules/**",
+    "security/skill_scanner/data/**",
+]
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
@@ -74,6 +84,7 @@ build-backend = "setuptools.build_meta"
 [project.scripts]
 qwenpaw = "qwenpaw.cli.main:cli"
 copaw = "qwenpaw.cli.main:cli"
+openspider = "openspider.cli.main:cli"
 
 # Optional doctor plugins: callable (DoctorRunContext) -> list[str]
 # [project.entry-points."qwenpaw.doctor"]

@@ -1,0 +1,26 @@
+version: '3.8'
+
+volumes:
+  openspider-data:
+    name: openspider-data
+  openspider-secrets:
+    name: openspider-secrets
+  openspider-backups:
+    name: openspider-backups
+
+services:
+  openspider:
+    image: openspider:latest
+    container_name: openspider
+    restart: always
+    ports:
+      - "127.0.0.1:8088:8088"
+    # environment:
+    #   - OPENSPIDER_AUTH_ENABLED=true
+    #   - OPENSPIDER_AUTH_USERNAME=admin
+    #   - OPENSPIDER_AUTH_PASSWORD=yourpassword
+    #   - OPENSPIDER_PORT=8088
+    volumes:
+      - openspider-data:/app/working
+      - openspider-secrets:/app/working.secret
+      - openspider-backups:/app/working.backups
