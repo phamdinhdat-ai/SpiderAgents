@@ -159,16 +159,19 @@ class ToolGuardMixin:
 
         self._ensure_tool_guard()
 
+        # Run the guard evaluation *outside* the lock — the check is a pure
+        # read/compute operation on immutable engine state.  The lock is
+        # reserved for mutations of _tool_guard_pending_info that happen in
+        # _execute_guard_action, keeping parallel_tool_calls=True effective.
         action: _GuardAction | None = None
-        async with self._tool_guard_lock:
-            try:
-                action = await self._decide_guard_action(tool_call)
-            except Exception as exc:
-                logger.warning(
-                    "Tool guard check error (non-blocking): %s",
-                    exc,
-                    exc_info=True,
-                )
+        try:
+            action = await self._decide_guard_action(tool_call)
+        except Exception as exc:
+            logger.warning(
+                "Tool guard check error (non-blocking): %s",
+                exc,
+                exc_info=True,
+            )
 
         if action is not None:
             return await self._execute_guard_action(action, tool_call)
