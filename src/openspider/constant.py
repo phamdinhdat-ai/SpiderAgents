@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+import logging
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+
+_logger = logging.getLogger(__name__)
 
 # Load .env file from project root before reading any env vars
 _env_path = Path(__file__).resolve().parent.parent.parent / ".env"
@@ -10,16 +13,23 @@ if _env_path.exists():
 
 
 def _get_env(key: str, default: str = "") -> str:
-    """Look up an env var with automatic COPAW_ legacy fallback.
+    """Look up an env var with OPENSPIDER_ / QWENPAW_ / COPAW_ fallback.
 
-    Primary key is always used as-is.  When the primary key starts with
-    ``QWENPAW_``, the corresponding ``COPAW_`` variant is transparently
-    checked as a fallback so that existing deployments keep working.
+    Lookup order:
+    1. The key as-is (e.g. ``QWENPAW_FOO``).
+    2. If the key starts with ``QWENPAW_``, the ``OPENSPIDER_`` variant
+       is checked first as the new canonical prefix.
+    3. The corresponding ``COPAW_`` legacy variant is checked last so
+       that existing deployments keep working.
     """
     if key in os.environ:
         return os.environ[key]
     if key.startswith("QWENPAW_"):
-        legacy_key = "COPAW_" + key[len("QWENPAW_") :]
+        suffix = key[len("QWENPAW_"):]
+        openspider_key = "OPENSPIDER_" + suffix
+        if openspider_key in os.environ:
+            return os.environ[openspider_key]
+        legacy_key = "COPAW_" + suffix
         if legacy_key in os.environ:
             return os.environ[legacy_key]
     return default
@@ -27,8 +37,8 @@ def _get_env(key: str, default: str = "") -> str:
 
 class EnvVarLoader:
     """Utility to load and parse environment variables with type safety
-    and defaults.  Pass QWENPAW_* keys; COPAW_* legacy variants are
-    checked automatically as a fallback inside _get_env.
+    and defaults.  Pass QWENPAW_* keys; OPENSPIDER_* and COPAW_* legacy
+    variants are checked automatically as a fallback inside _get_env.
     """
 
     @staticmethod
@@ -48,8 +58,9 @@ class EnvVarLoader:
     ) -> float:
         """Get a float environment variable with optional bounds
         and infinity handling."""
+        raw = _get_env(env_var, str(default))
         try:
-            value = float(_get_env(env_var, str(default)))
+            value = float(raw)
             if min_value is not None and value < min_value:
                 return min_value
             if max_value is not None and value > max_value:
@@ -60,6 +71,14 @@ class EnvVarLoader:
                 return default
             return value
         except (TypeError, ValueError):
+            if raw != str(default):
+                _logger.warning(
+                    "Invalid float value for env var %s=%r, "
+                    "using default %s",
+                    env_var,
+                    raw,
+                    default,
+                )
             return default
 
     @staticmethod
@@ -70,14 +89,23 @@ class EnvVarLoader:
         max_value: int | None = None,
     ) -> int:
         """Get an integer environment variable with optional bounds."""
+        raw = _get_env(env_var, str(default))
         try:
-            value = int(_get_env(env_var, str(default)))
+            value = int(raw)
             if min_value is not None and value < min_value:
                 return min_value
             if max_value is not None and value > max_value:
                 return max_value
             return value
         except (TypeError, ValueError):
+            if raw != str(default):
+                _logger.warning(
+                    "Invalid int value for env var %s=%r, "
+                    "using default %s",
+                    env_var,
+                    raw,
+                    default,
+                )
             return default
 
     @staticmethod
@@ -110,7 +138,7 @@ SECRET_DIR = (
     .resolve()
 )
 
-PROJECT_NAME = "QwenPaw"
+PROJECT_NAME = "OpenSpider"
 
 # Default media directory for channels (cross-platform)
 DEFAULT_MEDIA_DIR = WORKING_DIR / "media"
@@ -307,28 +335,20 @@ LLM_ACQUIRE_TIMEOUT = EnvVarLoader.get_float(
 )
 
 # Tool guard approval timeout (seconds).
-try:
-    TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS = max(
-        float(
-            _get_env("QWENPAW_TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS", "300"),
-        ),
-        1.0,
-    )
-except (TypeError, ValueError):
-    TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS = 300.0
+TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS = EnvVarLoader.get_float(
+    "QWENPAW_TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS",
+    300.0,
+    min_value=1.0,
+)
 
 # Tool guard approval heartbeat interval (seconds).
 # Sends periodic heartbeat messages during approval wait to keep SSE
 # connection alive. Should be less than browser/proxy timeout (30-60s).
-try:
-    TOOL_GUARD_APPROVAL_HEARTBEAT_INTERVAL = max(
-        float(
-            _get_env("QWENPAW_TOOL_GUARD_APPROVAL_HEARTBEAT_INTERVAL", "15"),
-        ),
-        5.0,
-    )
-except (TypeError, ValueError):
-    TOOL_GUARD_APPROVAL_HEARTBEAT_INTERVAL = 15.0
+TOOL_GUARD_APPROVAL_HEARTBEAT_INTERVAL = EnvVarLoader.get_float(
+    "QWENPAW_TOOL_GUARD_APPROVAL_HEARTBEAT_INTERVAL",
+    15.0,
+    min_value=5.0,
+)
 
 # Marker prepended to every truncation notice.
 # Format:
@@ -347,4 +367,13 @@ TRUNCATION_NOTICE_MARKER = "<<<TRUNCATED>>>"
 # because the model does not support multimodal content.
 MEDIA_UNSUPPORTED_PLACEHOLDER = (
     "[Media content removed - model does not support this media type]"
+)
+
+# Maximum number of events that can queue in the token-usage buffer
+# before new events are dropped with a warning.  Prevents unbounded
+# memory growth when the disk-flush consumer falls behind producers.
+TOKEN_USAGE_QUEUE_MAX = EnvVarLoader.get_int(
+    "QWENPAW_TOKEN_USAGE_QUEUE_MAX",
+    10_000,
+    min_value=100,
 )

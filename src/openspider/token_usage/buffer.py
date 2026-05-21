@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import NamedTuple, Optional
 
 from .storage import load_data, save_data_sync
+from ..constant import TOKEN_USAGE_QUEUE_MAX
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class TokenUsageBuffer:
         self._cache_loaded = False
 
         self._dirty: bool = False
-        self._queue: asyncio.Queue = asyncio.Queue()
+        self._queue: asyncio.Queue = asyncio.Queue(maxsize=TOKEN_USAGE_QUEUE_MAX)
         self._consumer_task: Optional[asyncio.Task] = None
         self._flush_task: Optional[asyncio.Task] = None
         self._stopped = False
