@@ -2,7 +2,7 @@
 """Agent status API."""
 
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -37,6 +37,14 @@ class AgentStatus(BaseModel):
     last_finish_at: Optional[datetime] = Field(
         None,
         description="Timestamp when the last task finished (UTC)",
+    )
+    llm_rate_limiter: Optional[Dict[str, Any]] = Field(
+        None,
+        description=(
+            "Global LLM rate-limiter snapshot: in-flight count, QPM usage, "
+            "pause state, and cumulative counters. None when the limiter has "
+            "not yet been initialised (no LLM calls made)."
+        ),
     )
 
 
@@ -90,4 +98,15 @@ async def get_agent_status(
     # get_agent_for_request will use the agent_id from request.path_params
     workspace = await get_agent_for_request(request)
     status_dict = await workspace.task_tracker.get_global_status()
-    return AgentStatus(**status_dict)
+
+    # Attach global LLM rate-limiter stats (non-blocking, best-effort).
+    llm_stats: Optional[Dict[str, Any]] = None
+    try:
+        from ...providers.rate_limiter import _global_limiter
+
+        if _global_limiter is not None:
+            llm_stats = _global_limiter.stats()
+    except Exception:
+        pass
+
+    return AgentStatus(**status_dict, llm_rate_limiter=llm_stats)

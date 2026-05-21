@@ -36,6 +36,7 @@ class MultiAgentManager:
         self.agents: Dict[str, Workspace] = {}
         self._lock = asyncio.Lock()
         self._pending_starts: Dict[str, asyncio.Event] = {}
+        self._pending_errors: Dict[str, Exception] = {}
         self._cleanup_tasks: Set[asyncio.Task] = set()
         logger.debug("MultiAgentManager initialized")
 
@@ -99,6 +100,12 @@ class MultiAgentManager:
             if agent_id in self.agents:
                 logger.debug(f"Returning cached agent: {agent_id}")
                 return self.agents[agent_id]
+            # Re-raise the original startup exception so callers get the
+            # root cause rather than a generic "failed to initialize" message.
+            async with self._lock:
+                exc = self._pending_errors.pop(agent_id, None)
+            if exc is not None:
+                raise exc
             raise ConfigurationException(
                 config_key="agent",
                 message=f"Agent '{agent_id}' failed to initialize",
@@ -127,6 +134,8 @@ class MultiAgentManager:
             return instance
         except Exception as e:
             logger.error(f"Failed to start workspace {agent_id}: {e}")
+            async with self._lock:
+                self._pending_errors[agent_id] = e
             raise
         finally:
             # Always clean up pending state and signal waiters

@@ -101,11 +101,21 @@ class ChannelManager:
         """
         available = get_available_channels()
         registry = get_channel_registry()
-        channels: list[BaseChannel] = [
-            ch_cls.from_env(process, on_reply_sent=on_last_dispatch)
-            for key, ch_cls in registry.items()
-            if key in available
-        ]
+        channels: list[BaseChannel] = []
+        for key, ch_cls in registry.items():
+            if key not in available:
+                continue
+            try:
+                channels.append(
+                    ch_cls.from_env(process, on_reply_sent=on_last_dispatch)
+                )
+            except Exception as e:
+                logger.error(
+                    "Failed to initialize channel '%s' from env, skipping: %s",
+                    key,
+                    e,
+                    exc_info=True,
+                )
         return cls(channels)
 
     @classmethod
