@@ -8,13 +8,15 @@ the ``/daemon approve`` command in the chat interface.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
 import logging
 import time
 import uuid
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from ...constant import TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS
+from ...constant import APPROVAL_SIGNING_SECRET, TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS
 from ...security.tool_guard.approval import ApprovalDecision
 
 if TYPE_CHECKING:
@@ -26,6 +28,40 @@ _GC_MAX_AGE_SECONDS = 3600.0
 _GC_MAX_COMPLETED = 500
 _GC_PENDING_MAX_AGE_SECONDS = 1800.0
 _GC_MAX_PENDING = 200
+
+
+# ------------------------------------------------------------------
+# HMAC token helpers
+# ------------------------------------------------------------------
+
+
+def _generate_resolution_token(request_id: str, session_id: str) -> str:
+    """Return a hex HMAC-SHA256 token binding *request_id* to *session_id*.
+
+    The token is generated from ``APPROVAL_SIGNING_SECRET`` and must be
+    verified by callers who resolve approvals via the HTTP API.  Channel
+    command handlers (``/approve``, ``/daemon approve``) are exempted
+    from the check because they run inside the trusted session context.
+    """
+    msg = f"{request_id}:{session_id}".encode()
+    return hmac.new(
+        APPROVAL_SIGNING_SECRET.encode(),
+        msg,
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def verify_resolution_token(
+    token: str,
+    request_id: str,
+    session_id: str,
+) -> bool:
+    """Return ``True`` iff *token* is a valid resolution token for this request.
+
+    Uses a constant-time comparison to prevent timing attacks.
+    """
+    expected = _generate_resolution_token(request_id, session_id)
+    return hmac.compare_digest(token, expected)
 
 
 # ------------------------------------------------------------------
@@ -53,6 +89,10 @@ class PendingApproval:
     findings_count: int = 0
     severity: str = "medium"  # For frontend display
     extra: dict[str, Any] = field(default_factory=dict)
+    # HMAC-SHA256 token: bind this approval to (request_id, root_session_id).
+    # Verified by HTTP API resolve endpoints; command-channel handlers are
+    # exempt (they operate inside the trusted session context).
+    resolution_token: str = field(default="", repr=False)
 
 
 # ------------------------------------------------------------------
@@ -114,6 +154,7 @@ class ApprovalService:
             findings_count=result.findings_count,
             severity=result.max_severity.value,
             extra=dict(extra or {}),
+            resolution_token=_generate_resolution_token(request_id, root_session_id),
         )
 
         async with self._lock:

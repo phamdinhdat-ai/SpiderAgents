@@ -9,7 +9,9 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from ..approvals import get_approval_service
+from ..approvals.service import verify_resolution_token
 from ...security.tool_guard.approval import ApprovalDecision
+from ...utils.audit_log import audit
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,14 @@ class ApprovalActionRequest(BaseModel):
     reason: Optional[str] = Field(
         None,
         description="Optional reason for denial",
+    )
+    resolution_token: Optional[str] = Field(
+        None,
+        description=(
+            "HMAC-SHA256 resolution token returned by the pending-approval "
+            "record.  Required for direct HTTP API callers; channel command "
+            "handlers (e.g. /approve) are exempt."
+        ),
     )
 
 
@@ -93,6 +103,29 @@ async def post_approval_approve(
             detail="Root session mismatch: cannot approve other session trees",
         )
 
+    # Verify HMAC resolution token when supplied by direct API callers.
+    # Channel command handlers (/approve, /daemon approve) do not supply
+    # a token; we warn but allow them through so existing UX is unaffected.
+    if body.resolution_token is not None:
+        if not verify_resolution_token(
+            body.resolution_token, body.request_id, body.session_id
+        ):
+            logger.warning(
+                "Approval token mismatch: request %s session %s",
+                body.request_id[:16],
+                body.session_id,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail="Invalid resolution token",
+            )
+    else:
+        logger.debug(
+            "Approval approve: no resolution_token supplied for request %s "
+            "(channel command path — exempted)",
+            body.request_id[:16],
+        )
+
     # Resolve the Future
     resolved = await svc.resolve_request(
         body.request_id,
@@ -104,6 +137,16 @@ async def post_approval_approve(
         body.request_id[:16],
         body.session_id,
         resolved.tool_name,
+    )
+    audit(
+        "approval.granted",
+        session_id=body.session_id,
+        user_id=body.user_id or "",
+        detail={
+            "request_id": body.request_id,
+            "tool": resolved.tool_name,
+            "token_provided": body.resolution_token is not None,
+        },
     )
 
     return ApprovalActionResponse(
@@ -163,6 +206,27 @@ async def post_approval_deny(
             detail="Root session mismatch: cannot approve other session trees",
         )
 
+    # Verify HMAC resolution token when supplied by direct API callers.
+    if body.resolution_token is not None:
+        if not verify_resolution_token(
+            body.resolution_token, body.request_id, body.session_id
+        ):
+            logger.warning(
+                "Approval token mismatch on deny: request %s session %s",
+                body.request_id[:16],
+                body.session_id,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail="Invalid resolution token",
+            )
+    else:
+        logger.debug(
+            "Approval deny: no resolution_token supplied for request %s "
+            "(channel command path — exempted)",
+            body.request_id[:16],
+        )
+
     # Resolve the Future
     resolved = await svc.resolve_request(
         body.request_id,
@@ -174,6 +238,17 @@ async def post_approval_deny(
         body.request_id[:16],
         body.session_id,
         resolved.tool_name,
+    )
+    audit(
+        "approval.denied",
+        session_id=body.session_id,
+        user_id=body.user_id or "",
+        detail={
+            "request_id": body.request_id,
+            "tool": resolved.tool_name,
+            "reason": reason,
+            "token_provided": body.resolution_token is not None,
+        },
     )
 
     return ApprovalActionResponse(

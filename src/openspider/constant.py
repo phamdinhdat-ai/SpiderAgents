@@ -377,3 +377,18 @@ TOKEN_USAGE_QUEUE_MAX = EnvVarLoader.get_int(
     10_000,
     min_value=100,
 )
+
+# Signing secret for approval resolution tokens.
+# HMAC-SHA256 tokens are generated for each pending approval and must
+# be verified when resolving via the HTTP API.
+# Override with a strong random value via OPENSPIDER_APPROVAL_SIGNING_SECRET
+# or QWENPAW_APPROVAL_SIGNING_SECRET.  The default value is insecure and
+# only suitable for local development / single-node deployments where the
+# secret is kept in memory only.
+import os as _os  # noqa: E402 — local import to avoid polluting module namespace
+import secrets as _secrets  # noqa: E402
+
+APPROVAL_SIGNING_SECRET: str = (
+    _get_env("APPROVAL_SIGNING_SECRET")
+    or _secrets.token_hex(32)  # fallback: per-process ephemeral secret
+)

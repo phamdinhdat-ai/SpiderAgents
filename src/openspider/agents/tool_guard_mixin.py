@@ -30,6 +30,7 @@ from ..constant import (
     TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS,
     TOOL_GUARD_APPROVAL_HEARTBEAT_INTERVAL,
 )
+from ..utils.audit_log import audit
 
 if TYPE_CHECKING:
     from qwenpaw.app.approvals import PendingApproval
@@ -415,9 +416,17 @@ class ToolGuardMixin:
 
         await self.print(tool_res_msg, True)
         await self.memory.add(tool_res_msg)
+        audit(
+            "tool_guard.blocked",
+            session_id=str(self._request_context.get("session_id") or ""),
+            agent_id=str(getattr(self, "agent_id", "") or ""),
+            detail={
+                "tool": tool_name,
+                "severity": severity,
+                "findings_count": count,
+            },
+        )
         return None
-
-    async def _acting_with_approval(
         self,
         tool_call: dict[str, Any],
         tool_name: str,
@@ -725,6 +734,12 @@ class ToolGuardMixin:
 
         await self.print(tool_res_msg, True)
         await self.memory.add(tool_res_msg)
+        audit(
+            "tool_guard.user_denied",
+            session_id=str(self._request_context.get("session_id") or ""),
+            agent_id=str(getattr(self, "agent_id", "") or ""),
+            detail={"tool": tool_name},
+        )
         return None
 
     async def _acting_timeout(

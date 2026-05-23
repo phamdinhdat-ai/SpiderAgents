@@ -41,6 +41,7 @@ from .routers import router as api_router, create_agent_scoped_router
 from .routers.agent_scoped import AgentContextMiddleware
 from .routers.approval import router as approval_router
 from .routers.voice import voice_router
+from ..utils.context import CorrelationIDMiddleware
 from ..envs import load_envs_into_environ
 from ..providers.provider_manager import ProviderManager
 from ..local_models.manager import LocalModelManager
@@ -543,6 +544,9 @@ app = FastAPI(
 
 # Add agent context middleware for agent-scoped routes
 app.add_middleware(AgentContextMiddleware)
+
+# Stamp every request with a correlation ID (X-Request-Id header)
+app.add_middleware(CorrelationIDMiddleware)
 
 app.add_middleware(AuthMiddleware)
 

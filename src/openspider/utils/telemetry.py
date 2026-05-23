@@ -24,7 +24,8 @@ def _safe_get(func: Callable[[], str], default: str = "unknown") -> str:
     """Safely get value from function, return default on error."""
     try:
         return func()
-    except Exception:
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("_safe_get: %s raised %s", getattr(func, '__name__', func), exc)
         return default
 
 
@@ -209,7 +210,8 @@ def has_telemetry_been_collected(working_dir: Path) -> bool:
             return current in collected_versions
         # v1.1 compat: single qwenpaw_version field
         return marker_data.get("qwenpaw_version", "") == current
-    except Exception:
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Failed to read telemetry marker: %s", exc)
         return False
 
 
@@ -230,7 +232,8 @@ def is_telemetry_opted_out(working_dir: Path) -> bool:
     try:
         marker_data = json.loads(marker_file.read_text(encoding="utf-8"))
         return marker_data.get("opted_out", False) is True
-    except Exception:
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Failed to read telemetry opt-out marker: %s", exc)
         return False
 
 
@@ -265,8 +268,8 @@ def mark_telemetry_collected(
                     old_ver = old_data.get("qwenpaw_version", "")
                     if old_ver:
                         collected_versions = [old_ver]
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("Failed to read existing telemetry marker: %s", exc)
 
         if current not in collected_versions:
             collected_versions.append(current)

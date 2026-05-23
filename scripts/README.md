@@ -51,3 +51,22 @@ python scripts/run_tests.py -p
 # Show help
 python scripts/run_tests.py -h
 ```
+
+## Run backend + frontend together
+
+```bash
+python scripts/run_dev.py
+```
+
+- Starts backend with `python -m openspider app` (from repo root).
+- Starts frontend with `npm run dev` (inside `console/`).
+- Press `Ctrl+C` to stop both.
+
+Optional flags:
+
+```bash
+python scripts/run_dev.py --no-backend
+python scripts/run_dev.py --no-frontend
+python scripts/run_dev.py --backend-cmd "python -m qwenpaw app"
+python scripts/run_dev.py --frontend-cmd "npm run dev -- --port 5174"
+```
