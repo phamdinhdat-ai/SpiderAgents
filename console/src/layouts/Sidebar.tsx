@@ -270,12 +270,6 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       label: t("nav.environments"),
     },
     {
-      key: "security",
-      icon: <SparkBrowseLine size={18} />,
-      path: "/security",
-      label: t("nav.security"),
-    },
-    {
       key: "token-usage",
       icon: <SparkDataLine size={18} />,
       path: "/token-usage",
@@ -286,18 +280,6 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       icon: <SparkSaveLine size={18} />,
       path: "/backups",
       label: t("nav.backups"),
-    },
-    {
-      key: "voice-transcription",
-      icon: <SparkMicLine size={18} />,
-      path: "/voice-transcription",
-      label: t("nav.voiceTranscription"),
-    },
-    {
-      key: "debug",
-      icon: <SparkDebugLine size={18} />,
-      path: "/debug",
-      label: t("nav.debug", "Debug"),
     },
     {
       key: "plugin-manager",
@@ -414,11 +396,6 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
           icon: <SparkInternetLine size={16} />,
         },
         {
-          key: "security",
-          label: collapsed ? null : t("nav.security"),
-          icon: <SparkBrowseLine size={16} />,
-        },
-        {
           key: "token-usage",
           label: collapsed ? null : t("nav.tokenUsage"),
           icon: <SparkDataLine size={16} />,
@@ -427,16 +404,6 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
           key: "backups",
           label: collapsed ? null : t("nav.backups"),
           icon: <SparkSaveLine size={16} />,
-        },
-        {
-          key: "voice-transcription",
-          label: collapsed ? null : t("nav.voiceTranscription"),
-          icon: <SparkMicLine size={16} />,
-        },
-        {
-          key: "debug",
-          label: collapsed ? null : t("nav.debug", "Debug"),
-          icon: <SparkDebugLine size={16} />,
         },
         {
           key: "plugin-manager",

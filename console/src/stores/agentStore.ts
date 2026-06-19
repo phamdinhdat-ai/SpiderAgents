@@ -6,13 +6,13 @@ import type { AgentSummary } from "../api/types/agents";
  * Storage key used by both sessionStorage (per-tab state) and localStorage
  * (cross-tab shared state).
  */
-const STORAGE_KEY = "qwenpaw-agent-storage";
+const STORAGE_KEY = "openspider-agent-storage";
 
 /**
  * localStorage key that remembers the last-used agent across browser sessions.
  * New tabs read this to set their initial selectedAgent.
  */
-const LAST_USED_AGENT_KEY = "qwenpaw-last-used-agent";
+const LAST_USED_AGENT_KEY = "openspider-last-used-agent";
 
 interface AgentStore {
   selectedAgent: string;

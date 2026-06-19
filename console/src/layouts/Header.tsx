@@ -120,12 +120,12 @@ export default function Header() {
       ? "ru"
       : "en";
     const faqLang = lang === "zh" ? "zh" : "en";
-    const url = `https://qwenpaw.agentscope.io/docs/faq.${faqLang}.md`;
+    const url = `https://openspider.agentscope.io/docs/faq.${faqLang}.md`;
     fetch(url, { cache: "no-cache" })
       .then((res) => (res.ok ? res.text() : Promise.reject()))
       .then((text) => {
-        const zhPattern = /###\s*QwenPaw如何更新[\s\S]*?(?=\n###|$)/;
-        const enPattern = /###\s*How to update QwenPaw[\s\S]*?(?=\n###|$)/;
+        const zhPattern = /###\s*OpenSpider如何更新[\s\S]*?(?=\n###|$)/;
+        const enPattern = /###\s*How to update OpenSpider[\s\S]*?(?=\n###|$)/;
         const match = text.match(faqLang === "zh" ? zhPattern : enPattern);
         setUpdateMarkdown(
           match && lang !== "ru"
@@ -155,7 +155,7 @@ export default function Header() {
         <div className={styles.logoWrapper}>
           <img
             src={isDark ? "/logo-dark.svg" : "/logo-light.svg"}
-            alt="QwenPaw"
+            alt="OpenSpider"
             className={styles.logoImg}
           />
           <div className={styles.logoDivider} />
@@ -179,33 +179,12 @@ export default function Header() {
           )}
         </div>
         <Space size="middle">
-          <Tooltip title={t("header.changelog")}>
-            <Button
-              type="text"
-              onClick={() => handleNavClick(getReleaseNotesUrl(i18n.language))}
-            >
-              {t("header.changelog")}
-            </Button>
-          </Tooltip>
           <Tooltip title={t("header.docs")}>
             <Button
               type="text"
               onClick={() => handleNavClick(getDocsUrl(i18n.language))}
             >
               {t("header.docs")}
-            </Button>
-          </Tooltip>
-          <Tooltip title={t("header.faq")}>
-            <Button
-              type="text"
-              onClick={() => handleNavClick(getFaqUrl(i18n.language))}
-            >
-              {t("header.faq")}
-            </Button>
-          </Tooltip>
-          <Tooltip title={t("header.github")}>
-            <Button type="text" onClick={() => handleNavClick(GITHUB_URL)}>
-              {t("header.github")}
             </Button>
           </Tooltip>
           <div className={styles.headerDivider} />

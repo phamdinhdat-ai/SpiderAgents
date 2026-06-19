@@ -87,7 +87,7 @@
     }
   },
   "login": {
-    "title": "Masuk ke QwenPaw",
+    "title": "Masuk ke OpenSpider",
     "registerTitle": "Buat Akun",
     "firstUserHint": "Buat akun admin untuk memulai",
     "usernamePlaceholder": "Nama pengguna",
@@ -226,7 +226,7 @@
     "nameRequired": "Masukkan nama agen",
     "namePlaceholder": "contoh: Agen Saya",
     "descriptionPlaceholder": "Jelaskan singkat tujuan agen ini...",
-    "workspaceHelp": "Kosongkan untuk dibuat otomatis di ~/.qwenpaw/workspaces/<id>",
+    "workspaceHelp": "Kosongkan untuk dibuat otomatis di ~/.openspider/workspaces/<id>",
     "defaultNotEditable": "Agen default tidak dapat diedit",
     "defaultNotDeletable": "Agen default tidak dapat dihapus",
     "disable": "Nonaktifkan",

@@ -1,8 +1,8 @@
 // ── URLs ──────────────────────────────────────────────────────────────────
 
-export const PYPI_URL = "https://pypi.org/pypi/qwenpaw/json";
+export const PYPI_URL = "https://pypi.org/pypi/openspider/json";
 
-export const GITHUB_URL = "https://github.com/agentscope-ai/QwenPaw" as const;
+export const GITHUB_URL = "https://github.com/agentscope-ai/OpenSpider" as const;
 
 // ── Timing ────────────────────────────────────────────────────────────────
 
@@ -33,11 +33,8 @@ export const KEY_TO_PATH: Record<string, string> = {
   models: "/models",
   environments: "/environments",
   "agent-config": "/agent-config",
-  security: "/security",
   "token-usage": "/token-usage",
   "agent-stats": "/agent-stats",
-  "voice-transcription": "/voice-transcription",
-  debug: "/debug",
   backups: "/backups",
   "plugin-manager": "/plugin-manager",
 };
@@ -70,13 +67,13 @@ export const getWebsiteLang = (lang: string): string =>
   lang.startsWith("zh") ? "zh" : "en";
 
 export const getDocsUrl = (lang: string): string =>
-  `https://qwenpaw.agentscope.io/docs/intro?lang=${getWebsiteLang(lang)}`;
+  `https://openspider.agentscope.io/docs/intro?lang=${getWebsiteLang(lang)}`;
 
 export const getFaqUrl = (lang: string): string =>
-  `https://qwenpaw.agentscope.io/docs/faq?lang=${getWebsiteLang(lang)}`;
+  `https://openspider.agentscope.io/docs/faq?lang=${getWebsiteLang(lang)}`;
 
 export const getReleaseNotesUrl = (lang: string): string =>
-  `https://qwenpaw.agentscope.io/release-notes?lang=${getWebsiteLang(lang)}`;
+  `https://openspider.agentscope.io/release-notes?lang=${getWebsiteLang(lang)}`;
 
 // ── Version helpers ────────────────────────────────────────────────────────
 
@@ -130,99 +127,99 @@ export const compareVersions = (a: string, b: string): number => {
 // ── Update markdown ───────────────────────────────────────────────────────
 // TODO
 export const UPDATE_MD: Record<string, string> = {
-  zh: `### QwenPaw如何更新
+  zh: `### OpenSpider如何更新
 
-要更新 QwenPaw 到最新版本，可根据你的安装方式选择对应方法：
+要更新 OpenSpider 到最新版本，可根据你的安装方式选择对应方法：
 
 1. 如果你使用的是一键安装脚本，直接重新运行安装命令即可自动升级。
 
 2. 如果你是通过 pip 安装，在终端中执行以下命令升级：
 
 \`\`\`
-qwenpaw update
+openspider update
 \`\`\`
 
 3. 如果你是从源码安装，进入项目目录并拉取最新代码后重新安装：
 
 \`\`\`
-cd QwenPaw
+cd OpenSpider
 git pull origin main
 cd console && npm ci && npm run build
-cd .. && mkdir -p src/qwenpaw/console
-cp -R console/dist/. src/qwenpaw/console/
+cd .. && mkdir -p src/openspider/console
+cp -R console/dist/. src/openspider/console/
 pip install -e .
 \`\`\`
 
 4. 如果你使用的是 Docker，拉取最新镜像并重启容器：
 
 \`\`\`
-docker pull agentscope/qwenpaw:latest
-docker run -p 127.0.0.1:8088:8088 -v qwenpaw-data:/app/working agentscope/qwenpaw:latest
+docker pull agentscope/openspider:latest
+docker run -p 127.0.0.1:8088:8088 -v openspider-data:/app/working agentscope/openspider:latest
 \`\`\`
 
-升级后重启服务 qwenpaw app。`,
+升级后重启服务 openspider app。`,
 
-  ru: `### Как обновить QwenPaw
+  ru: `### Как обновить OpenSpider
 
-Чтобы обновить QwenPaw, выберите способ в зависимости от типа установки:
+Чтобы обновить OpenSpider, выберите способ в зависимости от типа установки:
 
 1. Если вы устанавливали через однострочный скрипт, повторно запустите установщик для обновления.
 
 2. Если устанавливали через pip, выполните:
 
 \`\`\`
-qwenpaw update
+openspider update
 \`\`\`
 
 3. Если устанавливали из исходников, получите последние изменения и переустановите:
 
 \`\`\`
-cd QwenPaw
+cd OpenSpider
 git pull origin main
 cd console && npm ci && npm run build
-cd .. && mkdir -p src/qwenpaw/console
-cp -R console/dist/. src/qwenpaw/console/
+cd .. && mkdir -p src/openspider/console
+cp -R console/dist/. src/openspider/console/
 pip install -e .
 \`\`\`
 
 4. Если используете Docker, загрузите новый образ и перезапустите контейнер:
 
 \`\`\`
-docker pull agentscope/qwenpaw:latest
-docker run -p 127.0.0.1:8088:8088 -v qwenpaw-data:/app/working agentscope/qwenpaw:latest
+docker pull agentscope/openspider:latest
+docker run -p 127.0.0.1:8088:8088 -v openspider-data:/app/working agentscope/openspider:latest
 \`\`\`
 
-After upgrading, restart the service with \`qwenpaw app\`.`,
+After upgrading, restart the service with \`openspider app\`.`,
 
-  en: `### How to update QwenPaw
+  en: `### How to update OpenSpider
 
-To update QwenPaw, use the method matching your installation type:
+To update OpenSpider, use the method matching your installation type:
 
 1. If installed via one-line script, re-run the installer to upgrade.
 
 2. If installed via pip, run:
 
 \`\`\`
-qwenpaw update
+openspider update
 \`\`\`
 
 3. If installed from source, pull the latest code and reinstall:
 
 \`\`\`
-cd QwenPaw
+cd OpenSpider
 git pull origin main
 cd console && npm ci && npm run build
-cd .. && mkdir -p src/qwenpaw/console
-cp -R console/dist/. src/qwenpaw/console/
+cd .. && mkdir -p src/openspider/console
+cp -R console/dist/. src/openspider/console/
 pip install -e .
 \`\`\`
 
 4. If using Docker, pull the latest image and restart the container:
 
 \`\`\`
-docker pull agentscope/qwenpaw:latest
-docker run -p 127.0.0.1:8088:8088 -v qwenpaw-data:/app/working agentscope/qwenpaw:latest
+docker pull agentscope/openspider:latest
+docker run -p 127.0.0.1:8088:8088 -v openspider-data:/app/working agentscope/openspider:latest
 \`\`\`
 
-After upgrading, restart the service with \`qwenpaw app\`.`,
+After upgrading, restart the service with \`openspider app\`.`,
 };

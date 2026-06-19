@@ -1,5 +1,5 @@
 {
-  "name": "qwenpaw-console",
+  "name": "openspider-console",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -35,6 +35,7 @@
     "antd-style": "^3.7.1",
     "dayjs": "^1.11.13",
     "i18next": "^25.8.4",
+    "immer": "^11.1.8",
     "jszip": "^3.10.1",
     "lucide-react": "^0.562.0",
     "mermaid": "^11.12.2",

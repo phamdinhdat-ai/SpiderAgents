@@ -29,14 +29,9 @@ const ModelsPage = lazyImportWithRetry("../../pages/Settings/Models");
 const EnvironmentsPage = lazyImportWithRetry(
   "../../pages/Settings/Environments",
 );
-const SecurityPage = lazyImportWithRetry("../../pages/Settings/Security");
 const TokenUsagePage = lazyImportWithRetry("../../pages/Settings/TokenUsage");
 const AgentStatsPage = lazyImportWithRetry("../../pages/Settings/AgentStats");
-const VoiceTranscriptionPage = lazyImportWithRetry(
-  "../../pages/Settings/VoiceTranscription",
-);
 const AgentsPage = lazyImportWithRetry("../../pages/Settings/Agents");
-const DebugPage = lazyImportWithRetry("../../pages/Settings/Debug");
 const BackupsPage = lazyImportWithRetry("../../pages/Settings/Backups");
 const PluginManagerPage = lazyImportWithRetry(
   "../../pages/Settings/PluginManager",
@@ -60,11 +55,8 @@ const pathToKey: Record<string, string> = {
   "/models": "models",
   "/environments": "environments",
   "/agent-config": "agent-config",
-  "/security": "security",
   "/token-usage": "token-usage",
   "/agent-stats": "agent-stats",
-  "/voice-transcription": "voice-transcription",
-  "/debug": "debug",
   "/backups": "backups",
   "/plugin-manager": "plugin-manager",
 };
@@ -121,14 +113,8 @@ export default function MainLayout() {
                   <Route path="/models" element={<ModelsPage />} />
                   <Route path="/environments" element={<EnvironmentsPage />} />
                   <Route path="/agent-config" element={<AgentConfigPage />} />
-                  <Route path="/security" element={<SecurityPage />} />
                   <Route path="/token-usage" element={<TokenUsagePage />} />
                   <Route path="/agent-stats" element={<AgentStatsPage />} />
-                  <Route
-                    path="/voice-transcription"
-                    element={<VoiceTranscriptionPage />}
-                  />
-                  <Route path="/debug" element={<DebugPage />} />
                   <Route path="/backups" element={<BackupsPage />} />
                   <Route
                     path="/plugin-manager"
