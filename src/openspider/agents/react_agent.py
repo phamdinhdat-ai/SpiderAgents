@@ -64,6 +64,10 @@ from ..constant import (
     WORKING_DIR,
 )
 from ..providers.model_capability_cache import get_capability_cache
+from .loop_detector import LoopDetector
+from .self_verify import SelfVerifier
+from .tool_retry import ToolRetryWrapper
+from .snapshot import SnapshotManager
 
 if TYPE_CHECKING:
     from ..agents.memory import BaseMemoryManager
@@ -213,6 +217,27 @@ class QwenPawAgent(ToolGuardMixin, ReActAgent):
 
         # Register hooks
         self._register_hooks()
+
+        # ------------------------------------------------------------------
+        # Harness Engineering: loop detection, self-verification,
+        # tool retry, and lightweight rollback snapshots
+        # ------------------------------------------------------------------
+        self._loop_detector = LoopDetector()
+        self._self_verifier = SelfVerifier(
+            workspace_dir=self._workspace_dir,
+        )
+        self._tool_retry = ToolRetryWrapper()
+        self._snapshot_manager = SnapshotManager(
+            workspace_dir=self._workspace_dir,
+        )
+        logger.debug(
+            "Harness modules initialized: loop_detect=%s, self_verify=%s, "
+            "tool_retry=%s, snapshot=%s",
+            self._loop_detector.enabled,
+            self._self_verifier.enabled,
+            self._tool_retry.enabled,
+            self._snapshot_manager.enabled,
+        )
 
     def _create_toolkit(
         self,
@@ -740,14 +765,61 @@ class QwenPawAgent(ToolGuardMixin, ReActAgent):
                             pass
 
     async def _acting(self, tool_call) -> dict | None:
-        """Check plan tool gate before delegating to ToolGuardMixin."""
+        """Check plan tool gate, loop detection, snapshot, then delegate
+        to ToolGuardMixin, with self-verification after execution.
+
+        Harness Engineering integration points:
+        1. Loop detector — checks for stuck repetition before execution
+        2. Plan gate — restricts tools during plan creation (existing)
+        3. Snapshot — records file state before destructive tools
+        4. ToolGuardMixin — security approval gate (existing, via super)
+        5. Self-verifier — checks tool result after execution
+        """
         from ..plan.hints import check_plan_tool_gate
 
         tool_name = str(tool_call.get("name", ""))
+        tool_input = tool_call.get("input", {})
+        tool_call_id = str(tool_call.get("id", ""))
 
+        # ------------------------------------------------------------------
+        # 1. Loop detection: check if agent is stuck repeating
+        # ------------------------------------------------------------------
+        loop_obs = self._loop_detector.check(tool_name, tool_input)
+        if loop_obs:
+            from agentscope.message import ToolResultBlock
+
+            # Inject loop observation as a system message into memory
+            # so the LLM sees it and can self-correct
+            loop_msg = Msg(
+                "system",
+                [ToolResultBlock(
+                    type="tool_result",
+                    id=f"loop-detect-{tool_call_id}",
+                    name="loop_detection",
+                    output=[{"type": "text", "text": loop_obs}],
+                )],
+                "system",
+            )
+            await self.memory.add(loop_msg)
+            logger.warning(
+                "Loop detected: %s called with same args %d times",
+                tool_name,
+                self._loop_detector._threshold,  # pylint: disable=protected-access
+            )
+
+        # Record this call into the loop detector (before execution,
+        # so future calls can detect the loop even if this one fails)
+        self._loop_detector.record(tool_name, tool_input)
+
+        # ------------------------------------------------------------------
+        # 2. Fix stringified JSON args for plan tools (existing)
+        # ------------------------------------------------------------------
         if tool_name in self._PLAN_TOOLS_WITH_JSON_ARGS:
             self._fix_stringified_json_args(tool_call)
 
+        # ------------------------------------------------------------------
+        # 3. Plan gate check (existing)
+        # ------------------------------------------------------------------
         nb = getattr(self, "plan_notebook", None)
         if nb is not None:
             err = check_plan_tool_gate(nb, tool_name)
@@ -770,8 +842,48 @@ class QwenPawAgent(ToolGuardMixin, ReActAgent):
                 await self.memory.add(tool_res_msg)
                 return None
 
+        # ------------------------------------------------------------------
+        # 4. Snapshot: record pre-execution file state for rollback
+        # ------------------------------------------------------------------
+        _snap_entry = self._snapshot_manager.snapshot(tool_name, tool_input)
+
+        # ------------------------------------------------------------------
+        # 5. Execute via ToolGuardMixin → ReActAgent (security + execution)
+        # ------------------------------------------------------------------
         result = await super()._acting(tool_call)
 
+        # ------------------------------------------------------------------
+        # 6. Self-verification: check tool result after execution
+        # ------------------------------------------------------------------
+        verify_obs = await self._self_verifier.verify(
+            tool_name=tool_name,
+            tool_input=tool_input,
+            tool_result=result,
+            tool_call_id=tool_call_id,
+        )
+        if verify_obs:
+            from agentscope.message import ToolResultBlock
+
+            verify_msg = Msg(
+                "system",
+                [ToolResultBlock(
+                    type="tool_result",
+                    id=f"self-verify-{tool_call_id}",
+                    name="self_verification",
+                    output=[{"type": "text", "text": verify_obs}],
+                )],
+                "system",
+            )
+            await self.memory.add(verify_msg)
+            logger.info(
+                "Self-verification failed for %s (call %s)",
+                tool_name,
+                tool_call_id[:8] if tool_call_id else "?",
+            )
+
+        # ------------------------------------------------------------------
+        # 7. Plan mutation tracking (existing)
+        # ------------------------------------------------------------------
         if nb is not None and tool_name == "revise_current_plan":
             nb._plan_just_mutated = True  # pylint: disable=protected-access
 

@@ -398,3 +398,78 @@ APPROVAL_SIGNING_SECRET: str = (
     _get_env("APPROVAL_SIGNING_SECRET")
     or _secrets.token_hex(32)  # fallback: per-process ephemeral secret
 )
+
+# ------------------------------------------------------------------
+# Harness Engineering — Loop & Feedback Configuration
+# ------------------------------------------------------------------
+
+# Self-verification: agent checks its own tool results before committing.
+# When enabled, after each tool call the agent verifies the result
+# (e.g., read-back file content, check exit codes) and feeds failures
+# back to the LLM as additional observations.
+SELF_VERIFY_ENABLED = EnvVarLoader.get_bool(
+    "OPENSPIDER_SELF_VERIFY_ENABLED",
+    False,
+)
+
+SELF_VERIFY_MAX_RETRIES = EnvVarLoader.get_int(
+    "OPENSPIDER_SELF_VERIFY_MAX_RETRIES",
+    3,
+    min_value=0,
+    max_value=10,
+)
+
+# Loop detection: detect when the agent is stuck repeating the same
+# tool call with identical arguments, and inject a corrective observation.
+LOOP_DETECTION_ENABLED = EnvVarLoader.get_bool(
+    "OPENSPIDER_LOOP_DETECTION_ENABLED",
+    True,
+)
+
+LOOP_DETECTION_WINDOW = EnvVarLoader.get_int(
+    "OPENSPIDER_LOOP_DETECTION_WINDOW",
+    5,
+    min_value=2,
+    max_value=50,
+)
+
+LOOP_DETECTION_THRESHOLD = EnvVarLoader.get_int(
+    "OPENSPIDER_LOOP_DETECTION_THRESHOLD",
+    3,
+    min_value=2,
+    max_value=20,
+)
+
+# Tool-level retry: automatically retry failed tool executions with
+# exponential backoff for transient errors (timeout, connection).
+TOOL_RETRY_ENABLED = EnvVarLoader.get_bool(
+    "OPENSPIDER_TOOL_RETRY_ENABLED",
+    False,
+)
+
+TOOL_MAX_RETRIES = EnvVarLoader.get_int(
+    "OPENSPIDER_TOOL_MAX_RETRIES",
+    2,
+    min_value=0,
+    max_value=10,
+)
+
+TOOL_RETRY_BACKOFF_BASE = EnvVarLoader.get_float(
+    "OPENSPIDER_TOOL_RETRY_BACKOFF_BASE",
+    0.5,
+    min_value=0.1,
+)
+
+# Lightweight snapshots: hash-based pre-state recording before
+# destructive tool calls, enabling rollback on detected regression.
+SNAPSHOT_ENABLED = EnvVarLoader.get_bool(
+    "OPENSPIDER_SNAPSHOT_ENABLED",
+    False,
+)
+
+SNAPSHOT_MAX_BACKUP_SIZE_MB = EnvVarLoader.get_int(
+    "OPENSPIDER_SNAPSHOT_MAX_BACKUP_SIZE_MB",
+    50,
+    min_value=1,
+    max_value=500,
+)
