@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import pytest
 
-import qwenpaw.providers.provider_manager as provider_manager_module
-from qwenpaw.providers.openai_provider import OpenAIProvider
-from qwenpaw.providers.provider_manager import (
+import openspider.providers.provider_manager as provider_manager_module
+from openspider.providers.openai_provider import OpenAIProvider
+from openspider.providers.provider_manager import (
     PROVIDER_VOLCENGINE_CN,
     PROVIDER_VOLCENGINE_CN_CODINGPLAN,
     VOLCENGINE_CODINGPLAN_MODELS,

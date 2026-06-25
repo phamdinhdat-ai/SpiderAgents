@@ -76,8 +76,8 @@ _RM_ESCAPE_PATTERNS = [
 def _get_workspace_root() -> Path:
     """Return current workspace root for resolving relative paths."""
     try:
-        from qwenpaw.config.context import get_current_workspace_dir
-        from qwenpaw.constant import WORKING_DIR
+        from openspider.config.context import get_current_workspace_dir
+        from openspider.constant import WORKING_DIR
 
         workspace_dir = get_current_workspace_dir() or WORKING_DIR
         return Path(workspace_dir)
@@ -521,7 +521,7 @@ def _load_config_rules() -> tuple[list[GuardRule], set[str]]:
     Returns ``(custom_rules, disabled_ids)``.
     """
     try:
-        from qwenpaw.config import load_config
+        from openspider.config import load_config
 
         cfg = load_config().security.tool_guard
     except Exception:

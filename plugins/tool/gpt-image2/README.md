@@ -14,13 +14,13 @@ A QwenPaw tool plugin that enables image generation and editing using OpenAI's G
 ## Installation
 
 ```bash
-qwenpaw plugin install /path/to/gpt-image2
+openspider plugin install /path/to/gpt-image2
 ```
 
 Or from ZIP:
 
 ```bash
-qwenpaw plugin install gpt-image2-tool.zip
+openspider plugin install gpt-image2-tool.zip
 ```
 
 ## Configuration
@@ -115,8 +115,8 @@ GPT Image 2 usage is billed by OpenAI. See https://openai.com/pricing for curren
 
 ### Tool not showing up
 
-- Ensure the plugin is installed: `qwenpaw plugin list`
-- Check QwenPaw logs: `~/.qwenpaw/logs/qwenpaw.log`
+- Ensure the plugin is installed: `openspider plugin list`
+- Check openspider logs: `~/.openspider/logs/qwenpaw.log`
 - Restart QwenPaw after installation
 
 ### API errors
@@ -127,7 +127,7 @@ GPT Image 2 usage is billed by OpenAI. See https://openai.com/pricing for curren
 
 ### Configuration not saving
 
-- Check file permissions in `~/.qwenpaw/plugins/`
+- Check file permissions in `~/.openspider/plugins/`
 - Review logs for error messages
 
 ## Development

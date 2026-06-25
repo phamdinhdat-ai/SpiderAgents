@@ -13,7 +13,7 @@ from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types as genai_types
 
-from qwenpaw.providers.multimodal_prober import (
+from openspider.providers.multimodal_prober import (
     ProbeResult,
     _PROBE_IMAGE_B64,
     _IMAGE_PROBE_PROMPT,
@@ -21,7 +21,7 @@ from qwenpaw.providers.multimodal_prober import (
     _is_media_keyword_error,
     evaluate_image_probe_answer,
 )
-from qwenpaw.providers.provider import ModelInfo, Provider
+from openspider.providers.provider import ModelInfo, Provider
 
 logger = logging.getLogger(__name__)
 

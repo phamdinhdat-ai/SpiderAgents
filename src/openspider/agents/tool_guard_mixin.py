@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tool-guard mixin for QwenPawAgent.
+"""Tool-guard mixin for OpenSpiderAgent.
 
 Provides ``_acting`` and ``_reasoning`` overrides that intercept
 sensitive tool calls before execution, implementing the deny /
@@ -33,8 +33,8 @@ from ..constant import (
 from ..utils.audit_log import audit
 
 if TYPE_CHECKING:
-    from qwenpaw.app.approvals import PendingApproval
-    from qwenpaw.security.tool_guard.approval import ApprovalDecision
+    from openspider.app.approvals import PendingApproval
+    from openspider.security.tool_guard.approval import ApprovalDecision
 
 logger = logging.getLogger(__name__)
 
@@ -91,8 +91,8 @@ class ToolGuardMixin:
 
     def _init_tool_guard(self) -> None:
         """Lazy-init tool-guard components (called once)."""
-        from qwenpaw.security.tool_guard.engine import get_guard_engine
-        from qwenpaw.app.approvals import get_approval_service
+        from openspider.security.tool_guard.engine import get_guard_engine
+        from openspider.app.approvals import get_approval_service
 
         self._tool_guard_engine = get_guard_engine()
         self._tool_guard_approval_service = get_approval_service()
@@ -268,7 +268,7 @@ class ToolGuardMixin:
         if guard_result is None or not guard_result.findings:
             return None
 
-        from qwenpaw.security.tool_guard.utils import log_findings
+        from openspider.security.tool_guard.utils import log_findings
 
         log_findings(tool_name, guard_result)
 
@@ -372,7 +372,7 @@ class ToolGuardMixin:
     ) -> dict | None:
         """Auto-deny a tool call without offering approval."""
         from agentscope.message import ToolResultBlock
-        from qwenpaw.security.tool_guard.approval import (
+        from openspider.security.tool_guard.approval import (
             format_findings_summary,
         )
 
@@ -427,101 +427,101 @@ class ToolGuardMixin:
             },
         )
         return None
-        self,
-        tool_call: dict[str, Any],
-        tool_name: str,
-        guard_result,
-    ) -> dict | None:
-        """Block and wait for user approval with heartbeat keep-alive.
+        # self,
+        # tool_call: dict[str, Any],
+        # tool_name: str,
+        # guard_result,
+    # ) -> dict | None:
+    #     """Block and wait for user approval with heartbeat keep-alive.
 
-        This method creates a Future, sends an approval request message to
-        the user, then blocks waiting for the Future to be resolved by
-        /approval approve or /approval deny command. During the wait,
-        periodic heartbeat messages are sent to keep SSE connection alive.
-        """
-        from qwenpaw.security.tool_guard.approval import ApprovalDecision
+    #     This method creates a Future, sends an approval request message to
+    #     the user, then blocks waiting for the Future to be resolved by
+    #     /approval approve or /approval deny command. During the wait,
+    #     periodic heartbeat messages are sent to keep SSE connection alive.
+    #     """
+    #     from openspider.security.tool_guard.approval import ApprovalDecision
 
-        session_id = str(self._request_context.get("session_id") or "")
-        user_id = str(self._request_context.get("user_id") or "")
-        channel = str(self._request_context.get("channel") or "")
-        agent_id = str(self._request_context.get("agent_id", "unknown"))
+    #     session_id = str(self._request_context.get("session_id") or "")
+    #     user_id = str(self._request_context.get("user_id") or "")
+    #     channel = str(self._request_context.get("channel") or "")
+    #     agent_id = str(self._request_context.get("agent_id", "unknown"))
 
-        # Get root_session_id for cross-session approval routing
-        root_session_id = str(
-            self._request_context.get("root_session_id") or session_id,
-        )
+    #     # Get root_session_id for cross-session approval routing
+    #     root_session_id = str(
+    #         self._request_context.get("root_session_id") or session_id,
+    #     )
 
-        svc = self._tool_guard_approval_service
-        tool_call_id = tool_call.get("id", "")
+    #     svc = self._tool_guard_approval_service
+    #     tool_call_id = tool_call.get("id", "")
 
-        # Cancel any stale pending approvals for this tool call
-        if session_id and tool_call_id:
-            await svc.cancel_stale_pending_for_tool_call(
-                session_id,
-                tool_call_id,
-            )
+    #     # Cancel any stale pending approvals for this tool call
+    #     if session_id and tool_call_id:
+    #         await svc.cancel_stale_pending_for_tool_call(
+    #             session_id,
+    #             tool_call_id,
+    #         )
 
-        # Create pending approval with Future
-        extra: dict[str, Any] = {"tool_call": tool_call}
-        pending = await svc.create_pending(
-            session_id=session_id,
-            root_session_id=root_session_id,
-            user_id=user_id,
-            channel=channel,
-            agent_id=agent_id,
-            tool_name=tool_name,
-            result=guard_result,
-            timeout_seconds=TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS,
-            extra=extra,
-        )
+    #     # Create pending approval with Future
+    #     extra: dict[str, Any] = {"tool_call": tool_call}
+    #     pending = await svc.create_pending(
+    #         session_id=session_id,
+    #         root_session_id=root_session_id,
+    #         user_id=user_id,
+    #         channel=channel,
+    #         agent_id=agent_id,
+    #         tool_name=tool_name,
+    #         result=guard_result,
+    #         timeout_seconds=TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS,
+    #         extra=extra,
+    #     )
 
-        # Send approval request message to user (with frontend metadata)
-        await self._emit_waiting_for_approval_blocking(pending, guard_result)
+    #     # Send approval request message to user (with frontend metadata)
+    #     await self._emit_waiting_for_approval_blocking(pending, guard_result)
 
-        # **Block and wait** for approval decision with heartbeat
-        try:
-            decision = await self._wait_for_approval_with_heartbeat(
-                pending.request_id,
-                pending.future,
-                timeout_seconds=TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS,
-            )
-        except Exception as exc:
-            logger.error(
-                "Wait for approval failed: %s",
-                exc,
-                exc_info=True,
-            )
-            decision = ApprovalDecision.TIMEOUT
+    #     # **Block and wait** for approval decision with heartbeat
+    #     try:
+    #         decision = await self._wait_for_approval_with_heartbeat(
+    #             pending.request_id,
+    #             pending.future,
+    #             timeout_seconds=TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS,
+    #         )
+    #     except Exception as exc:
+    #         logger.error(
+    #             "Wait for approval failed: %s",
+    #             exc,
+    #             exc_info=True,
+    #         )
+    #         decision = ApprovalDecision.TIMEOUT
 
-        # Execute or deny based on decision
-        if decision == ApprovalDecision.APPROVED:
-            logger.info(
-                "Tool '%s' approved by user, executing...",
-                tool_name,
-            )
-            # Execute the tool
-            return await super()._acting(tool_call)  # type: ignore[misc]
-        elif decision == ApprovalDecision.DENIED:
-            logger.info(
-                "Tool '%s' denied by user",
-                tool_name,
-            )
-            return await self._acting_denied(
-                tool_call,
-                tool_name,
-                guard_result,
-            )
-        else:  # TIMEOUT
-            logger.warning(
-                "Tool '%s' approval timeout (%ds)",
-                tool_name,
-                TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS,
-            )
-            return await self._acting_timeout(
-                tool_call,
-                tool_name,
-                guard_result,
-            )
+    #     # Execute or deny based on decision
+    #     if decision == ApprovalDecision.APPROVED:
+    #         logger.info(
+    #             "Tool '%s' approved by user, executing...",
+    #             tool_name,
+    #         )
+    #         # Execute the tool
+    #         return await super()._acting(tool_call)  # type: ignore[misc]
+    #     elif decision == ApprovalDecision.DENIED:
+    #         logger.info(
+    #             "Tool '%s' denied by user",
+    #             tool_name,
+    #         )
+    #         return await self._acting_denied(
+    #             tool_call,
+    #             tool_name,
+    #             guard_result,
+    #         )
+    #     else:  # TIMEOUT
+    #         logger.warning(
+    #             "Tool '%s' approval timeout (%ds)",
+    #             tool_name,
+    #             TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS,
+    #         )
+    #         return await self._acting_timeout(
+    #             tool_call,
+    #             tool_name,
+    #             guard_result,
+    #         )
 
     # pylint: disable=unused-argument
     async def _wait_for_approval_with_heartbeat(
@@ -546,7 +546,7 @@ class ToolGuardMixin:
         Returns:
             ApprovalDecision (APPROVED/DENIED/TIMEOUT)
         """
-        from qwenpaw.security.tool_guard.approval import (
+        from openspider.security.tool_guard.approval import (
             ApprovalDecision,
         )
 
@@ -641,7 +641,7 @@ class ToolGuardMixin:
             return _tool_guard_t(lang, key)
 
         # Format message text
-        from qwenpaw.security.tool_guard.approval import (
+        from openspider.security.tool_guard.approval import (
             format_findings_summary,
         )
 
@@ -699,7 +699,7 @@ class ToolGuardMixin:
     ) -> dict | None:
         """Handle user denial of tool execution."""
         from agentscope.message import ToolResultBlock
-        from qwenpaw.security.tool_guard.approval import (
+        from openspider.security.tool_guard.approval import (
             format_findings_summary,
         )
 
@@ -750,7 +750,7 @@ class ToolGuardMixin:
     ) -> dict | None:
         """Handle approval timeout (auto-deny)."""
         from agentscope.message import ToolResultBlock
-        from qwenpaw.security.tool_guard.approval import (
+        from openspider.security.tool_guard.approval import (
             format_findings_summary,
         )
 

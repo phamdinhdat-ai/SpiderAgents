@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from qwenpaw.utils.http import is_loopback_url, trust_env_for_url
+from openspider.utils.http import is_loopback_url, trust_env_for_url
 
 
 # Local API calls should bypass env proxies for localhost/loopback targets.

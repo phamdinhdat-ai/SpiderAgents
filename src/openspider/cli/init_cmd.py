@@ -36,10 +36,10 @@ files, run commands, and call external APIs. By default it is a single-operator
 boundary: one trusted user. A malicious or confused prompt can lead the agent to
 do unsafe things if tools are enabled.
 
-If multiple people can message the same QwenPaw instance with tools enabled, they
+If multiple people can message the same OpenSpider instance with tools enabled, they
 share the same delegated authority (files, commands, secrets the agent can use).
 
-If you are not comfortable with access control and hardening, do not run QwenPaw with
+If you are not comfortable with access control and hardening, do not run OpenSpider with
 tools or expose it to untrusted users. Get help from someone experienced before
 enabling powerful skills or exposing the bot to the internet.
 
@@ -55,10 +55,10 @@ Review your config and skills regularly; limit tool scope to what you need.
 """
 
 TELEMETRY_INFO = """
-Help improve QwenPaw by sharing anonymous usage data!
+Help improve OpenSpider by sharing anonymous usage data!
 
 We collect only:
-• QwenPaw version (e.g., 0.0.7)
+• OpenSpider version (e.g., 0.0.7)
 • Install method (pip, Docker, or desktop app)
 • OS and version (e.g., macOS 14.0, Ubuntu 22.04)
 • Python version (e.g., 3.11)

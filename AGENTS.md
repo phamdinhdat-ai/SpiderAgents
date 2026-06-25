@@ -48,7 +48,7 @@ This project is indexed by GitNexus as **SpiderAgents** (51961 symbols, 83755 re
 
 ## Critical Rule: OpenSpider is the Active Target
 
-**OpenSpider** (`src/openspider/`) is the active development branch. **QwenPaw** (`src/qwenpaw/`) is the legacy baseline — structurally identical but frozen.
+**OpenSpider** (`src/openspider/`) is the active development branch. **QwenPaw** legacy baseline (`src/qwenpaw/`) is the legacy baseline — structurally identical but frozen.
 
 - **All new features & bugfixes go into `src/openspider/` only.**
 - **NEVER modify `src/qwenpaw/`** unless explicitly asked. It exists only as a reference baseline.
@@ -74,7 +74,7 @@ See [Makefile](Makefile) for all targets. `pytest` uses `asyncio_mode = "auto"` 
 
 - **Pydantic everywhere**: config, provider info, plan schemas — `BaseModel`, `model_validate()` for cross-module loads.
 - **Async-first**: all I/O is `async def`; `asyncio.Lock`/`asyncio.Future`; never block the event loop.
-- **Env-var namespace**: `OPENSPIDER_*` is canonical. Legacy `QWENPAW_*` and `COPAW_*` fall back via `_get_env()` in [`constant.py`](src/openspider/constant.py). Use `EnvVarLoader` for type-safe access. **NEW env vars MUST use `OPENSPIDER_*` prefix.**
+- **Env-var namespace**: `OPENSPIDER_*` is canonical. Legacy `OPENSPIDER_*` and `COPAW_*` fall back via `_get_env()` in [`constant.py`](src/openspider/constant.py). Use `EnvVarLoader` for type-safe access. **NEW env vars MUST use `OPENSPIDER_*` prefix.**
 - **Skills are Markdown**: each skill is `SKILL.md` + optional Python scripts, bilingual (`*-en/`, `*-zh/`).
 - **AgentScope foundation**: agents, runner, exceptions extend `agentscope`/`agentscope-runtime` primitives.
 
@@ -97,7 +97,7 @@ Subclass `BaseChannel` in `app/channels/<name>/channel.py`, implement `start()`,
 When working on `openspider`, prioritize:
 1. **Interaction**: faster SSE streaming, richer slash-command feedback, improved multi-turn context in `app/runner/`.
 2. **Processing**: parallelise subtask execution in `plan/`, increase `LLM_MAX_CONCURRENT` default, reduce per-tool overhead.
-3. **Branding migration**: finish `QWENPAW_*` → `OPENSPIDER_*` migration in `constant.py` (backward-compat fallback exists).
+3. **Branding migration**: finish `OPENSPIDER_*` → `OPENSPIDER_*` migration in `constant.py` (backward-compat fallback exists).
 4. **Project name**: `PROJECT_NAME = "OpenSpider"` in `constant.py`.
 
 ## Security Rules

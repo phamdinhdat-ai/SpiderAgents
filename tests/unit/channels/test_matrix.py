@@ -25,8 +25,8 @@ from nio import (
 )
 
 from nio.responses import WhoamiResponse
-from qwenpaw.app.channels.matrix.channel import MatrixChannel
-from qwenpaw.config.config import MatrixConfig
+from openspider.app.channels.matrix.channel import MatrixChannel
+from openspider.config.config import MatrixConfig
 
 
 @pytest.fixture
@@ -690,7 +690,7 @@ class TestMatrixChannelStartStop:
     ):
         """Test that start creates and configures AsyncClient."""
         with patch(
-            "qwenpaw.app.channels.matrix.channel.AsyncClient",
+            "openspider.app.channels.matrix.channel.AsyncClient",
             return_value=mock_async_client,
         ):
             await matrix_channel.start()
@@ -706,7 +706,7 @@ class TestMatrixChannelStartStop:
     ):
         """Test that start creates sync task."""
         with patch(
-            "qwenpaw.app.channels.matrix.channel.AsyncClient",
+            "openspider.app.channels.matrix.channel.AsyncClient",
             return_value=mock_async_client,
         ):
             await matrix_channel.start()
@@ -721,7 +721,7 @@ class TestMatrixChannelStartStop:
     ):
         """Test that stop cancels sync task."""
         with patch(
-            "qwenpaw.app.channels.matrix.channel.AsyncClient",
+            "openspider.app.channels.matrix.channel.AsyncClient",
             return_value=mock_async_client,
         ):
             await matrix_channel.start()
@@ -734,7 +734,7 @@ class TestMatrixChannelStartStop:
     async def test_stop_closes_client(self, matrix_channel, mock_async_client):
         """Test that stop closes the client."""
         with patch(
-            "qwenpaw.app.channels.matrix.channel.AsyncClient",
+            "openspider.app.channels.matrix.channel.AsyncClient",
             return_value=mock_async_client,
         ):
             await matrix_channel.start()

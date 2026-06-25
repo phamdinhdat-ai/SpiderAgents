@@ -96,56 +96,56 @@ class LazyGroup(click.Group):
     cls=LazyGroup,
     context_settings={"help_option_names": ["-h", "--help"]},
     lazy_subcommands={
-        "acp": ("qwenpaw.cli.acp_cmd", "acp_cmd", ".acp_cmd"),
-        "app": ("qwenpaw.cli.app_cmd", "app_cmd", ".app_cmd"),
+        "acp": ("openspider.cli.acp_cmd", "acp_cmd", ".acp_cmd"),
+        "app": ("openspider.cli.app_cmd", "app_cmd", ".app_cmd"),
         "channels": (
-            "qwenpaw.cli.channels_cmd",
+            "openspider.cli.channels_cmd",
             "channels_group",
             ".channels_cmd",
         ),
         "channel": (
-            "qwenpaw.cli.channels_cmd",
+            "openspider.cli.channels_cmd",
             "channels_group",
             ".channels_cmd",
         ),
-        "daemon": ("qwenpaw.cli.daemon_cmd", "daemon_group", ".daemon_cmd"),
-        "chats": ("qwenpaw.cli.chats_cmd", "chats_group", ".chats_cmd"),
-        "chat": ("qwenpaw.cli.chats_cmd", "chats_group", ".chats_cmd"),
-        "clean": ("qwenpaw.cli.clean_cmd", "clean_cmd", ".clean_cmd"),
-        "cron": ("qwenpaw.cli.cron_cmd", "cron_group", ".cron_cmd"),
-        "env": ("qwenpaw.cli.env_cmd", "env_group", ".env_cmd"),
-        "init": ("qwenpaw.cli.init_cmd", "init_cmd", ".init_cmd"),
+        "daemon": ("openspider.cli.daemon_cmd", "daemon_group", ".daemon_cmd"),
+        "chats": ("openspider.cli.chats_cmd", "chats_group", ".chats_cmd"),
+        "chat": ("openspider.cli.chats_cmd", "chats_group", ".chats_cmd"),
+        "clean": ("openspider.cli.clean_cmd", "clean_cmd", ".clean_cmd"),
+        "cron": ("openspider.cli.cron_cmd", "cron_group", ".cron_cmd"),
+        "env": ("openspider.cli.env_cmd", "env_group", ".env_cmd"),
+        "init": ("openspider.cli.init_cmd", "init_cmd", ".init_cmd"),
         "models": (
-            "qwenpaw.cli.providers_cmd",
+            "openspider.cli.providers_cmd",
             "models_group",
             ".providers_cmd",
         ),
-        "skills": ("qwenpaw.cli.skills_cmd", "skills_group", ".skills_cmd"),
+        "skills": ("openspider.cli.skills_cmd", "skills_group", ".skills_cmd"),
         "uninstall": (
-            "qwenpaw.cli.uninstall_cmd",
+            "openspider.cli.uninstall_cmd",
             "uninstall_cmd",
             ".uninstall_cmd",
         ),
-        "desktop": ("qwenpaw.cli.desktop_cmd", "desktop_cmd", ".desktop_cmd"),
-        "update": ("qwenpaw.cli.update_cmd", "update_cmd", ".update_cmd"),
+        "desktop": ("openspider.cli.desktop_cmd", "desktop_cmd", ".desktop_cmd"),
+        "update": ("openspider.cli.update_cmd", "update_cmd", ".update_cmd"),
         "shutdown": (
-            "qwenpaw.cli.shutdown_cmd",
+            "openspider.cli.shutdown_cmd",
             "shutdown_cmd",
             ".shutdown_cmd",
         ),
-        "auth": ("qwenpaw.cli.auth_cmd", "auth_group", ".auth_cmd"),
-        "agents": ("qwenpaw.cli.agents_cmd", "agents_group", ".agents_cmd"),
-        "agent": ("qwenpaw.cli.agents_cmd", "agents_group", ".agents_cmd"),
+        "auth": ("openspider.cli.auth_cmd", "auth_group", ".auth_cmd"),
+        "agents": ("openspider.cli.agents_cmd", "agents_group", ".agents_cmd"),
+        "agent": ("openspider.cli.agents_cmd", "agents_group", ".agents_cmd"),
         "plugin": (
-            "qwenpaw.cli.plugin_commands",
+            "openspider.cli.plugin_commands",
             "plugin",
             ".plugin_commands",
         ),
-        "task": ("qwenpaw.cli.task_cmd", "task_cmd", ".task_cmd"),
-        "doctor": ("qwenpaw.cli.doctor_cmd", "doctor_cmd", ".doctor_cmd"),
+        "task": ("openspider.cli.task_cmd", "task_cmd", ".task_cmd"),
+        "doctor": ("openspider.cli.doctor_cmd", "doctor_cmd", ".doctor_cmd"),
     },
 )
-@click.version_option(version=__version__, prog_name="QwenPaw")
+@click.version_option(version=__version__, prog_name="OpenSpider")
 @click.option("--host", default=None, help="API Host")
 @click.option(
     "--port",
@@ -155,7 +155,7 @@ class LazyGroup(click.Group):
 )
 @click.pass_context
 def cli(ctx: click.Context, host: str | None, port: int | None) -> None:
-    """QwenPaw CLI."""
+    """OpenSpider CLI."""
     # default from last run if not provided
     last = read_last_api()
     if host is None or port is None:

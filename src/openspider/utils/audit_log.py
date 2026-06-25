@@ -43,14 +43,14 @@ def _get_audit_file_path() -> str | None:
     """Return the configured audit log file path, or *None* to disable."""
     for env_var in (
         "OPENSPIDER_AUDIT_LOG_FILE",
-        "QWENPAW_AUDIT_LOG_FILE",
+        "OPENSPIDER_AUDIT_LOG_FILE",
     ):
         path = os.environ.get(env_var, "").strip()
         if path:
             return path
     # Fall back to DATA_DIR if set
     data_dir = os.environ.get("OPENSPIDER_DATA_DIR") or os.environ.get(
-        "QWENPAW_DATA_DIR"
+        "OPENSPIDER_DATA_DIR"
     )
     if data_dir:
         return os.path.join(data_dir, "audit.jsonl")

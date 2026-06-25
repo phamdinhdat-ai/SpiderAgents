@@ -239,7 +239,7 @@ async def send_proactive_message_via_http(
     proactive_content: str,
     timeout_seconds: int = 60,
 ) -> Optional[Msg]:
-    """Send a proactive message by directly calling the QwenPaw API."""
+    """Send a proactive message by directly calling the OpenSpider API."""
 
     from ...tools.agent_management import resolve_agent_api_base_url
 
@@ -298,11 +298,11 @@ async def send_proactive_message_via_http(
 
     except asyncio.TimeoutError:
         logger.error(
-            "Timeout (%ds) calling QwenPaw API for proactive message",
+            "Timeout (%ds) calling OpenSpider API for proactive message",
             timeout_seconds,
         )
     except Exception as e:
-        logger.error("Error calling QwenPaw API for proactive message: %s", e)
+        logger.error("Error calling OpenSpider API for proactive message: %s", e)
 
     return None
 

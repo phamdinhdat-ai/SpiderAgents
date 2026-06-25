@@ -74,7 +74,7 @@ async def register(req: RegisterRequest):
     - 0 or -1: permanent token (100 years)
     - None/omitted: default 7 days
     """
-    env_flag = EnvVarLoader.get_str("QWENPAW_AUTH_ENABLED", "").strip().lower()
+    env_flag = EnvVarLoader.get_str("OPENSPIDER_AUTH_ENABLED", "").strip().lower()
     if env_flag not in ("true", "1", "yes"):
         raise HTTPException(
             status_code=403,

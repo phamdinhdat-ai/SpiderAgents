@@ -24,7 +24,7 @@ orchestrator.
 
 Quick start::
 
-    from qwenpaw.security.tool_guard import ToolGuardEngine
+    from openspider.security.tool_guard import ToolGuardEngine
 
     engine = ToolGuardEngine()
     result = engine.guard("execute_shell_command", {"command": "rm -rf /"})

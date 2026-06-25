@@ -50,7 +50,7 @@ DENY_KEY = "deny"
 
 # Placeholder url for the resolved card's required card_action.  WeCom
 # rejects ``text_notice`` cards without a card_action of type 1 or 2.
-_RESOLVED_CARD_URL = "https://qwenpaw.agentscope.io"
+_RESOLVED_CARD_URL = "https://openspider.agentscope.io"
 
 
 # =====================================================================

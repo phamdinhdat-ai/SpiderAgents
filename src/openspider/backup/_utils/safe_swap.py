@@ -61,10 +61,10 @@ logger = logging.getLogger(__name__)
 
 _RESTORE_TMP_SUFFIX = ".restore_tmp"
 _RESTORE_OLD_SUFFIX = ".restore_old"
-_RESTORE_LOCK_FILE = ".qwenpaw_restore.lock"
+_RESTORE_LOCK_FILE = ".openspider_restore.lock"
 _LOCK_REGION_SIZE = 1
 _LOCK_RETRY_INTERVAL_SECONDS = 0.1
-_LOCK_TIMEOUT_SECONDS_ENV = "QWENPAW_RESTORE_LOCK_TIMEOUT_SECONDS"
+_LOCK_TIMEOUT_SECONDS_ENV = "OPENSPIDER_RESTORE_LOCK_TIMEOUT_SECONDS"
 _LOCK_TIMEOUT_SECONDS = 300.0
 
 # Per-destination threading locks.  The dict itself is guarded by _LOCKS_GUARD.

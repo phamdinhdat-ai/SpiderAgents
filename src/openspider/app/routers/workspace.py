@@ -677,7 +677,7 @@ def _extract_and_merge_zip(data: bytes, workspace_dir: Path) -> None:
     """Extract zip data and merge into workspace_dir (blocking operation)."""
     tmp_dir = None
     try:
-        tmp_dir = Path(tempfile.mkdtemp(prefix="qwenpaw_upload_"))
+        tmp_dir = Path(tempfile.mkdtemp(prefix="OPENSPIDER_upload_"))
         with zipfile.ZipFile(io.BytesIO(data)) as zf:
             zf.extractall(tmp_dir)
 
@@ -741,7 +741,7 @@ async def download_workspace(request: Request):
     buf = await asyncio.to_thread(_zip_directory, workspace_dir)
 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"qwenpaw_workspace_{agent.agent_id}_{timestamp}.zip"
+    filename = f"OPENSPIDER_workspace_{agent.agent_id}_{timestamp}.zip"
 
     return StreamingResponse(
         buf,

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from qwenpaw.agents.command_handler import CommandHandler
+from openspider.agents.command_handler import CommandHandler
 
 
 class DummyMemory:

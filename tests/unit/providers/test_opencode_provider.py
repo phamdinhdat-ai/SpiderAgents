@@ -7,9 +7,9 @@ from types import SimpleNamespace
 
 import pytest
 
-import qwenpaw.providers.provider_manager as provider_manager_module
-from qwenpaw.providers.openai_provider import OpenAIProvider
-from qwenpaw.providers.provider_manager import (
+import openspider.providers.provider_manager as provider_manager_module
+from openspider.providers.openai_provider import OpenAIProvider
+from openspider.providers.provider_manager import (
     PROVIDER_OPENCODE,
     ProviderManager,
 )

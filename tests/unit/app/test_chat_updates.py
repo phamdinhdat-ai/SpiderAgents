@@ -10,11 +10,11 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from qwenpaw.app.runner import manager as chat_manager_module
-from qwenpaw.app.runner.api import get_chat_manager, router
-from qwenpaw.app.runner.manager import ChatManager
-from qwenpaw.app.runner.models import ChatSpec, ChatUpdate
-from qwenpaw.app.runner.repo.json_repo import JsonChatRepository
+from openspider.app.runner import manager as chat_manager_module
+from openspider.app.runner.api import get_chat_manager, router
+from openspider.app.runner.manager import ChatManager
+from openspider.app.runner.models import ChatSpec, ChatUpdate
+from openspider.app.runner.repo.json_repo import JsonChatRepository
 
 
 @pytest.fixture

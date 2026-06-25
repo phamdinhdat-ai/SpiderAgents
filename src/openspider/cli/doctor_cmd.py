@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""`qwenpaw doctor` — read-only checks.
+"""`openspider doctor` — read-only checks.
 
-`qwenpaw doctor fix` — conservative repairs with backup.
+`openspider doctor fix` — conservative repairs with backup.
 """
 from __future__ import annotations
 
@@ -159,8 +159,8 @@ def _doctor_server_python_mismatch_note(
     if server_exe and doctor_exe:
         if not _same_python_executable(doctor_exe, server_exe):
             return (
-                "This `qwenpaw doctor` is not using the same Python "
-                "executable as the running `qwenpaw app` — diagnostics and "
+                "This `openspider doctor` is not using the same Python "
+                "executable as the running `openspider app` — diagnostics and "
                 "package versions may not match the server. doctor: "
                 f"{doctor_exe!r}; server: {server_exe!r}"
             )
@@ -168,7 +168,7 @@ def _doctor_server_python_mismatch_note(
     if doctor_env.strip() != server_env.strip():
         return (
             "Doctor Python environment label differs from the running "
-            f"`qwenpaw app` (doctor: {doctor_env!r}; server: "
+            f"`openspider app` (doctor: {doctor_env!r}; server: "
             f"{server_env!r}). "
             "Use the same venv when debugging if possible."
         )
@@ -215,11 +215,11 @@ def _check_web_auth(base: str) -> tuple[bool, str]:
         return (
             False,
             "enabled but no account registered yet.\n"
-            f"        1) Start `qwenpaw app`, open {base}/ in a browser.\n"
+            f"        1) Start `openspider app`, open {base}/ in a browser.\n"
             "        2) Complete registration (single user) on the login "
             "page.\n"
             "        For automation, set QWENPAW_AUTH_USERNAME and "
-            "QWENPAW_AUTH_PASSWORD (legacy COPAW_* names still work) — the "
+            "OPENSPIDER_AUTH_PASSWORD (legacy COPAW_* names still work) — the "
             "server creates the user on startup.",
         )
     return (
@@ -250,7 +250,7 @@ def _classify_console_root_response(resp: httpx.Response) -> tuple[bool, str]:
                     "server is running but the console bundle is not "
                     "installed — build `console/` or set "
                     f"{CONSOLE_STATIC_ENV}, then restart "
-                    "`qwenpaw app`.",
+                    "`openspider app`.",
                 )
         return False, "HTTP GET / returned JSON instead of the console page"
     return (
@@ -272,7 +272,7 @@ async def _check_active_llm(
     ):
         return (
             False,
-            "no active LLM slot — run `qwenpaw models list` and configure "
+            "no active LLM slot — run `openspider models list` and configure "
             "an active model",
             [],
         )
@@ -380,7 +380,7 @@ def run_doctor_checks(
     llm_timeout: float,
     deep: bool,
 ) -> None:
-    """Run read-only ``qwenpaw doctor`` checks (no disk mutations)."""
+    """Run read-only ``openspider doctor`` checks (no disk mutations)."""
     base = resolve_base_url(ctx, None).rstrip("/")
     failed = False
 
@@ -417,7 +417,7 @@ def run_doctor_checks(
         _doctor_fix_hint(
             "fix the root `config.json` fields shown above. "
             "For workspace repairs after it validates, see "
-            "`qwenpaw doctor fix --dry-run --help` and `--only`.",
+            "`openspider doctor fix --dry-run --help` and `--only`.",
         )
 
     raw_cfg = load_raw_config_dict()
@@ -435,7 +435,7 @@ def run_doctor_checks(
                 click.echo(f"  - {item}")
             _doctor_fix_hint(
                 "Fix: edit `config.json` manually to remove obsolete keys "
-                "(`qwenpaw doctor` and `doctor fix` do not strip unknown keys "
+                "(`openspider doctor` and `doctor fix` do not strip unknown keys "
                 "yet).",
             )
 
@@ -458,7 +458,7 @@ def run_doctor_checks(
                 err=True,
             )
             _doctor_fix_hint(
-                "Preview the plan (no writes): `qwenpaw doctor fix --dry-run "
+                "Preview the plan (no writes): `openspider doctor fix --dry-run "
                 "--only ensure-working-dir,ensure-workspace-dirs`. Apply: run "
                 "the plan without `--dry-run` (add `-y` to skip the "
                 "confirmation prompt).",
@@ -475,7 +475,7 @@ def run_doctor_checks(
                 err=True,
             )
             _doctor_fix_hint(
-                "Preview the plan (no writes): `qwenpaw doctor fix --dry-run "
+                "Preview the plan (no writes): `openspider doctor fix --dry-run "
                 "--only seed-missing-agent-json,reset-invalid-agent-json`. "
                 "Apply: run the plan without `--dry-run` (risky writes need "
                 "adding `-y` to skip the confirmation prompt).",
@@ -492,7 +492,7 @@ def run_doctor_checks(
                 err=True,
             )
             _doctor_fix_hint(
-                "Preview the plan (no writes): `qwenpaw doctor fix --dry-run "
+                "Preview the plan (no writes): `openspider doctor fix --dry-run "
                 "--only seed-missing-agent-json,reset-invalid-agent-json`. "
                 "Apply: run the plan without `--dry-run` (risky writes need "
                 "adding `-y` to skip the confirmation prompt).",
@@ -626,7 +626,7 @@ def run_doctor_checks(
                 err=True,
             )
             _doctor_fix_hint(
-                "Preview the plan (no writes): `qwenpaw doctor fix --dry-run "
+                "Preview the plan (no writes): `openspider doctor fix --dry-run "
                 "--only validate-all-jobs-json` (read-only), or the same "
                 "command with `write-empty-jobs-json,normalize-jobs-cron` in "
                 "`--only`. "
@@ -655,7 +655,7 @@ def run_doctor_checks(
             click.style("SKIP", fg="yellow")
             + " — not run because root `config.json` failed validation above: "
             + _skipped_when_cfg_invalid
-            + ". Fix the config file, then re-run `qwenpaw doctor`.",
+            + ". Fix the config file, then re-run `openspider doctor`.",
         )
         click.echo("\n=== Browser (browser_use / Playwright) ===")
         br_skip = browser_automation_notes(None)
@@ -677,8 +677,8 @@ def run_doctor_checks(
         click.echo(click.style("FAIL", fg="red") + f" — {detail}", err=True)
         _doctor_fix_hint(
             "Fix: set `QWENPAW_WORKING_DIR` (or legacy `COPAW_WORKING_DIR`) "
-            "or run `qwenpaw init`. "
-            "Preview the plan (no writes): `qwenpaw doctor fix --dry-run "
+            "or run `openspider init`. "
+            "Preview the plan (no writes): `openspider doctor fix --dry-run "
             "--only ensure-working-dir` if the parent path exists and is "
             "writable. Apply: run the plan `without --dry-run` (add `-y` to "
             "skip the confirmation prompt).",
@@ -704,7 +704,7 @@ def run_doctor_checks(
             )
             _doctor_fix_hint(
                 "Fix: ensure the data directory is writable. "
-                "Preview the plan (no writes): `qwenpaw doctor fix --dry-run "
+                "Preview the plan (no writes): `openspider doctor fix --dry-run "
                 "--only ensure-working-dir` if the directory is missing and "
                 "the parent allows creating it. Apply: run the plan `without "
                 "--dry-run` (add `-y` to skip the confirmation prompt).",
@@ -748,7 +748,7 @@ def run_doctor_checks(
         _doctor_fix_hint(
             f"Fix: build `console/` or set {CONSOLE_STATIC_ENV}. From a git "
             "checkout — "
-            "Preview the plan (no writes): `qwenpaw doctor fix --dry-run "
+            "Preview the plan (no writes): `openspider doctor fix --dry-run "
             "--only rebuild-console-npm`. "
             "Apply: run `without --dry-run` and include `-y` (runs npm; "
             "copies dist → bundled console).",
@@ -796,7 +796,7 @@ def run_doctor_checks(
             err=True,
         )
         _doctor_fix_hint(
-            "`qwenpaw models list` / console model settings — not a "
+            "`openspider models list` / console model settings — not a "
             "filesystem fix.",
         )
     for line in llm_notes:
@@ -855,7 +855,7 @@ def run_doctor_checks(
             err=True,
         )
         click.echo(
-            f"Hint: start the server with `qwenpaw app` (default {base}).",
+            f"Hint: start the server with `openspider app` (default {base}).",
             err=True,
         )
     else:

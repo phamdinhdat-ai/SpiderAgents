@@ -130,7 +130,7 @@ def _submit_background_task(
         click.echo()
         click.echo("💡 Don't wait - continue with other tasks!")
         click.echo("   Check status later (10-60s depending on complexity):")
-        click.echo(f"  qwenpaw agents chat --background --task-id {task_id}")
+        click.echo(f"  openspider agents chat --background --task-id {task_id}")
 
     except Exception as e:
         click.echo(f"ERROR: Failed to submit task: {e}", err=True)
@@ -243,7 +243,7 @@ def _check_task_status(
             )
             click.echo("   Check again later (10-30s):")
             click.echo(
-                f"  qwenpaw agents chat --background --task-id {task_id}",
+                f"  openspider agents chat --background --task-id {task_id}",
             )
 
         elif status == "pending":
@@ -254,7 +254,7 @@ def _check_task_status(
             )
             click.echo("   Check again in a few seconds:")
             click.echo(
-                f"  qwenpaw agents chat --background --task-id {task_id}",
+                f"  openspider agents chat --background --task-id {task_id}",
             )
 
         elif status == "submitted":
@@ -265,7 +265,7 @@ def _check_task_status(
             )
             click.echo("   Check again in a few seconds:")
             click.echo(
-                f"  qwenpaw agents chat --background --task-id {task_id}",
+                f"  openspider agents chat --background --task-id {task_id}",
             )
 
         else:
@@ -455,10 +455,10 @@ def agents_group() -> None:
 
     \b
     Examples:
-      qwenpaw agents chat --from-agent bot_a --to-agent bot_b --text "..."
-      qwenpaw agents create --name "Research Bot" --agent-id research_bot
-      qwenpaw agents delete research_bot
-      qwenpaw agents list
+      openspider agents chat --from-agent bot_a --to-agent bot_b --text "..."
+      openspider agents create --name "Research Bot" --agent-id research_bot
+      openspider agents delete research_bot
+      openspider agents list
     """
 
 
@@ -480,8 +480,8 @@ def list_agents(ctx: click.Context, base_url: Optional[str]) -> None:
 
     \b
     Examples:
-      qwenpaw agents list
-      qwenpaw agents list --base-url http://192.168.1.100:8088
+      openspider agents list
+      openspider agents list --base-url http://192.168.1.100:8088
 
     \b
     Output format:
@@ -667,13 +667,13 @@ def delete_cmd(
     configured agent list. The default agent cannot be deleted.
 
     \b
-    AGENT_ID  Configured agent ID, obtainable via `qwenpaw agents list`.
+    AGENT_ID  Configured agent ID, obtainable via `openspider agents list`.
 
     \b
     Examples:
-      qwenpaw agents delete research
-      qwenpaw agents delete research --remove-workspace
-      qwenpaw agents delete research --yes
+      openspider agents delete research
+      openspider agents delete research --remove-workspace
+      openspider agents delete research --yes
     """
     resolved_base_url = resolve_base_url(ctx, base_url)
 
@@ -814,13 +814,13 @@ def chat_cmd(
     \b
     Background Task Mode (NEW):
       # Submit complex task
-      qwenpaw agents chat --background \\
+      openspider agents chat --background \\
         --from-agent bot_a --to-agent bot_b \\
         --text "Analyze large dataset"
       # Output: [TASK_ID: xxx] [SESSION: xxx]
 
       # Check task status (note --to-agent is optional here)
-      qwenpaw agents chat --background --task-id <task_id>
+      openspider agents chat --background --task-id <task_id>
       # Possible status: submitted → pending → running → finished
       # When finished, shows completed (success) or failed (error)
 
@@ -845,14 +845,14 @@ def chat_cmd(
     \b
     Examples:
       # Simple chat (new conversation each time)
-      qwenpaw agents chat \\
+      openspider agents chat \\
         --from-agent bot_a \\
         --to-agent bot_b \\
         --text "What is the weather today?"
       # Output: [SESSION: xxx]\\nThe weather is...
 
       # Continue conversation (use session_id from previous output)
-      qwenpaw agents chat \\
+      openspider agents chat \\
         --from-agent bot_a \\
         --to-agent bot_b \\
         --session-id "bot_a:to:bot_b:1773998835:abc123" \\
@@ -860,22 +860,22 @@ def chat_cmd(
       # Output: [SESSION: xxx] (same!)\\nTomorrow will be...
 
       # Background task (complex task)
-      qwenpaw agents chat --background \\
+      openspider agents chat --background \\
         --from-agent bot_a \\
         --to-agent bot_b \\
         --text "Process complex data analysis"
       # Output: [TASK_ID: xxx] [SESSION: xxx]
 
       # Check background task status (note --to-agent is optional)
-      qwenpaw agents chat --background --task-id <task_id>
+      openspider agents chat --background --task-id <task_id>
       # Possible status: submitted → pending → running → finished
       # When finished, shows completed (success) or failed (error)
 
     \b
     Prerequisites:
-      1. Use 'qwenpaw agents list' to discover available agents
+      1. Use 'openspider agents list' to discover available agents
       2. Ensure target agent (--to-agent) is configured and running
-      3. Use 'qwenpaw chats list' to find existing sessions (optional)
+      3. Use 'OpenSpider chats list' to find existing sessions (optional)
 
     \b
     Returns:

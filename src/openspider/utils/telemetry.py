@@ -30,12 +30,12 @@ def _safe_get(func: Callable[[], str], default: str = "unknown") -> str:
 
 
 def _detect_install_method() -> str:
-    """Detect how QwenPaw was installed based on environment signals."""
+    """Detect how OpenSpider was installed based on environment signals."""
     from ..constant import EnvVarLoader
 
-    if EnvVarLoader.get_bool("QWENPAW_RUNNING_IN_CONTAINER"):
+    if EnvVarLoader.get_bool("OPENSPIDER_RUNNING_IN_CONTAINER"):
         return "docker"
-    if EnvVarLoader.get_bool("QWENPAW_DESKTOP_APP"):
+    if EnvVarLoader.get_bool("OPENSPIDER_DESKTOP_APP"):
         return "desktop"
     return "pip"
 
@@ -45,11 +45,11 @@ def get_system_info() -> dict[str, Any]:
 
     Returns anonymized system information including:
     - install_id: Random UUID (not tied to user)
-    - qwenpaw_version: QwenPaw version string
-    - install_method: How QwenPaw was installed (docker/desktop/pip)
+    - qwenpaw_version: OpenSpider version string
+    - install_method: How OpenSpider was installed (docker/desktop/pip)
     - os: Operating system (Windows/Darwin/Linux)
     - os_version: OS version string
-    - python_version: Python version running qwenpaw (major.minor)
+    - python_version: Python version running OpenSpider (major.minor)
     - architecture: CPU architecture (x86_64/arm64/etc)
     - has_gpu: GPU availability detection
     """
@@ -57,7 +57,7 @@ def get_system_info() -> dict[str, Any]:
 
     info = {
         "install_id": str(uuid.uuid4()),
-        "qwenpaw_version": _safe_get(lambda: qwenpaw_ver, "unknown"),
+        "OPENSPIDER_version": _safe_get(lambda: qwenpaw_ver, "unknown"),
         "install_method": _safe_get(_detect_install_method, "unknown"),
         "os": _safe_get(platform.system, "unknown"),
         "os_version": _safe_get(platform.release, "unknown"),
@@ -177,7 +177,7 @@ def _upload_telemetry_sync(data: dict[str, Any]) -> bool:
 
 
 def _get_current_version() -> str:
-    """Get the current QwenPaw version string."""
+    """Get the current OpenSpider version string."""
     try:
         from ..__version__ import __version__ as qwenpaw_ver
 
@@ -189,11 +189,11 @@ def _get_current_version() -> str:
 def has_telemetry_been_collected(working_dir: Path) -> bool:
     """Check if telemetry has already been collected for the current version.
 
-    Re-triggers collection when QwenPaw is upgraded (or downgraded) to a
+    Re-triggers collection when OpenSpider is upgraded (or downgraded) to a
     version that hasn't been collected before.
 
     Args:
-        working_dir: Path to QwenPaw working directory
+        working_dir: Path to OpenSpider working directory
 
     Returns:
         True if already collected for this version, False otherwise
@@ -209,7 +209,7 @@ def has_telemetry_been_collected(working_dir: Path) -> bool:
         if collected_versions:
             return current in collected_versions
         # v1.1 compat: single qwenpaw_version field
-        return marker_data.get("qwenpaw_version", "") == current
+        return marker_data.get("OPENSPIDER_version", "") == current
     except Exception as exc:  # noqa: BLE001
         logger.debug("Failed to read telemetry marker: %s", exc)
         return False
@@ -221,7 +221,7 @@ def is_telemetry_opted_out(working_dir: Path) -> bool:
     Once opted out, telemetry is never collected again regardless of version.
 
     Args:
-        working_dir: Path to QwenPaw working directory
+        working_dir: Path to OpenSpider working directory
 
     Returns:
         True if user has opted out, False otherwise
@@ -248,7 +248,7 @@ def mark_telemetry_collected(
     between previously-collected versions won't re-trigger the prompt.
 
     Args:
-        working_dir: Path to QwenPaw working directory
+        working_dir: Path to OpenSpider working directory
         opted_out: If True, marks the user as permanently opted out
     """
     marker_file = working_dir / TELEMETRY_MARKER_FILE
@@ -265,7 +265,7 @@ def mark_telemetry_collected(
                 prev_opted_out = old_data.get("opted_out", False) is True
                 # Migrate from v1.1 single-version format
                 if not collected_versions:
-                    old_ver = old_data.get("qwenpaw_version", "")
+                    old_ver = old_data.get("OPENSPIDER_version", "")
                     if old_ver:
                         collected_versions = [old_ver]
             except Exception as exc:  # noqa: BLE001
@@ -276,7 +276,7 @@ def mark_telemetry_collected(
 
         marker_data = {
             "collected_at": time.time(),
-            "qwenpaw_version": current,
+            "OPENSPIDER_version": current,
             "collected_versions": collected_versions,
             "opted_out": opted_out or prev_opted_out,
             "version": "1.3",
@@ -290,7 +290,7 @@ def collect_and_upload_telemetry(working_dir: Path) -> bool:
     """Collect system info and upload telemetry.
 
     Args:
-        working_dir: Path to QwenPaw working directory
+        working_dir: Path to OpenSpider working directory
 
     Returns:
         True if upload succeeded, False otherwise

@@ -8,9 +8,12 @@ export function buildAuthHeaders(): Record<string, string> {
     headers.Authorization = `Bearer ${token}`;
   }
   try {
-    // Read from sessionStorage first (per-tab agent), fall back to localStorage
+    // Read from sessionStorage first (per-tab agent), fall back to localStorage.
+    // Try new key first, fall back to legacy key for backward compatibility.
     const agentStorage =
+      sessionStorage.getItem("openspider-agent-storage") ||
       sessionStorage.getItem("qwenpaw-agent-storage") ||
+      localStorage.getItem("openspider-agent-storage") ||
       localStorage.getItem("qwenpaw-agent-storage");
     if (agentStorage) {
       const parsed = JSON.parse(agentStorage);

@@ -17,8 +17,8 @@ import shutil
 from pathlib import Path
 from typing import Optional
 
-from qwenpaw.constant import SECRET_DIR, WORKING_DIR
-from qwenpaw.security.secret_store import decrypt, encrypt, is_encrypted
+from openspider.constant import SECRET_DIR, WORKING_DIR
+from openspider.security.secret_store import decrypt, encrypt, is_encrypted
 
 logger = logging.getLogger(__name__)
 
@@ -82,11 +82,12 @@ def _migrate_legacy_envs_json(path: Path) -> None:
 
 
 # Security-sensitive envs should come from process/system environment,
-# not persisted envs.json.
+# not persisted envs.json.  Keys kept as OPENSPIDER_* for backward compat;
+# OPENSPIDER_* is the canonical prefix checked first by _get_env().
 _PROTECTED_BOOTSTRAP_KEYS = frozenset(
     {
-        "QWENPAW_WORKING_DIR",
-        "QWENPAW_SECRET_DIR",
+        "OPENSPIDER_WORKING_DIR",
+        "OPENSPIDER_SECRET_DIR",
     },
 )
 
@@ -251,7 +252,7 @@ def load_envs_into_environ() -> dict[str, str]:
         Full persisted mapping from envs.json, including protected keys
         that are intentionally not injected into ``os.environ``.
     """
-    from qwenpaw.backup._utils.safe_swap import (
+    from openspider.backup._utils.safe_swap import (
         cleanup_stale_restore_artifacts,
         restore_process_lock,
     )

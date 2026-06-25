@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Read-only diagnostics for `qwenpaw doctor` (no config or disk mutations)."""
+"""Read-only diagnostics for `openspider doctor` (no config or disk mutations)."""
 from __future__ import annotations
 
 # pylint: disable=too-many-branches,too-many-statements
@@ -101,7 +101,7 @@ def check_app_log_writable() -> tuple[bool, str]:
         return (
             False,
             f"cannot write to existing log file {log_path} "
-            "(required when starting `qwenpaw app`)",
+            "(required when starting `openspider app`)",
         )
 
     parent = log_path.parent
@@ -109,7 +109,7 @@ def check_app_log_writable() -> tuple[bool, str]:
         return (
             False,
             f"log directory does not exist: {parent} "
-            "(required when starting `qwenpaw app`)",
+            "(required when starting `openspider app`)",
         )
     if os.access(parent, os.W_OK | os.X_OK):
         return (
@@ -191,7 +191,7 @@ def environment_summary_lines(
     """One line per fact; safe to paste into bug reports.
 
     *server_python_environment* describes the **HTTP API process** (running
-    ``qwenpaw app``), when ``GET /api/doctor/runtime`` returned
+    ``openspider app``), when ``GET /api/doctor/runtime`` returned
     ``python_environment``. Doctor's own interpreter uses
     ``doctor_python_environment``.
     """
@@ -199,24 +199,24 @@ def environment_summary_lines(
     doctor_env = summarize_python_environment()
     lines = [
         f"python version: {py_ver}",
-        f"qwenpaw version: {__version__}",
+        f"OpenSpider version: {__version__}",
         f"platform: {platform.system()} {platform.machine()}",
         f"doctor_python_environment: {doctor_env}",
     ]
     if server_python_environment is not None:
         lines.append(
-            f"qwenpaw_python_environment: {server_python_environment}",
+            f"OPENSPIDER_python_environment: {server_python_environment}",
         )
     else:
         lines.append(
-            "qwenpaw_python_environment: "
+            "OPENSPIDER_python_environment: "
             + (server_python_note or "(unknown)"),
         )
     lines.append(f"working_dir: {WORKING_DIR}")
-    wd_qp = os.getenv("QWENPAW_WORKING_DIR")
+    wd_qp = os.getenv("OPENSPIDER_WORKING_DIR")
     wd_legacy = os.getenv("COPAW_WORKING_DIR")
     if wd_qp:
-        lines.append(f"QWENPAW_WORKING_DIR (env): {wd_qp}")
+        lines.append(f"OPENSPIDER_WORKING_DIR (env): {wd_qp}")
     elif wd_legacy:
         lines.append(f"COPAW_WORKING_DIR (env, legacy): {wd_legacy}")
     lines.append(f"sqlite library: {sqlite3.sqlite_version}")
@@ -301,7 +301,7 @@ def _powershell_language_mode(
 
 
 def windows_environment_lines() -> list[str]:
-    """Windows-specific read-only diagnostics for ``qwenpaw doctor``."""
+    """Windows-specific read-only diagnostics for ``openspider doctor``."""
     if platform.system() != "Windows":
         return []
 
@@ -407,7 +407,7 @@ def scan_unknown_config_keys(raw: dict[str, Any]) -> list[str]:
 def legacy_single_agent_workspace_note(cfg: Config) -> str | None:
     """Align with ``migrate_legacy_workspace_to_default_agent`` preconditions.
 
-    When this applies, ``qwenpaw app`` may run an automatic migration;
+    When this applies, ``openspider app`` may run an automatic migration;
     doctor only informs — it does not migrate.
     """
     profiles = cfg.agents.profiles
@@ -422,8 +422,8 @@ def legacy_single_agent_workspace_note(cfg: Config) -> str | None:
     return (
         "Only `default` is listed and workspace "
         f"`{agent_json}` is missing — the same situation "
-        "`qwenpaw app` uses to trigger legacy → multi-agent workspace "
-        "migration. Start `qwenpaw app` once (or see docs / `qwenpaw init`). "
+        "`openspider app` uses to trigger legacy → multi-agent workspace "
+        "migration. Start `openspider app` once (or see docs / `openspider init`). "
         "Doctor does not change config or files."
     )
 
@@ -556,13 +556,13 @@ def browser_automation_notes(cfg: Config | None) -> list[str]:
         return notes
 
     use_default = (
-        EnvVarLoader.get_str("QWENPAW_BROWSER_USE_DEFAULT", "1")
+        EnvVarLoader.get_str("OPENSPIDER_BROWSER_USE_DEFAULT", "1")
         .strip()
         .lower()
     )
     if use_default in ("0", "false", "no", "off"):
         notes.append(
-            "QWENPAW_BROWSER_USE_DEFAULT is off — browser_use will not "
+            "OPENSPIDER_BROWSER_USE_DEFAULT is off — browser_use will not "
             "prefer the OS default Chrome/Edge path; bundled or scanned "
             "Chromium paths apply.",
         )
@@ -753,7 +753,7 @@ def workspace_hygiene_notes(cfg: Config) -> list[str]:
     return notes
 
 
-# --- QwenPaw checks (agent.json, channels, MCP, skills, providers) ---
+# --- OpenSpider checks (agent.json, channels, MCP, skills, providers) ---
 
 
 def _read_workspace_agent_json(ref: AgentProfileRef) -> dict[str, Any] | None:
@@ -818,7 +818,7 @@ def check_enabled_agents_load_agent_config(cfg: Config) -> tuple[bool, str]:
             problems.append(
                 f"{agent_id}: enabled but missing {path} — at startup "
                 "`load_agent_config` would create a fallback agent.json on "
-                "disk; ensure the file exists or use `qwenpaw doctor fix` "
+                "disk; ensure the file exists or use `openspider doctor fix` "
                 "where applicable.",
             )
             continue
@@ -1121,7 +1121,7 @@ def active_llm_local_failure_hint(provider: Provider, provider_id: str) -> str:
         return (
             f"Hint: {PROJECT_NAME} Local uses llama.cpp. Start the local "
             f"server from the {PROJECT_NAME} console or install the llama.cpp "
-            "binary from there. Run `qwenpaw doctor --deep` to see llama.cpp "
+            "binary from there. Run `openspider doctor --deep` to see llama.cpp "
             "install and server status."
         )
     if getattr(provider, "is_local", False):
@@ -1326,7 +1326,7 @@ def console_static_diagnostic_notes() -> list[str]:
     )
 
     notes: list[str] = []
-    env_dir = EnvVarLoader.get_str("QWENPAW_CONSOLE_STATIC_DIR", "").strip()
+    env_dir = EnvVarLoader.get_str("OPENSPIDER_CONSOLE_STATIC_DIR", "").strip()
     if env_dir:
         notes.append(
             f"{CONSOLE_STATIC_ENV} is set — the app serves console files "
@@ -1363,7 +1363,7 @@ def console_static_diagnostic_notes() -> list[str]:
         notes.append(
             f"source checkout detected at {repo} — if you changed the web "
             "console under `console/`, you could rebuild the bundled UI with "
-            "`qwenpaw doctor fix -y --only rebuild-console-npm`.",
+            "`openspider doctor fix -y --only rebuild-console-npm`.",
         )
     else:
         notes.append(

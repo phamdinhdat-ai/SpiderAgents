@@ -164,15 +164,15 @@ After obtaining the credentials, guide the user to choose one of the following m
 }
 ```
 
-Path: `~/.qwenpaw/config.json`, under `channels.dingtalk`.
+Path: `~/.openspider/config.json`, under `channels.dingtalk`.
 
 ### Credential Delivery Requirements (Mandatory)
 
 1. The agent is only responsible for guiding the user to the credentials page, obtaining and displaying the `Client ID` and the actual `Client Secret`.
-2. The agent must not proactively modify the `console` configuration or `~/.qwenpaw/config.json`.
+2. The agent must not proactively modify the `console` configuration or `~/.openspider/config.json`.
 3. You must instruct the user to fill in the credentials manually using one of the following two methods:
    - Console frontend: `Control -> Channels -> DingTalk`
-   - Configuration file: edit the `channels.dingtalk` field in `~/.qwenpaw/config.json`
+   - Configuration file: edit the `channels.dingtalk` field in `~/.openspider/config.json`
 
 ## Browser Tool Usage Pattern
 

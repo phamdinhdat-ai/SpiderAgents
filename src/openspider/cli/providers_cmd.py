@@ -361,7 +361,7 @@ def configure_llm_slot_interactive(*, use_defaults: bool = False) -> None:
     if not eligible:
         if use_defaults:
             click.echo(
-                "No LLM provider configured. Run 'qwenpaw models config' "
+                "No LLM provider configured. Run 'OpenSpider models config' "
                 "to configure later.",
             )
             return
@@ -421,7 +421,7 @@ def configure_llm_slot_interactive(*, use_defaults: bool = False) -> None:
     if not model and use_defaults:
         click.echo(
             f"No default model for {defn.name}. "
-            "Run 'qwenpaw models config' to set one.",
+            "Run 'OpenSpider models config' to set one.",
         )
         return
     try:
@@ -506,7 +506,7 @@ def list_cmd() -> None:
                     click.echo(f"    - {m.name}")
             else:
                 click.echo("  No models downloaded.")
-                click.echo("  Use 'qwenpaw models download' to add models.")
+                click.echo("  Use 'OpenSpider models download' to add models.")
         else:
             click.echo(f"  {'base_url':16s}: {cur_url or '(not set)'}")
             click.echo(
@@ -596,8 +596,8 @@ def add_provider_cmd(
     if base_url:
         click.echo(f"  base_url: {base_url}")
     click.echo(
-        "  Run 'qwenpaw models add-model' to add models, "
-        "then 'qwenpaw models config-key' to set the API key.",
+        "  Run 'OpenSpider models add-model' to add models, "
+        "then 'OpenSpider models config-key' to set the API key.",
     )
 
 
@@ -727,8 +727,8 @@ def download_cmd(
 
     \b
     Examples:
-      qwenpaw models download TheBloke/Mistral-7B-Instruct-v0.2-GGUF
-      qwenpaw models download Qwen/Qwen2-0.5B-Instruct-GGUF --source modelscope
+      OpenSpider models download TheBloke/Mistral-7B-Instruct-v0.2-GGUF
+      OpenSpider models download Qwen/Qwen2-0.5B-Instruct-GGUF --source modelscope
     """
     local_model_manager = _get_local_model_manager()
 
@@ -774,7 +774,7 @@ def download_cmd(
     click.echo(f"  Name: {repo_id}")
     click.echo(
         "\nTo use this model, run:\n"
-        "  qwenpaw models set-llm  (select 'qwenpaw-local' provider)",
+        "  OpenSpider models set-llm  (select 'qwenpaw-local' provider)",
     )
 
 
@@ -787,7 +787,7 @@ def list_local_cmd() -> None:
 
     if not models:
         click.echo("No local models downloaded.")
-        click.echo("Use 'qwenpaw models download <repo_id>' to download one.")
+        click.echo("Use 'OpenSpider models download <repo_id>' to download one.")
         return
 
     click.echo(f"\n=== Local Models ({len(models)}) ===")

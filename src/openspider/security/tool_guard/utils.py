@@ -54,7 +54,7 @@ def _load_config_tool_guard():
     Returns ``None`` when config cannot be loaded.
     """
     try:
-        from qwenpaw.config import load_config
+        from openspider.config import load_config
 
         return load_config().security.tool_guard
     except Exception:
@@ -80,7 +80,7 @@ def resolve_guarded_tools(
     if user_defined is not None:
         return _parse_guarded_tokens(user_defined)
 
-    raw = EnvVarLoader.get_str("QWENPAW_TOOL_GUARD_TOOLS") or None
+    raw = EnvVarLoader.get_str("OPENSPIDER_TOOL_GUARD_TOOLS") or None
     if raw is not None:
         normalized = raw.strip().lower()
         if normalized in {"*", "all"}:
@@ -115,7 +115,7 @@ def resolve_denied_tools(
     if user_defined is not None:
         return set(user_defined)
 
-    raw = EnvVarLoader.get_str("QWENPAW_TOOL_GUARD_DENIED_TOOLS") or None
+    raw = EnvVarLoader.get_str("OPENSPIDER_TOOL_GUARD_DENIED_TOOLS") or None
     if raw is not None:
         return {t.strip() for t in raw.split(",") if t.strip()}
 
@@ -145,7 +145,7 @@ def resolve_auto_denied_rules(
     if user_defined is not None:
         return {r.strip() for r in user_defined if r and r.strip()}
 
-    raw = EnvVarLoader.get_str("QWENPAW_TOOL_GUARD_AUTO_DENIED_RULES") or None
+    raw = EnvVarLoader.get_str("OPENSPIDER_TOOL_GUARD_AUTO_DENIED_RULES") or None
     if raw is not None:
         return {r.strip() for r in raw.split(",") if r.strip()}
 

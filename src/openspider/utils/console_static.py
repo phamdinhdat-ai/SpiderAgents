@@ -9,7 +9,7 @@ from ..constant import EnvVarLoader
 
 # Primary env key (``COPAW_CONSOLE_STATIC_DIR`` is accepted as a legacy
 # fallback via :class:`~qwenpaw.constant.EnvVarLoader`).
-CONSOLE_STATIC_ENV = "QWENPAW_CONSOLE_STATIC_DIR"
+CONSOLE_STATIC_ENV = "OPENSPIDER_CONSOLE_STATIC_DIR"
 
 
 def resolve_console_static_dir() -> str:
@@ -18,7 +18,7 @@ def resolve_console_static_dir() -> str:
     Resolution order matches :mod:`qwenpaw.app._app`: env override, package
     ``qwenpaw/console``, repo ``console/dist``, then cwd fallbacks.
     """
-    static_dir = EnvVarLoader.get_str("QWENPAW_CONSOLE_STATIC_DIR")
+    static_dir = EnvVarLoader.get_str("OPENSPIDER_CONSOLE_STATIC_DIR")
     if static_dir:
         return static_dir
 
@@ -43,15 +43,15 @@ def resolve_console_static_dir() -> str:
 
 def find_qwenpaw_source_repo_root() -> Path | None:
     """Return the git checkout root if this Python
-    is running from QwenPaw source.
+    is running from OpenSpider source.
 
-    Looks upward from :mod:`qwenpaw` for ``console/package.json``,
+    Looks upward from :mod:`OpenSpider` for ``console/package.json``,
     ``console/package-lock.json``, and ``src/qwenpaw/``
     (bundled static target).
     Returns ``None`` for a normal pip/wheel install.
     """
     try:
-        import qwenpaw  # noqa: PLC0415 — avoid import cycle at module load
+        import OpenSpider  # noqa: PLC0415 — avoid import cycle at module load
     except Exception:  # pylint: disable=broad-exception-caught
         return None
     cur = Path(qwenpaw.__file__).resolve().parent

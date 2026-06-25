@@ -91,7 +91,7 @@ function PlatformCard({
   const updatedDate = new Date(
     selectedFileMetadata.updated_at,
   ).toLocaleDateString(isZh ? "zh-CN" : "en-US");
-  const downloadUrl = `https://download.qwenpaw.agentscope.io${selectedFileMetadata.url}`;
+  const downloadUrl = `https://download.openspider.agentscope.io${selectedFileMetadata.url}`;
   const stableVersions = versions.filter(
     (item) => !/[ab]\d*$/i.test(item.version) && !/preview/i.test(item.version),
   );
@@ -231,7 +231,7 @@ export default function Downloads() {
   useEffect(() => {
     async function loadDownloads() {
       try {
-        const CDN_BASE = "https://download.qwenpaw.agentscope.io";
+        const CDN_BASE = "https://download.openspider.agentscope.io";
 
         console.log(
           "Fetching main index from:",

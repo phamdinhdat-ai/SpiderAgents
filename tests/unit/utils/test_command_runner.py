@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from qwenpaw.utils import command_runner
-from qwenpaw.utils.command_runner import (
+from openspider.utils import command_runner
+from openspider.utils.command_runner import (
     CommandExecutionError,
     ManagedProcess,
     ProcessLaunchError,

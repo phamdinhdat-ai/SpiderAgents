@@ -12,7 +12,7 @@ def print_ready_banner(
     api_info: Optional[Tuple[str, int]] = None,
     elapsed_seconds: Optional[float] = None,
 ) -> None:
-    """Print a fancy QwenPaw ready banner with rich formatting.
+    """Print a fancy OpenSpider ready banner with rich formatting.
 
     Args:
         api_info: Optional tuple of (host, port) for the server URL.

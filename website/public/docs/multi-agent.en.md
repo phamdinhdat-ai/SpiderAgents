@@ -1,6 +1,6 @@
 # Multi-Agent
 
-QwenPaw supports **multi-agent**, allowing you to run multiple independent AI agents in a single QwenPaw instance.
+openspider supports **multi-agent**, allowing you to run multiple independent AI agents in a single openspider instance.
 
 > This feature was introduced in **v0.1.0**.
 
@@ -15,7 +15,7 @@ QwenPaw supports **multi-agent**, allowing you to run multiple independent AI ag
 
 ### What is Multi-Agent?
 
-Simply put, **multi-agent** lets you run multiple "personas" in one QwenPaw, where each persona:
+Simply put, **multi-agent** lets you run multiple "personas" in one openspider, where each persona:
 
 - Has its own **personality and specialization** (configured via different persona files)
 - Remembers **its own conversations** (no cross-talk)
@@ -40,7 +40,7 @@ Each agent focuses on its domain without interference.
 
 ### Use Case 2: Platform Separation
 
-You might use QwenPaw across multiple platforms:
+You might use openspider across multiple platforms:
 
 - **DingTalk** - work-related conversations
 - **Discord** - community discussions
@@ -65,7 +65,7 @@ You might need:
 
 #### 1. View and Switch Agents
 
-After starting QwenPaw, you'll see the **Agent Selector** in the **top-left corner** of the console:
+After starting openspider, you'll see the **Agent Selector** in the **top-left corner** of the console:
 
 ```
 ┌───────────────────────────────────┐
@@ -203,7 +203,7 @@ Yes. If you configure different agents for DingTalk and Discord, they can respon
 
 Click the delete button in the "Settings → Agent Management" page in console.
 
-**Note**: After deletion, the workspace directory is retained (to prevent accidental data loss). To completely remove it, manually delete the `~/.qwenpaw/workspaces/{agent_id}` directory.
+**Note**: After deletion, the workspace directory is retained (to prevent accidental data loss). To completely remove it, manually delete the `~/.openspider/workspaces/{agent_id}` directory.
 
 ### Q: Can the default agent be deleted?
 
@@ -228,7 +228,7 @@ Not recommended. The `default` agent is the system's default fallback; deleting 
 
 ## Upgrading from Single-Agent
 
-If you previously used QwenPaw **v0.0.x**, upgrading to **v0.1.0** will **automatically migrate**:
+If you previously used openspider **v0.0.x**, upgrading to **v0.1.0** will **automatically migrate**:
 
 1. **Automatic Migration on First Start**
 
@@ -237,14 +237,14 @@ If you previously used QwenPaw **v0.0.x**, upgrading to **v0.1.0** will **automa
 
 2. **Verify Migration**
 
-   - After starting QwenPaw, check the agent list in console
+   - After starting openspider, check the agent list in console
    - You should see an agent named "Default Agent"
    - Your old conversations and configs should still be there
 
 3. **Backup Recommendation**
    Back up your working directory before upgrading:
    ```bash
-   cp -r ~/.qwenpaw ~/.qwenpaw.backup
+   cp -r ~/.openspider ~/.openspider.backup
    ```
 
 ---
@@ -276,10 +276,10 @@ Agents can communicate and collaborate with each other to handle complex tasks t
 
 ```bash
 # Enable for default agent
-qwenpaw skills config
+openspider skills config
 
 # Enable for specific agent
-qwenpaw skills config --agent-id abc123
+openspider skills config --agent-id abc123
 
 # In the interactive interface:
 # - Use ↑/↓ keys to find "multi_agent_collaboration"
@@ -427,7 +427,7 @@ For testing
 The system **automatically generates** a `PROFILE.md` file based on the agent's configuration (including name, description, skills, persona files, etc.), stored in the workspace directory:
 
 ```
-~/.qwenpaw/workspaces/{agent_id}/PROFILE.md
+~/.openspider/workspaces/{agent_id}/PROFILE.md
 ```
 
 You can view the auto-generated PROFILE.md in the **Workspace → Files** page.
@@ -437,13 +437,13 @@ You can view the auto-generated PROFILE.md in the **Workspace → Files** page.
 Use CLI to view all agents' information:
 
 ```bash
-qwenpaw agents list
+openspider agents list
 
 # Example output:
 # Agent ID: code_reviewer
 # Name: Code Review Assistant
 # Description: Specializes in Python/JavaScript code review, refactoring, and performance optimization
-# Workspace: ~/.qwenpaw/workspaces/code_reviewer
+# Workspace: ~/.openspider/workspaces/code_reviewer
 # Profile: [Auto-generated detailed capability description]
 ```
 
@@ -471,7 +471,7 @@ When agents have the collaboration skill enabled, they automatically use these C
 #### Query Available Agents
 
 ```bash
-qwenpaw agents list
+openspider agents list
 ```
 
 This command lists all configured agents, including:
@@ -488,13 +488,13 @@ This command lists all configured agents, including:
 Agent ID: code_reviewer
 Name: Code Review Assistant
 Description: Specializes in Python/JavaScript code review, refactoring, and performance optimization
-Workspace: ~/.qwenpaw/workspaces/code_reviewer
+Workspace: ~/.openspider/workspaces/code_reviewer
 Profile: [Auto-generated detailed capability description based on config and persona files]
 
 Agent ID: writer_bot
 Name: Writing Assistant
 Description: Handles document writing, content polishing, and technical writing; proficient in Chinese and English
-Workspace: ~/.qwenpaw/workspaces/writer_bot
+Workspace: ~/.openspider/workspaces/writer_bot
 Profile: [Auto-generated detailed capability description]
 ```
 
@@ -504,27 +504,27 @@ Agents reference both **Description** and **Profile** when deciding which agent 
 
 ```bash
 # Initiate new conversation (real-time mode, for quick queries)
-qwenpaw agents chat \
+openspider agents chat \
   --from-agent <current_agent> \
   --to-agent <target_agent> \
   --text "Request content"
 
 # Multi-turn conversation (maintain context)
-qwenpaw agents chat \
+openspider agents chat \
   --from-agent <current_agent> \
   --to-agent <target_agent> \
   --session-id "<session_id>" \
   --text "Follow-up request"
 
 # Complex task (background mode, for data analysis, report generation, etc.)
-qwenpaw agents chat --background \
+openspider agents chat --background \
   --from-agent <current_agent> \
   --to-agent <target_agent> \
   --text "Complex task request"
 # Returns [TASK_ID: xxx] [SESSION: xxx]
 
 # Check background task status (--to-agent is optional when querying)
-qwenpaw agents chat --background \
+openspider agents chat --background \
   --task-id <task_id>
 # Status flow: submitted → pending → running → finished
 # When finished, result shows: completed (✅) or failed (❌)
@@ -557,12 +557,12 @@ All multi-agent-aware CLI commands accept the `--agent-id` parameter (defaults t
 
 ```bash
 # View specific agent's configuration
-qwenpaw channels list --agent-id abc123
-qwenpaw cron list --agent-id abc123
-qwenpaw skills list --agent-id abc123
+openspider channels list --agent-id abc123
+openspider cron list --agent-id abc123
+openspider skills list --agent-id abc123
 
 # Create cron job for specific agent
-qwenpaw cron create \
+openspider cron create \
   --agent-id abc123 \
   --type agent \
   --name "Check Todos" \
@@ -575,18 +575,18 @@ qwenpaw cron create \
 
 **Commands Supporting `--agent-id`**:
 
-- `qwenpaw channels` - channel management
-- `qwenpaw cron` - cron jobs
-- `qwenpaw daemon` - runtime status
-- `qwenpaw chats` - chat management
-- `qwenpaw skills` - skill management
+- `openspider channels` - channel management
+- `openspider cron` - cron jobs
+- `openspider daemon` - runtime status
+- `openspider chats` - chat management
+- `openspider skills` - skill management
 
 **Commands NOT Supporting `--agent-id`** (global operations):
 
-- `qwenpaw init` - initialization
-- `qwenpaw providers` - model providers
-- `qwenpaw models` - model configuration
-- `qwenpaw env` - environment variables
+- `openspider init` - initialization
+- `openspider providers` - model providers
+- `openspider models` - model configuration
+- `openspider env` - environment variables
 
 ### REST API
 
@@ -633,7 +633,7 @@ If you need to directly edit configuration files:
 #### Old Structure (v0.0.x)
 
 ```
-~/.qwenpaw/
+~/.openspider/
 ├── config.json          # All config
 ├── chats.json
 ├── jobs.json
@@ -644,7 +644,7 @@ If you need to directly edit configuration files:
 #### New Structure (v0.1.0+)
 
 ```
-~/.qwenpaw/
+~/.openspider/
 ├── config.json          # Global config (providers, agents.profiles)
 └── workspaces/
     ├── default/         # Default agent workspace
@@ -688,10 +688,10 @@ Back up important agent workspaces regularly:
 
 ```bash
 # Backup specific agent
-cp -r ~/.qwenpaw/workspaces/abc123 ~/backups/agent-abc123-$(date +%Y%m%d)
+cp -r ~/.openspider/workspaces/abc123 ~/backups/agent-abc123-$(date +%Y%m%d)
 
 # Backup all agents
-cp -r ~/.qwenpaw/workspaces ~/backups/workspaces-$(date +%Y%m%d)
+cp -r ~/.openspider/workspaces ~/backups/workspaces-$(date +%Y%m%d)
 ```
 
 ---

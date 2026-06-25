@@ -8,12 +8,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from qwenpaw.token_usage.buffer import (
+from openspider.token_usage.buffer import (
     TokenUsageBuffer,
     _UsageEvent,
     _apply_event,
 )
-from qwenpaw.token_usage.manager import (
+from openspider.token_usage.manager import (
     TokenUsageByDateModel,
     TokenUsageByModel,
     TokenUsageManager,
@@ -21,8 +21,8 @@ from qwenpaw.token_usage.manager import (
     TokenUsageStats,
     TokenUsageSummary,
 )
-from qwenpaw.token_usage.model_wrapper import TokenRecordingModelWrapper
-from qwenpaw.token_usage.storage import load_data, save_data_sync
+from openspider.token_usage.model_wrapper import TokenRecordingModelWrapper
+from openspider.token_usage.storage import load_data, save_data_sync
 
 
 # =============================================================================
@@ -313,11 +313,11 @@ class TestTokenUsageManagerCore:
     def test_get_instance_returns_singleton(self, tmp_path, monkeypatch):
         """Should return same instance on multiple calls."""
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.WORKING_DIR",
+            "openspider.token_usage.manager.WORKING_DIR",
             tmp_path,
         )
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.TOKEN_USAGE_FILE",
+            "openspider.token_usage.manager.TOKEN_USAGE_FILE",
             "test_token_usage.json",
         )
 
@@ -329,11 +329,11 @@ class TestTokenUsageManagerCore:
     async def test_start_and_stop(self, tmp_path, monkeypatch):
         """Should start and stop cleanly."""
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.WORKING_DIR",
+            "openspider.token_usage.manager.WORKING_DIR",
             tmp_path,
         )
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.TOKEN_USAGE_FILE",
+            "openspider.token_usage.manager.TOKEN_USAGE_FILE",
             "test_token_usage.json",
         )
 
@@ -345,11 +345,11 @@ class TestTokenUsageManagerCore:
     async def test_record_usage(self, tmp_path, monkeypatch):
         """Should record token usage."""
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.WORKING_DIR",
+            "openspider.token_usage.manager.WORKING_DIR",
             tmp_path,
         )
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.TOKEN_USAGE_FILE",
+            "openspider.token_usage.manager.TOKEN_USAGE_FILE",
             "test_token_usage.json",
         )
 
@@ -370,11 +370,11 @@ class TestTokenUsageManagerCore:
     async def test_get_summary_empty(self, tmp_path, monkeypatch):
         """Should return empty summary when no data."""
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.WORKING_DIR",
+            "openspider.token_usage.manager.WORKING_DIR",
             tmp_path,
         )
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.TOKEN_USAGE_FILE",
+            "openspider.token_usage.manager.TOKEN_USAGE_FILE",
             "test_token_usage.json",
         )
 
@@ -394,11 +394,11 @@ class TestTokenUsageManagerCore:
     async def test_get_details_empty(self, tmp_path, monkeypatch):
         """Should return empty list when no data."""
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.WORKING_DIR",
+            "openspider.token_usage.manager.WORKING_DIR",
             tmp_path,
         )
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.TOKEN_USAGE_FILE",
+            "openspider.token_usage.manager.TOKEN_USAGE_FILE",
             "test_token_usage.json",
         )
 
@@ -415,11 +415,11 @@ class TestTokenUsageManagerCore:
     async def test_get_details_with_data(self, tmp_path, monkeypatch):
         """Should return raw records for frontend aggregation."""
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.WORKING_DIR",
+            "openspider.token_usage.manager.WORKING_DIR",
             tmp_path,
         )
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.TOKEN_USAGE_FILE",
+            "openspider.token_usage.manager.TOKEN_USAGE_FILE",
             "test_token_usage.json",
         )
 
@@ -468,11 +468,11 @@ class TestTokenRecordingModelWrapper:
     def test_init_wraps_model(self, tmp_path, monkeypatch):
         """Should wrap a ChatModelBase instance."""
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.WORKING_DIR",
+            "openspider.token_usage.manager.WORKING_DIR",
             tmp_path,
         )
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.TOKEN_USAGE_FILE",
+            "openspider.token_usage.manager.TOKEN_USAGE_FILE",
             "test_token_usage.json",
         )
 
@@ -491,11 +491,11 @@ class TestTokenRecordingModelWrapper:
     def test_record_usage_with_valid_usage(self, tmp_path, monkeypatch):
         """Should record valid usage."""
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.WORKING_DIR",
+            "openspider.token_usage.manager.WORKING_DIR",
             tmp_path,
         )
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.TOKEN_USAGE_FILE",
+            "openspider.token_usage.manager.TOKEN_USAGE_FILE",
             "test_token_usage.json",
         )
 
@@ -516,11 +516,11 @@ class TestTokenRecordingModelWrapper:
     def test_pop_usage_for_session(self, monkeypatch):
         """Should pop usage for session."""
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.WORKING_DIR",
+            "openspider.token_usage.manager.WORKING_DIR",
             "/tmp",
         )
         monkeypatch.setattr(
-            "qwenpaw.token_usage.manager.TOKEN_USAGE_FILE",
+            "openspider.token_usage.manager.TOKEN_USAGE_FILE",
             "test_token_usage.json",
         )
 

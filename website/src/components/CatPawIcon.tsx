@@ -1,5 +1,5 @@
 /**
- * QwenPaw branding logo (logo.png). Favicon uses qwenpaw-symbol.svg.
+ * openspider branding logo (logo.png). Favicon uses openspider-symbol.svg.
  */
 interface CatPawIconProps {
   size: number;

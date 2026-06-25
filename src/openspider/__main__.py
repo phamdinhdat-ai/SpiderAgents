@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Allow running QwenPaw via ``python -m qwenpaw``."""
+"""Allow running OpenSpider via ``python -m openspider``."""
 from .cli.main import cli
 
 if __name__ == "__main__":

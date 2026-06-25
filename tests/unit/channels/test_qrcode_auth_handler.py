@@ -18,7 +18,7 @@ def mock_request():
 @pytest.fixture
 def feishu_handler():
     """Create Feishu handler instance."""
-    from qwenpaw.app.channels.qrcode_auth_handler import (
+    from openspider.app.channels.qrcode_auth_handler import (
         FeishuQRCodeAuthHandler,
     )
 
@@ -243,7 +243,7 @@ class TestQRCodeAuthHandlerRegistry:
 
     def test_registry_contains_all_channels(self):
         """Should contain handlers for all supported channels."""
-        from qwenpaw.app.channels.qrcode_auth_handler import (
+        from openspider.app.channels.qrcode_auth_handler import (
             QRCODE_AUTH_HANDLERS,
         )
 
@@ -252,7 +252,7 @@ class TestQRCodeAuthHandlerRegistry:
 
     def test_registry_handlers_are_correct_type(self):
         """Should contain FeishuQRCodeAuthHandler for feishu."""
-        from qwenpaw.app.channels.qrcode_auth_handler import (
+        from openspider.app.channels.qrcode_auth_handler import (
             QRCODE_AUTH_HANDLERS,
             FeishuQRCodeAuthHandler,
             QRCodeAuthHandler,

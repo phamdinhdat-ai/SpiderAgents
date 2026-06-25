@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""QwenPaw exception definitions and converters."""
+"""OpenSpider exception definitions and converters."""
 
 from typing import Any, Dict, Optional
 
@@ -15,7 +15,7 @@ from agentscope_runtime.engine.schemas.exception import (
 )
 
 
-# ==================== QwenPaw Business Exceptions ====================
+# ==================== OpenSpider Business Exceptions ====================
 
 
 class ProviderError(AgentRuntimeErrorException):

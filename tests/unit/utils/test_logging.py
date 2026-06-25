@@ -10,7 +10,7 @@ import logging
 import sys
 from unittest.mock import MagicMock, patch
 
-from qwenpaw.utils.logging import (
+from openspider.utils.logging import (
     ColorFormatter,
     SuppressPathAccessLogFilter,
     add_project_file_handler,
@@ -185,13 +185,13 @@ class TestAddFileHandler:
 
     def test_creates_log_directory(self, tmp_path):
         """S级: Creates log directory if it doesn't exist."""
-        log_path = tmp_path / "logs" / "qwenpaw.log"
+        log_path = tmp_path / "logs" / "openspider.log"
         add_project_file_handler(log_path)
         assert log_path.parent.exists()
 
     def test_idempotent_same_path(self, tmp_path):
         """S级: Same path twice doesn't duplicate handlers."""
-        log_path = tmp_path / "qwenpaw.log"
+        log_path = tmp_path / "openspider.log"
 
         # First call
         add_project_file_handler(log_path)
@@ -204,7 +204,7 @@ class TestAddFileHandler:
 
     def test_adds_file_handler(self, tmp_path):
         """S级: File handler is added to logger."""
-        log_path = tmp_path / "qwenpaw.log"
+        log_path = tmp_path / "openspider.log"
 
         # Clear handlers first
         logger = logging.getLogger(LOG_NAMESPACE)

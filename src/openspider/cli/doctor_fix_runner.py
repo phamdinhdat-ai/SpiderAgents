@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Conservative filesystem repairs for ``qwenpaw doctor fix``.
+"""Conservative filesystem repairs for ``openspider doctor fix``.
 
 Backup, allowlist, atomic write. Includes ``reconcile-workspace-skills``,
 which calls the same ``reconcile_workspace_manifest`` as the app (CLI-only,
@@ -225,7 +225,7 @@ def _write_meta(
     cfg = load_config()
     ch, cp = _effective_cli_api_host_port(cli_api_host, cli_api_port)
     meta = {
-        "qwenpaw_version": __version__,
+        "OPENSPIDER_version": __version__,
         "utc": datetime.now(timezone.utc).isoformat(),
         "argv": argv,
         "fix_ids": fix_ids,
@@ -290,7 +290,7 @@ def _plan_fixes(
                 raise ValueError(
                     f"fix {fid!r} requires --yes (-y) to apply "
                     "(may modify files or run external tools such as npm). "
-                    "Use `qwenpaw doctor fix --dry-run --only ...` to preview "
+                    "Use `openspider doctor fix --dry-run --only ...` to preview "
                     "the plan without -y.",
                 )
 
@@ -312,7 +312,7 @@ def _plan_fixes(
     ):
         raise ValueError(
             f"working directory {wd} does not exist; include "
-            "ensure-working-dir in --only or run `qwenpaw doctor fix` without "
+            "ensure-working-dir in --only or run `openspider doctor fix` without "
             "--only (safe fixes include it when needed).",
         )
 
@@ -596,7 +596,7 @@ def _plan_fixes(
         repo = find_qwenpaw_source_repo_root()
         if repo is None:
             skip_msgs.append(
-                "rebuild-console-npm: only in a QwenPaw source checkout "
+                "rebuild-console-npm: only in a OpenSpider source checkout "
                 "(./console/package.json + ./console/package-lock.json + "
                 "./src/qwenpaw/)",
             )
@@ -640,7 +640,7 @@ def _plan_fixes(
                     shutil.copytree(target, prev)
                     bkp.mkdir(parents=True, exist_ok=True)
                     meta = {
-                        "qwenpaw_version": __version__,
+                        "OPENSPIDER_version": __version__,
                         "previous_bundle": str(prev),
                     }
                     (bkp / "meta.json").write_text(

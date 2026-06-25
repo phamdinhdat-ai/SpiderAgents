@@ -49,14 +49,14 @@ dependencies = [
 ]
 
 [tool.setuptools.dynamic]
-version = {attr = "qwenpaw.__version__.__version__"}
+version = {attr = "openspider.__version__.__version__"}
 
 [tool.setuptools]
 packages = { find = { where = ["src"] } }
 include-package-data = true
 
 [tool.setuptools.package-data]
-# Dockerfile copies console build output to src/qwenpaw/console/ (no dist subdir).
+# Dockerfile copies console build output to src/openspider/console/ (no dist subdir).
 "qwenpaw" = [
     "console/**",
     "agents/md_files/**",
@@ -106,7 +106,7 @@ whisper = [
     "openai-whisper>=20231117",
 ]
 full = [
-    "qwenpaw[local,whisper]",
+    "openspider[local,whisper]",
 ]
 sip = [
     "pyVoIP>=1.6.0",
@@ -115,7 +115,7 @@ sip = [
     "audioop-lts; python_version >= '3.13'",
 ]
 sip-livekit = [
-    "qwenpaw[sip]",
+    "openspider[sip]",
     "livekit>=1.0.0",
     "livekit-api>=0.6.0",
 ]
@@ -134,7 +134,7 @@ testpaths = [
 ]
 
 [tool.coverage.run]
-source = ["src/qwenpaw"]
+source = ["src/openspider"]
 omit = [
     "*/tests/*",
     "*/test_*",

@@ -2,7 +2,7 @@
 
 # OpenSpider
 
-[![PyPI](https://img.shields.io/pypi/v/qwenpaw?color=3775A9&label=PyPI&logo=pypi)](https://pypi.org/project/qwenpaw/)
+[![PyPI](https://img.shields.io/pypi/v/openspider?color=3775A9&label=PyPI&logo=pypi)](https://pypi.org/project/openspider/)
 [![Python Version](https://img.shields.io/badge/python-3.10%20~%20%3C3.14-blue.svg?logo=python&label=Python)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-black.svg?logo=python&label=CodeStyle)](https://github.com/psf/black)
@@ -49,7 +49,7 @@
 
 ## Overview
 
-**OpenSpider** is a self-hosted personal AI agent assistant (evolved from QwenPaw). It runs locally or on your own server, connects to any LLM provider, integrates with 17+ messaging channels, and extends its capabilities through a skill system.
+**OpenSpider** is a self-hosted personal AI agent assistant (evolved from openspider). It runs locally or on your own server, connects to any LLM provider, integrates with 17+ messaging channels, and extends its capabilities through a skill system.
 
 > **Core capabilities:**
 >
@@ -98,7 +98,7 @@
 │              │  └────────┬─────────┘   │                           │
 │              │           │             │                           │
 │              │  ┌────────▼──────────┐  │                           │
-│              │  │  QwenPawAgent     │  │  ReActAgent subclass      │
+│              │  │  openspiderAgent     │  │  ReActAgent subclass      │
 │              │  │  ToolGuardMixin   │  │  approval gate            │
 │              │  └────────┬──────────┘  │                           │
 │              └───────────┼─────────────┘                           │
@@ -136,7 +136,7 @@ MultiAgentManager.get_workspace(agent_id)  ← lazy create on first request
 Runner.run(message, session)
         │
         ▼
-QwenPawAgent._acting(tool_call)
+openspiderAgent._acting(tool_call)
         │
         ├── ToolGuardMixin checks ExecLevel
         │       ├── FREE → execute immediately
@@ -158,7 +158,7 @@ SSE stream → Console / Channel
 | Layer | Package path | Key classes |
 |---|---|---|
 | Application | `app/_app.py` | `DynamicMultiAgentRunner`, `AgentApp` |
-| Agent | `agents/react_agent.py` | `QwenPawAgent`, `ToolGuardMixin` |
+| Agent | `agents/react_agent.py` | `openspiderAgent`, `ToolGuardMixin` |
 | Runner | `app/runner/` | `Runner`, `MultiAgentManager`, `Workspace`, `TaskTracker` |
 | Providers | `providers/` | `ProviderManager`, `OpenAIProvider`, `AnthropicProvider`, … |
 | Channels | `app/channels/` | `BaseChannel` subclasses (17 types) |
@@ -180,9 +180,9 @@ SSE stream → Console / Channel
 ### Option 1: pip install
 
 ```bash
-pip install qwenpaw
-qwenpaw init --defaults
-qwenpaw app
+pip install openspider
+openspider init --defaults
+openspider app
 ```
 
 Open **http://127.0.0.1:8088/** → **Settings → Models** to configure your API key and model.
@@ -195,23 +195,23 @@ No Python setup required. The script installs `uv`, creates a virtual environmen
 
 **macOS / Linux:**
 ```bash
-curl -fsSL https://qwenpaw.agentscope.io/install.sh | bash
+curl -fsSL https://openspider.agentscope.io/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://qwenpaw.agentscope.io/install.ps1 | iex
+irm https://openspider.agentscope.io/install.ps1 | iex
 ```
 
 **Windows (CMD):**
 ```cmd
-curl -fsSL https://qwenpaw.agentscope.io/install.bat -o install.bat && install.bat
+curl -fsSL https://openspider.agentscope.io/install.bat -o install.bat && install.bat
 ```
 
 Then:
 ```bash
-qwenpaw init --defaults
-qwenpaw app
+openspider init --defaults
+openspider app
 ```
 
 ---
@@ -220,19 +220,19 @@ qwenpaw app
 
 ```bash
 docker run -p 127.0.0.1:8088:8088 \
-  -v qwenpaw-data:/app/working \
-  -v qwenpaw-secrets:/app/working.secret \
-  -v qwenpaw-backups:/app/working.backups \
-  agentscope/qwenpaw:latest
+  -v openspider-data:/app/working \
+  -v openspider-secrets:/app/working.secret \
+  -v openspider-backups:/app/working.backups \
+  agentscope/openspider:latest
 ```
 
 Pass API keys as environment variables:
 ```bash
 docker run -p 127.0.0.1:8088:8088 \
   -e DASHSCOPE_API_KEY=sk-xxx \
-  -v qwenpaw-data:/app/working \
-  -v qwenpaw-secrets:/app/working.secret \
-  agentscope/qwenpaw:latest
+  -v openspider-data:/app/working \
+  -v openspider-secrets:/app/working.secret \
+  agentscope/openspider:latest
 ```
 
 > **Connecting to Ollama on host:** Add `--add-host=host.docker.internal:host-gateway` and use `http://host.docker.internal:11434` as the base URL in Settings.
@@ -246,15 +246,15 @@ docker compose -f docker-compose.openspider.yml up
 
 ### Option 4: ModelScope Studio
 
-[ModelScope Studio](https://modelscope.cn/studios/fork?target=AgentScope/QwenPaw) — one-click cloud setup, no local install. Set your Studio to **non-public**.
+[ModelScope Studio](https://modelscope.cn/studios/fork?target=AgentScope/openspider) — one-click cloud setup, no local install. Set your Studio to **non-public**.
 
 ---
 
 ### Option 5: Desktop Application (Beta)
 
-Download from [GitHub Releases](https://github.com/agentscope-ai/QwenPaw/releases):
-- **Windows**: `QwenPaw-Setup-<version>.exe`
-- **macOS**: `QwenPaw-<version>-macOS.zip`
+Download from [GitHub Releases](https://github.com/agentscope-ai/openspider/releases):
+- **Windows**: `openspider-Setup-<version>.exe`
+- **macOS**: `openspider-<version>-macOS.zip`
 
 Zero configuration — double-click to run.
 
@@ -376,7 +376,7 @@ skills/
 
 ### Creating Custom Skills
 
-1. Create a directory under your working directory's `skills/` folder (e.g., `~/.qwenpaw/skills/my-skill-en/`)
+1. Create a directory under your working directory's `skills/` folder (e.g., `~/.openspider/skills/my-skill-en/`)
 2. Add a `SKILL.md` with natural language instructions for the agent
 3. Restart or use `/reload` — skills are auto-discovered
 
@@ -440,62 +440,62 @@ Before any skill is installed, `security/skill_scanner/` automatically scans the
 | Feature | Description |
 |---|---|
 | File access guard | Restricts agent access to sensitive paths (`~/.ssh`, key files, system dirs) |
-| Web authentication | Optional login for the console — set `QWENPAW_AUTH_ENABLED=true` |
+| Web authentication | Optional login for the console — set `openspider_AUTH_ENABLED=true` |
 | Local deployment | All data stored locally; only conversation content is sent to your chosen LLM API |
 
 ---
 
 ## Configuration & Environment Variables
 
-OpenSpider is configured via environment variables (current prefix: `QWENPAW_*`, migration to `OPENSPIDER_*` is in progress with backward-compat fallback).
+OpenSpider is configured via environment variables (current prefix: `openspider_*`, migration to `OPENSPIDER_*` is in progress with backward-compat fallback).
 
 ### Core
 
 | Variable | Default | Description |
 |---|---|---|
-| `QWENPAW_WORKING_DIR` | `~/.qwenpaw` | Working directory for data, memory, config |
-| `QWENPAW_SECRET_DIR` | `~/.qwenpaw.secret` | Directory for secrets and API keys |
-| `QWENPAW_RUNNING_IN_CONTAINER` | `false` | Set `true` inside Docker/K8s |
-| `QWENPAW_OPENAPI_DOCS` | `false` | Enable `/docs` (OpenAPI UI) |
-| `QWENPAW_CORS_ORIGINS` | `""` | Comma-separated allowed CORS origins |
-| `QWENPAW_AUTH_ENABLED` | `false` | Enable web authentication |
+| `openspider_WORKING_DIR` | `~/.openspider` | Working directory for data, memory, config |
+| `openspider_SECRET_DIR` | `~/.openspider.secret` | Directory for secrets and API keys |
+| `openspider_RUNNING_IN_CONTAINER` | `false` | Set `true` inside Docker/K8s |
+| `openspider_OPENAPI_DOCS` | `false` | Enable `/docs` (OpenAPI UI) |
+| `openspider_CORS_ORIGINS` | `""` | Comma-separated allowed CORS origins |
+| `openspider_AUTH_ENABLED` | `false` | Enable web authentication |
 
 ### LLM Concurrency
 
 | Variable | Default | Description |
 |---|---|---|
-| `QWENPAW_LLM_MAX_CONCURRENT` | `10` | Max parallel LLM requests |
-| `QWENPAW_LLM_MAX_QPM` | `600` | Max queries per minute |
-| `QWENPAW_LLM_MAX_RETRIES` | `3` | Retry attempts on failure |
-| `QWENPAW_LLM_BACKOFF_BASE` | `1.0` | Exponential backoff base (seconds) |
-| `QWENPAW_LLM_BACKOFF_CAP` | `10.0` | Exponential backoff cap (seconds) |
-| `QWENPAW_LLM_ACQUIRE_TIMEOUT` | `300` | Semaphore acquire timeout (seconds) |
+| `openspider_LLM_MAX_CONCURRENT` | `10` | Max parallel LLM requests |
+| `openspider_LLM_MAX_QPM` | `600` | Max queries per minute |
+| `openspider_LLM_MAX_RETRIES` | `3` | Retry attempts on failure |
+| `openspider_LLM_BACKOFF_BASE` | `1.0` | Exponential backoff base (seconds) |
+| `openspider_LLM_BACKOFF_CAP` | `10.0` | Exponential backoff cap (seconds) |
+| `openspider_LLM_ACQUIRE_TIMEOUT` | `300` | Semaphore acquire timeout (seconds) |
 
 ### Security / Approval
 
 | Variable | Default | Description |
 |---|---|---|
-| `QWENPAW_TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS` | `300` | Approval request timeout |
-| `QWENPAW_TOOL_GUARD_APPROVAL_HEARTBEAT_INTERVAL` | `15` | SSE heartbeat interval (seconds) |
+| `openspider_TOOL_GUARD_APPROVAL_TIMEOUT_SECONDS` | `300` | Approval request timeout |
+| `openspider_TOOL_GUARD_APPROVAL_HEARTBEAT_INTERVAL` | `15` | SSE heartbeat interval (seconds) |
 
 ### Memory
 
 | Variable | Default | Description |
 |---|---|---|
-| `QWENPAW_MEMORY_COMPACT_RATIO` | `0.7` | Trigger compaction when memory hits this ratio of limit |
-| `QWENPAW_MEMORY_COMPACT_KEEP_RECENT` | `3` | Messages to keep uncompressed during compaction |
+| `openspider_MEMORY_COMPACT_RATIO` | `0.7` | Trigger compaction when memory hits this ratio of limit |
+| `openspider_MEMORY_COMPACT_KEEP_RECENT` | `3` | Messages to keep uncompressed during compaction |
 
 ### Working Directory Structure (auto-created)
 
 ```
-~/.qwenpaw/
+~/.openspider/
 ├── config.yaml          # Agent configuration
 ├── memory/              # Long-term memory storage
 ├── skills/              # User-installed custom skills
 ├── workspace/           # Per-agent workspace data
 └── logs/                # Application logs
 
-~/.qwenpaw.secret/
+~/.openspider.secret/
 ├── providers.yaml       # LLM provider API keys
 └── auth.yaml            # Web auth credentials (if enabled)
 ```
@@ -517,8 +517,8 @@ OpenSpider supports multiple independent agent instances, each with isolated mem
 
 Via the console (**Settings → Agents → New Agent**) or CLI:
 ```bash
-qwenpaw agents create --name "Research Agent" --model gpt-4o
-qwenpaw agents list
+openspider agents create --name "Research Agent" --model gpt-4o
+openspider agents list
 ```
 
 ### Inter-Agent Communication
@@ -574,7 +574,7 @@ MCP tools are automatically discovered from connected servers and made available
 
 ## API Reference
 
-The FastAPI application exposes 25+ router groups at **http://localhost:8088/api/v1/**. Enable the OpenAPI docs with `QWENPAW_OPENAPI_DOCS=true`.
+The FastAPI application exposes 25+ router groups at **http://localhost:8088/api/v1/**. Enable the OpenAPI docs with `openspider_OPENAPI_DOCS=true`.
 
 | Router | Path prefix | Description |
 |---|---|---|
@@ -608,10 +608,10 @@ The FastAPI application exposes 25+ router groups at **http://localhost:8088/api
 
 ## CLI Reference
 
-All CLI commands are available via `qwenpaw` (also `openspider` and `copaw` aliases):
+All CLI commands are available via `openspider` (also `openspider` and `copaw` aliases):
 
 ```bash
-qwenpaw <command> [options]
+openspider <command> [options]
 ```
 
 | Command | Description |
@@ -681,9 +681,9 @@ Config in [`deploy/`](deploy/):
 Create a `.env` file in the project root:
 ```env
 DASHSCOPE_API_KEY=sk-xxx
-QWENPAW_AUTH_ENABLED=true
-QWENPAW_CORS_ORIGINS=https://yourdomain.com
-QWENPAW_LLM_MAX_CONCURRENT=20
+openspider_AUTH_ENABLED=true
+openspider_CORS_ORIGINS=https://yourdomain.com
+openspider_LLM_MAX_CONCURRENT=20
 ```
 
 ### Reverse Proxy (nginx)
@@ -701,7 +701,7 @@ location / {
 
 ### Alibaba Cloud ECS
 
-One-click deployment: [QwenPaw on Alibaba Cloud ECS](https://computenest.console.aliyun.com/service/instance/create/cn-hangzhou?type=user&ServiceId=service-1ed84201799f40879884)
+One-click deployment: [openspider on Alibaba Cloud ECS](https://computenest.console.aliyun.com/service/instance/create/cn-hangzhou?type=user&ServiceId=service-1ed84201799f40879884)
 
 ---
 
@@ -710,16 +710,16 @@ One-click deployment: [QwenPaw on Alibaba Cloud ECS](https://computenest.console
 ### Install from Source
 
 ```bash
-git clone https://github.com/agentscope-ai/QwenPaw.git
-cd QwenPaw
+git clone https://github.com/agentscope-ai/openspider.git
+cd openspider
 
 # Build console frontend
 cd console && npm ci && npm run build
 cd ..
 
 # Copy frontend build
-mkdir -p src/qwenpaw/console
-cp -R console/dist/. src/qwenpaw/console/
+mkdir -p src/openspider/console
+cp -R console/dist/. src/openspider/console/
 
 # Install Python package (editable)
 pip install -e ".[dev,full]"
@@ -744,7 +744,7 @@ Test markers: `unit`, `contract`, `integration`, `slow`.
 
 ```
 src/openspider/          # Active development target
-src/qwenpaw/             # Legacy (kept in sync; do not modify unless asked)
+src/openspider/             # Legacy (kept in sync; do not modify unless asked)
 tests/
 ├── unit/                # Fast unit tests
 ├── contract/            # Channel and provider contract tests
@@ -785,7 +785,7 @@ def my_custom_tool(input: str) -> str:
     return f"processed: {input}"
 ```
 
-Place the plugin directory under the working directory's `plugins/` folder or install it as a pip package with the `qwenpaw.plugins` entry point.
+Place the plugin directory under the working directory's `plugins/` folder or install it as a pip package with the `openspider.plugins` entry point.
 
 ---
 
@@ -801,7 +801,7 @@ OpenSpider evolves through open collaboration. Areas actively seeking contributo
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow, code style (Black), and PR checklist.
 
-Join [GitHub Discussions](https://github.com/agentscope-ai/QwenPaw/discussions) to discuss ideas.
+Join [GitHub Discussions](https://github.com/agentscope-ai/openspider/discussions) to discuss ideas.
 
 ---
 
@@ -809,7 +809,7 @@ Join [GitHub Discussions](https://github.com/agentscope-ai/QwenPaw/discussions) 
 
 | Area | Item | Status |
 |---|---|---|
-| **Branding** | Rename `PROJECT_NAME` and env prefix from `QWENPAW_*` to `OPENSPIDER_*` (with fallback) | In Progress |
+| **Branding** | Rename `PROJECT_NAME` and env prefix from `openspider_*` to `OPENSPIDER_*` (with fallback) | In Progress |
 | **Multi-agent** | Agent Swarm / Team coordination | Planned |
 | **Interaction** | Faster SSE streaming, richer slash-command feedback | In Progress |
 | **Processing** | Parallel subtask execution in `plan/`, higher `LLM_MAX_CONCURRENT` default | In Progress |
@@ -836,6 +836,6 @@ OpenSpider is released under the [Apache License 2.0](LICENSE).
 
 ## Contributors
 
-<a href="https://github.com/agentscope-ai/QwenPaw/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=agentscope-ai/QwenPaw" alt="Contributors" />
+<a href="https://github.com/agentscope-ai/openspider/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=agentscope-ai/openspider" alt="Contributors" />
 </a>

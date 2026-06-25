@@ -28,7 +28,7 @@ First, check whether there is a documentation directory in memory. If found, use
 
 ```bash
 # Get the documentation directory from memory
-DOC_DIR=$(find ~/.qwenpaw/memory/ -type d -name "docs")
+DOC_DIR=$(find ~/.openspider/memory/ -type d -name "docs")
 ```
 
 If there is no documentation directory in memory, continue with the following logic.

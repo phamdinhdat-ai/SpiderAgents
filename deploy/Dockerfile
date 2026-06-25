@@ -14,16 +14,16 @@ FROM agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/node:slim
 # ENV variables
 ENV NODE_ENV=production
 ENV WORKSPACE_DIR=/app
-ENV QWENPAW_WORKING_DIR=/app/working
-ENV QWENPAW_SECRET_DIR=/app/working.secret
-ENV QWENPAW_BACKUP_DIR=/app/working.backups
+ENV openspider_WORKING_DIR=/app/working
+ENV openspider_SECRET_DIR=/app/working.secret
+ENV openspider_BACKUP_DIR=/app/working.backups
 
-# Channel filtering: use QWENPAW_DISABLED_CHANNELS (exclusion, recommended)
-# or QWENPAW_ENABLED_CHANNELS (whitelist). Override at runtime with -e.
-ARG QWENPAW_DISABLED_CHANNELS="imessage"
-ENV QWENPAW_DISABLED_CHANNELS=${QWENPAW_DISABLED_CHANNELS}
-ARG QWENPAW_ENABLED_CHANNELS=""
-ENV QWENPAW_ENABLED_CHANNELS=${QWENPAW_ENABLED_CHANNELS}
+# Channel filtering: use openspider_DISABLED_CHANNELS (exclusion, recommended)
+# or openspider_ENABLED_CHANNELS (whitelist). Override at runtime with -e.
+ARG openspider_DISABLED_CHANNELS="imessage"
+ENV openspider_DISABLED_CHANNELS=${openspider_DISABLED_CHANNELS}
+ARG openspider_ENABLED_CHANNELS=""
+ENV openspider_ENABLED_CHANNELS=${openspider_ENABLED_CHANNELS}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -76,7 +76,7 @@ ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 # Avoid Playwright downloading its own browser when executable_path is used.
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 # Indicate running in container (used e.g. for Chromium --no-sandbox).
-ENV QWENPAW_RUNNING_IN_CONTAINER=1
+ENV openspider_RUNNING_IN_CONTAINER=1
 
 WORKDIR ${WORKSPACE_DIR}
 
@@ -86,14 +86,14 @@ ENV PATH="/app/venv/bin:$PATH"
 COPY pyproject.toml setup.py README.md ./
 COPY src ./src
 # Inject console dist from build stage (repo does not commit dist).
-COPY --from=console-builder /app/console/dist/ ./src/qwenpaw/console/
+COPY --from=console-builder /app/console/dist/ ./src/openspider/console/
 # Speed up Python package installation with uv.
 COPY --from=agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/uv:latest /uv /bin/uv
 RUN uv pip install --no-cache-dir . && rm -rf ./build
 
 
-# QwenPaw app port (default 8088). Override at runtime with -e QWENPAW_PORT=3000.
-ENV QWENPAW_PORT=8088
+# openspider app port (default 8088). Override at runtime with -e openspider_PORT=3000.
+ENV openspider_PORT=8088
 
 COPY deploy/config/supervisord.conf.template /etc/supervisor/conf.d/supervisord.conf.template
 COPY --chmod=755 deploy/entrypoint.sh /entrypoint.sh

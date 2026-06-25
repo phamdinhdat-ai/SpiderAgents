@@ -8,11 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from qwenpaw.local_models.download_manager import (
+from openspider.local_models.download_manager import (
     DownloadTaskResult,
     DownloadTaskStatus,
 )
-from qwenpaw.local_models.model_manager import ModelManager, DownloadSource
+from openspider.local_models.model_manager import ModelManager, DownloadSource
 
 
 class _FakeController:
@@ -344,7 +344,7 @@ def test_download_worker_sanitizes_standard_streams(
             queue_messages.append(item)
 
     monkeypatch.setattr(
-        "qwenpaw.local_models.model_manager.ensure_standard_streams",
+        "openspider.local_models.model_manager.ensure_standard_streams",
         lambda: calls.append("sanitized"),
     )
     monkeypatch.setattr(

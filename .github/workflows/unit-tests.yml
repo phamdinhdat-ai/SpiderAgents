@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, master, dev, develop]
     paths:
-      - 'src/qwenpaw/**'
+      - 'src/openspider/**'
       - 'tests/unit/**'
       - 'tests/conftest.py'
       - 'pyproject.toml'
@@ -12,7 +12,7 @@ on:
   pull_request:
     branches: [main, master, dev, develop]
     paths:
-      - 'src/qwenpaw/**'
+      - 'src/openspider/**'
       - 'tests/unit/**'
       - 'tests/conftest.py'
       - 'pyproject.toml'
@@ -92,7 +92,7 @@ jobs:
         run: |
           pytest tests/unit \
             --ignore=tests/unit/channels \
-            --cov=src/qwenpaw \
+            --cov=src/openspider \
             --cov-report=xml:coverage.xml \
             --cov-report=term-missing \
             --tb=short \

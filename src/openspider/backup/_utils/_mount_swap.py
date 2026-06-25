@@ -8,7 +8,7 @@ to rename the mount directory itself (typically ``EBUSY`` on Linux).
 
 This module keeps the mount directory stable and swaps only its children:
 
-1. ``evacuating_old``: move existing children into ``.qwenpaw_restore_old``.
+1. ``evacuating_old``: move existing children into ``.openspider_restore_old``.
 2. ``installing_new``: move staged children from the sibling ``.restore_tmp``.
 3. ``committed``: new contents are live; only cleanup remains.
 
@@ -27,9 +27,9 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-OLD_CONTENT_DIR_NAME = ".qwenpaw_restore_old"
-STATE_FILE_NAME = ".qwenpaw_restore_state"
-STATE_TMP_FILE_NAME = ".qwenpaw_restore_state.tmp"
+OLD_CONTENT_DIR_NAME = ".openspider_restore_old"
+STATE_FILE_NAME = ".openspider_restore_state"
+STATE_TMP_FILE_NAME = ".openspider_restore_state.tmp"
 
 STATE_EVACUATING_OLD = "evacuating_old"
 STATE_INSTALLING_NEW = "installing_new"

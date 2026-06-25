@@ -404,7 +404,7 @@ class WeChatConfig(BaseChannelConfig):
 
     bot_token:              Bearer token obtained after QR code login.
     bot_token_file:         Path to persist/load the bot_token
-                            (default ~/.qwenpaw/wechat_bot_token).
+                            (default ~/.openspider/wechat_bot_token).
     base_url:               iLink API base URL (leave empty to use default).
     media_dir:              Local directory for downloaded media files.
     message_merge_enabled:  When True, merge multiple outgoing text messages
@@ -1717,7 +1717,7 @@ def build_fallback_agent_profile_config(
     """Build the same profile as when ``agent.json``
     is missing (no disk read/write).
 
-    Used by :func:`load_agent_config` and ``qwenpaw doctor fix``
+    Used by :func:`load_agent_config` and ``openspider doctor fix``
     so defaults stay in sync.
     """
     if agent_id not in config.agents.profiles:
@@ -1826,7 +1826,7 @@ def load_agent_config(agent_id: str) -> AgentProfileConfig:
         # One-shot migration: rename legacy ``channels.weixin`` key to
         # ``channels.wechat`` and rewrite the file on disk so future loads
         # see the canonical key directly. This rewrite must happen BEFORE
-        # any in-memory normalization (e.g. ~/.copaw path rewriting) so we
+        # any in-memory normalization (e.g. ~/.openspider path rewriting) so we
         # only persist the key rename, not unrelated runtime transforms.
         channels = data.get("channels")
         if isinstance(channels, dict) and "weixin" in channels:
@@ -1856,9 +1856,9 @@ def load_agent_config(agent_id: str) -> AgentProfileConfig:
             except OSError:
                 pass
 
-        # Normalize legacy ~/.copaw-bound paths to current WORKING_DIR.
+        # Normalize legacy ~/.openspider-bound paths to current WORKING_DIR.
         # This keeps QWENPAW_WORKING_DIR effective even if existing agent.json
-        # contains older hard-coded paths like "~/.copaw/media".
+        # contains older hard-coded paths like "~/.openspider/media".
         # NOTE: this transform is applied in-memory only; it must not be
         # persisted back to disk.
         try:
@@ -1958,7 +1958,7 @@ def migrate_legacy_config_to_multi_agent() -> bool:
     default_agent_config = AgentProfileConfig(
         id="default",
         name="Default Agent",
-        description="Default QwenPaw agent",
+        description="Default OpenSpider agent",
         workspace_dir=str(default_workspace),
         channels=config.channels if config.channels else None,
         mcp=config.mcp if config.mcp else None,
@@ -1998,8 +1998,8 @@ def migrate_legacy_config_to_multi_agent() -> bool:
 
     # Migrate existing workspace files from legacy default working dir.
     # When QWENPAW_WORKING_DIR is customized, historical data may still exist
-    # under "~/.copaw".
-    old_workspace = Path("~/.copaw").expanduser().resolve()
+    # under "~/.openspider".
+    old_workspace = Path("~/.openspider").expanduser().resolve()
 
     # Move sessions, memory, and other workspace files
     for item_name in ["sessions", "memory", "jobs.json"]:

@@ -13,10 +13,10 @@ from typing import TYPE_CHECKING, Any, List
 from agentscope.model import ChatModelBase
 from openai import APIError
 
-from qwenpaw.providers.provider import ModelInfo, Provider
+from openspider.providers.provider import ModelInfo, Provider
 
 if TYPE_CHECKING:
-    from qwenpaw.providers.multimodal_prober import ProbeResult
+    from openspider.providers.multimodal_prober import ProbeResult
 
 logger = logging.getLogger(__name__)
 

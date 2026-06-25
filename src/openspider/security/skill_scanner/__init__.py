@@ -20,7 +20,7 @@ orchestrator.
 
 Quick start::
 
-    from qwenpaw.security.skill_scanner import SkillScanner
+    from openspider.security.skill_scanner import SkillScanner
 
     scanner = SkillScanner()
     result = scanner.scan_skill("/path/to/skill_directory")
@@ -98,7 +98,7 @@ def _get_scan_mode(cfg: Any = None) -> str:
 
     Priority: env ``QWENPAW_SKILL_SCAN_MODE`` > config > default ``warn``.
     """
-    env = EnvVarLoader.get_str("QWENPAW_SKILL_SCAN_MODE") or None
+    env = EnvVarLoader.get_str("OPENSPIDER_SKILL_SCAN_MODE") or None
     if env is not None:
         val = env.lower().strip()
         if val in _VALID_MODES:

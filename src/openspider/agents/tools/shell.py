@@ -282,8 +282,8 @@ def _execute_subprocess_sync(
             # POSIX-like shell on Windows (e.g. Git Bash, MSYS2)
             wrapped = [shell_executable, "-c", cmd]
 
-        stdout_fd, stdout_path = tempfile.mkstemp(prefix="qwenpaw_out_")
-        stderr_fd, stderr_path = tempfile.mkstemp(prefix="qwenpaw_err_")
+        stdout_fd, stdout_path = tempfile.mkstemp(prefix="OPENSPIDER_out_")
+        stderr_fd, stderr_path = tempfile.mkstemp(prefix="OPENSPIDER_err_")
         stdout_file = os.fdopen(stdout_fd, "wb")
         stderr_file = os.fdopen(stderr_fd, "wb")
 

@@ -6,8 +6,8 @@
 import pytest
 from agentscope.message import Msg
 
-from qwenpaw.agents.context.as_msg_handler import AsMsgHandler
-from qwenpaw.agents.utils.estimate_token_counter import EstimatedTokenCounter
+from openspider.agents.context.as_msg_handler import AsMsgHandler
+from openspider.agents.utils.estimate_token_counter import EstimatedTokenCounter
 
 
 class MockTokenCounter(EstimatedTokenCounter):

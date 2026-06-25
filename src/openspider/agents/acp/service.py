@@ -282,7 +282,7 @@ class ACPService:
                 protocol_version=PROTOCOL_VERSION,
                 capabilities=ClientCapabilities(),
                 client_info=Implementation(
-                    name="qwenpaw-acp-service",
+                    name="openspider-acp-service",
                     version="0.1.0",
                 ),
             )

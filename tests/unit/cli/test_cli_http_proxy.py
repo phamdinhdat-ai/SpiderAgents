@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-from qwenpaw.agents.tools import agent_management
-from qwenpaw.cli import http as cli_http
+from openspider.agents.tools import agent_management
+from openspider.cli import http as cli_http
 
 
 # CLI API clients hit the local QwenPaw service, so loopback URLs skip proxies.

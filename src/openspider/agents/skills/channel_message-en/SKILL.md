@@ -1,6 +1,6 @@
 ---
 name: channel_message
-description: Use this skill to proactively send a one-way message to a user/session/channel, usually only when the user explicitly asks to send to a channel/session or when proactive notification is needed. First query sessions with qwenpaw chats list, then push with qwenpaw channels send.
+description: Use this skill to proactively send a one-way message to a user/session/channel, usually only when the user explicitly asks to send to a channel/session or when proactive notification is needed. First query sessions with openspider chats list, then push with openspider channels send.
 metadata:
   builtin_skill_version: "1.3"
   qwenpaw:
@@ -22,7 +22,7 @@ This is a **one-way send** — **no reply is returned**.
 - The user explicitly says "notify me when done"
 
 ### Should Not Use
-- If you are simply replying in the current session, **do not use `qwenpaw channels send`**
+- If you are simply replying in the current session, **do not use `openspider channels send`**
 - You need a two-way conversation and expect an immediate reply
 - You do not know which target session to use
 - You are guessing `target-user` or `target-session`
@@ -42,19 +42,19 @@ This is a **one-way send** — **no reply is returned**.
 ### 1) Query available sessions first
 
 ```bash
-qwenpaw chats list --agent-id <your_agent> --channel <channel>
+openspider chats list --agent-id <your_agent> --channel <channel>
 ```
 
 You can also filter by user:
 
 ```bash
-qwenpaw chats list --agent-id <your_agent> --user-id <user_id>
+openspider chats list --agent-id <your_agent> --user-id <user_id>
 ```
 
 ### 2) Send a message
 
 ```bash
-qwenpaw channels send \
+openspider channels send \
   --agent-id <your_agent> \
   --channel <channel> \
   --target-user <user_id> \
@@ -68,10 +68,10 @@ qwenpaw channels send \
 
 ```
 1. Determine: is the user explicitly requesting a send, or is proactive notification needed?
-2. qwenpaw chats list — query the target session
+2. openspider chats list — query the target session
 3. Extract user_id and session_id from the results
 4. If multiple sessions exist, prefer the most recently active one
-5. qwenpaw channels send — send the message
+5. openspider channels send — send the message
 6. Done (no reply)
 ```
 
@@ -81,7 +81,7 @@ qwenpaw channels send \
 
 ### Required Parameters
 
-`qwenpaw channels send` requires all of the following:
+`openspider channels send` requires all of the following:
 - `--agent-id`
 - `--channel`
 - `--target-user`
@@ -93,7 +93,7 @@ qwenpaw channels send \
 Before sending, run:
 
 ```bash
-qwenpaw chats list --agent-id <your_agent> --channel <channel>
+openspider chats list --agent-id <your_agent> --channel <channel>
 ```
 
 Extract from the results:
@@ -104,7 +104,7 @@ If there are multiple candidate sessions, prefer the one with the most recent `u
 
 ### One-Way Push
 
-`qwenpaw channels send` only sends — it does not wait for a reply.
+`openspider channels send` only sends — it does not wait for a reply.
 
 ---
 
@@ -113,9 +113,9 @@ If there are multiple candidate sessions, prefer the one with the most recent `u
 ### User explicitly asks to send to a channel
 
 ```bash
-qwenpaw chats list --agent-id notify_bot --channel feishu
+openspider chats list --agent-id notify_bot --channel feishu
 
-qwenpaw channels send \
+openspider channels send \
   --agent-id notify_bot \
   --channel feishu \
   --target-user manager_id \
@@ -126,9 +126,9 @@ qwenpaw channels send \
 ### Task completion notification
 
 ```bash
-qwenpaw chats list --agent-id task_bot --channel console
+openspider chats list --agent-id task_bot --channel console
 
-qwenpaw channels send \
+openspider channels send \
   --agent-id task_bot \
   --channel console \
   --target-user alice \
@@ -139,9 +139,9 @@ qwenpaw channels send \
 ### Async result push-back
 
 ```bash
-qwenpaw chats list --agent-id analyst_bot --user-id alice
+openspider chats list --agent-id analyst_bot --user-id alice
 
-qwenpaw channels send \
+openspider channels send \
   --agent-id analyst_bot \
   --channel console \
   --target-user alice \
@@ -155,14 +155,14 @@ qwenpaw channels send \
 
 ### Mistake 1: Using channel send for a normal reply
 
-If you are replying to the user in the current session, do not use `qwenpaw channels send`.
+If you are replying to the user in the current session, do not use `openspider channels send`.
 
 ### Mistake 2: Sending without querying sessions first
 
 Do not guess `target-user` or `target-session`. First run:
 
 ```bash
-qwenpaw chats list --agent-id <your_agent> --channel <channel>
+openspider chats list --agent-id <your_agent> --channel <channel>
 ```
 
 ### Mistake 3: Missing required parameters
@@ -184,37 +184,37 @@ Prefer the most recently active session.
 ### List all sessions
 
 ```bash
-qwenpaw chats list --agent-id <your_agent>
+openspider chats list --agent-id <your_agent>
 ```
 
 ### List sessions for a specific user
 
 ```bash
-qwenpaw chats list --agent-id <your_agent> --user-id <user_id>
+openspider chats list --agent-id <your_agent> --user-id <user_id>
 ```
 
 ### List available channels
 
 ```bash
-qwenpaw channels list --agent-id <your_agent>
+openspider channels list --agent-id <your_agent>
 ```
 
 ---
 
 ## Difference from Agent Chat
 
-- **qwenpaw agents chat**: sends to another agent, two-way, returns a reply
-- **qwenpaw channels send**: sends to a user/session/channel, one-way, no reply
+- **openspider agents chat**: sends to another agent, two-way, returns a reply
+- **openspider channels send**: sends to a user/session/channel, one-way, no reply
 
 **Selection principle**:
-- Need to collaborate with another agent → `qwenpaw agents chat`
-- Need to proactively push a message to a user → `qwenpaw channels send`
+- Need to collaborate with another agent → `openspider agents chat`
+- Need to proactively push a message to a user → `openspider channels send`
 
 ---
 
 ## Full Parameter Reference
 
-### qwenpaw chats list
+### openspider chats list
 
 **Required parameters**:
 - `--agent-id`: Agent ID
@@ -224,13 +224,13 @@ qwenpaw channels list --agent-id <your_agent>
 - `--user-id`: filter by user
 - `--base-url`: override API address
 
-### qwenpaw channels send
+### openspider channels send
 
 **Required parameters** (5):
 - `--agent-id`: sender agent ID
 - `--channel`: target channel (console/dingtalk/feishu/discord/imessage/qq/...)
-- `--target-user`: target user ID (obtained from `qwenpaw chats list`)
-- `--target-session`: target session ID (obtained from `qwenpaw chats list`)
+- `--target-user`: target user ID (obtained from `openspider chats list`)
+- `--target-session`: target session ID (obtained from `openspider chats list`)
 - `--text`: message content
 
 **Optional parameters**:
@@ -243,8 +243,8 @@ qwenpaw channels list --agent-id <your_agent>
 Use `-h` at any time to view detailed help:
 
 ```bash
-qwenpaw channels -h
-qwenpaw channels send -h
-qwenpaw chats -h
-qwenpaw chats list -h
+openspider channels -h
+openspider channels send -h
+openspider chats -h
+openspider chats list -h
 ```

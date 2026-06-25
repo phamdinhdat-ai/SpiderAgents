@@ -43,9 +43,9 @@ jobs:
 
       - name: Copy console build into package
         run: |
-          rm -rf src/qwenpaw/console/*
-          mkdir -p src/qwenpaw/console
-          cp -R console/dist/* src/qwenpaw/console/
+          rm -rf src/openspider/console/*
+          mkdir -p src/openspider/console
+          cp -R console/dist/* src/openspider/console/
 
       - name: Install build dependencies
         run: |
@@ -59,7 +59,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.force_push_to_pypi != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: qwenpaw-wheel
+          name: openspider-wheel
           path: dist/*.whl
           retention-days: 30
 

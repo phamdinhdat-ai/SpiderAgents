@@ -52,7 +52,7 @@ def _should_skip_keyring() -> bool:
     Covers Docker containers, headless Linux servers, and CI
     environments where attempting keyring access could hang on D-Bus.
     """
-    if EnvVarLoader.get_bool("QWENPAW_RUNNING_IN_CONTAINER"):
+    if EnvVarLoader.get_bool("OPENSPIDER_RUNNING_IN_CONTAINER"):
         return True
 
     import sys

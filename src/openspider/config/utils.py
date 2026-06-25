@@ -50,14 +50,14 @@ _agent_config_lock = threading.Lock()
 
 
 def _normalize_working_dir_bound_paths(data: object) -> object:
-    """Normalize legacy ~/.copaw-bound paths to current WORKING_DIR.
+    """Normalize legacy ~/.openspider-bound paths to current WORKING_DIR.
 
-    This keeps QWENPAW_WORKING_DIR effective even if user config files contain
-    older hard-coded paths like "~/.copaw/media" or
+    This keeps OPENSPIDER_WORKING_DIR effective even if user config files contain
+    older hard-coded paths like "~/.openspider/media" or
     "/Users/x/.copaw/workspaces/...".
     Only rewrites known working-dir-bound keys.
     """
-    legacy_root_tilde = "~/.copaw"
+    legacy_root_tilde = "~/.openspider"
     legacy_root_abs = str(Path(legacy_root_tilde).expanduser().resolve())
     new_root_abs = str(WORKING_DIR)
 
@@ -353,12 +353,12 @@ def get_system_default_browser() -> Tuple[Optional[str], Optional[str]]:
 
 def get_available_channels() -> Tuple[str, ...]:
     """Return channel keys enabled for this run (built-in + entry point
-    qwenpaw.channels), filtered by QWENPAW_ENABLED_CHANNELS or
-    QWENPAW_DISABLED_CHANNELS when set.
+    openspider.channels), filtered by OPENSPIDER_ENABLED_CHANNELS or
+    OPENSPIDER_DISABLED_CHANNELS when set.
 
-    * QWENPAW_ENABLED_CHANNELS — whitelist (only these channels are active).
-    * QWENPAW_DISABLED_CHANNELS — blacklist (all channels *except* these).
-    * If both are set, QWENPAW_ENABLED_CHANNELS takes precedence.
+    * OPENSPIDER_ENABLED_CHANNELS — whitelist (only these channels are active).
+    * OPENSPIDER_DISABLED_CHANNELS — blacklist (all channels *except* these).
+    * If both are set, OPENSPIDER_ENABLED_CHANNELS takes precedence.
     * If neither is set, all discovered channels are returned.
     """
     from ..app.channels.registry import get_channel_registry
@@ -366,13 +366,13 @@ def get_available_channels() -> Tuple[str, ...]:
     registry = get_channel_registry()
     all_keys = tuple(registry.keys())
 
-    raw_enabled = EnvVarLoader.get_str("QWENPAW_ENABLED_CHANNELS", "").strip()
+    raw_enabled = EnvVarLoader.get_str("OPENSPIDER_ENABLED_CHANNELS", "").strip()
     if raw_enabled:
         enabled = {ch.strip() for ch in raw_enabled.split(",") if ch.strip()}
         return tuple(k for k in all_keys if k in enabled) or all_keys
 
     raw_disabled = EnvVarLoader.get_str(
-        "QWENPAW_DISABLED_CHANNELS",
+        "OPENSPIDER_DISABLED_CHANNELS",
         "",
     ).strip()
     if raw_disabled:
@@ -384,7 +384,7 @@ def get_available_channels() -> Tuple[str, ...]:
 
 def is_running_in_container() -> bool:
     """Return True if running inside a container (Docker/Kubernetes).
-    Prefer env QWENPAW_RUNNING_IN_CONTAINER (1/true/yes) at call time so
+    Prefer env OPENSPIDER_RUNNING_IN_CONTAINER (1/true/yes) at call time so
     supervisord child gets correct value; else check /.dockerenv and cgroup.
     """
     if RUNNING_IN_CONTAINER:
@@ -830,11 +830,11 @@ def get_agent_dirs() -> list[Path]:
     return agent_dirs
 
 
-def is_qwenpaw_running() -> bool:
-    """Check if QwenPaw is currently running by checking API availability.
+def is_openspider_running() -> bool:
+    """Check if OpenSpider is currently running by checking API availability.
 
     Returns:
-        True if QwenPaw is running, False otherwise
+        True if OpenSpider is running, False otherwise
     """
     try:
         # Read last API host/port

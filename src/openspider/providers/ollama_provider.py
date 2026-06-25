@@ -7,7 +7,7 @@ from typing import Any
 from agentscope.model import ChatModelBase
 from openai import AsyncOpenAI
 
-from qwenpaw.providers.openai_provider import OpenAIProvider
+from openspider.providers.openai_provider import OpenAIProvider
 
 
 class OllamaProvider(OpenAIProvider):

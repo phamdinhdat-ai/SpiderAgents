@@ -87,7 +87,7 @@ def _resolve_output_path(path: str) -> str:
 # to avoid NotImplementedError with asyncio.create_subprocess_exec.
 # On other platforms or without reload, use async Playwright for better performance.
 _USE_SYNC_PLAYWRIGHT = sys.platform == "win32" and EnvVarLoader.get_bool(
-    "QWENPAW_RELOAD_MODE",
+    "OPENSPIDER_RELOAD_MODE",
 )
 
 if _USE_SYNC_PLAYWRIGHT:
@@ -317,7 +317,7 @@ def _ensure_playwright_async():
         return async_playwright
     except ImportError as exc:
         raise ImportError(
-            "Playwright not installed. Use the same Python that runs QwenPaw (e.g. "
+            "Playwright not installed. Use the same Python that runs OpenSpider (e.g. "
             "activate your venv or use 'uv run'): "
             f"'{sys.executable}' -m pip install playwright && "
             f"'{sys.executable}' -m playwright install",
@@ -332,7 +332,7 @@ def _ensure_playwright_sync():
         return sync_playwright
     except ImportError as exc:
         raise ImportError(
-            "Playwright not installed. Use the same Python that runs QwenPaw (e.g. "
+            "Playwright not installed. Use the same Python that runs OpenSpider (e.g. "
             "activate your venv or use 'uv run'): "
             f"'{sys.executable}' -m pip install playwright && "
             f"'{sys.executable}' -m playwright install",
@@ -349,7 +349,7 @@ def _sync_browser_launch(
     sync_playwright = _ensure_playwright_sync()
     pw = sync_playwright().start()  # Start without context manager
     use_default = not is_running_in_container() and EnvVarLoader.get_bool(
-        "QWENPAW_BROWSER_USE_DEFAULT",
+        "OPENSPIDER_BROWSER_USE_DEFAULT",
         True,
     )
     default_kind, default_path = (
@@ -424,7 +424,7 @@ def _sync_browser_close(state: dict):
 def _resolve_chromium_launch_target() -> tuple[Optional[str], Optional[str]]:
     """Return (browser_kind, executable_path) for Chromium-family launches."""
     use_default = not is_running_in_container() and EnvVarLoader.get_bool(
-        "QWENPAW_BROWSER_USE_DEFAULT",
+        "OPENSPIDER_BROWSER_USE_DEFAULT",
         True,
     )
     default_kind, default_path = (
@@ -3647,12 +3647,12 @@ async def browser_use(  # pylint: disable=R0911,R0912
             (non-headless). User can see the real browser. Default False.
         cdp_port (int):
             When > 0 with action=start, use the specified CDP port. When 0,
-            QwenPaw chooses a free local port automatically for managed CDP.
+            OpenSpider chooses a free local port automatically for managed CDP.
         private_mode (bool):
             When True with action=start, force direct Playwright management
             instead of managed CDP. Use this when the user explicitly does not
             want the browser to be connectable by other local tools/workspaces
-            via CDP. Default False. By default, QwenPaw prefers managed CDP for
+            via CDP. Default False. By default, OpenSpider prefers managed CDP for
             both headless and headed starts.
         browser_args (str):
             Extra Chromium launch arguments, e.g. "--incognito" or

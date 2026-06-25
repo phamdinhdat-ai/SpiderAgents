@@ -38,12 +38,12 @@ def _guard_enabled() -> bool:
 
     Priority: env var > config.json > default (True).
     """
-    env_val = EnvVarLoader.get_str("QWENPAW_TOOL_GUARD_ENABLED") or None
+    env_val = EnvVarLoader.get_str("OPENSPIDER_TOOL_GUARD_ENABLED") or None
     if env_val is not None:
         return env_val.lower() in _TRUE_STRINGS
 
     try:
-        from qwenpaw.config import load_config
+        from openspider.config import load_config
 
         cfg = load_config()
         return cfg.security.tool_guard.enabled

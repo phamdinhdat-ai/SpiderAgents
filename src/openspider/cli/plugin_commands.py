@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_api_base() -> Optional[str]:
-    """Return the base URL of the running QwenPaw API, or None.
+    """Return the base URL of the running OpenSpider API, or None.
 
     Returns:
         Base URL string such as ``http://127.0.0.1:8088/api`` if the
@@ -41,7 +41,7 @@ def _get_api_base() -> Optional[str]:
 
 
 def _api_install_plugin(source: str, force: bool = False) -> bool:
-    """Send a hot-install request to the running QwenPaw API.
+    """Send a hot-install request to the running OpenSpider API.
 
     Uses the localhost auth-bypass so no credentials are required.
 
@@ -85,7 +85,7 @@ def _api_install_plugin(source: str, force: bool = False) -> bool:
 
 
 def _api_upload_plugin(zip_path: Path, force: bool = False) -> bool:
-    """Send a ZIP file to the running QwenPaw API for hot-install.
+    """Send a ZIP file to the running OpenSpider API for hot-install.
 
     Args:
         zip_path: Path to the plugin .zip archive
@@ -145,7 +145,7 @@ def _api_upload_plugin(zip_path: Path, force: bool = False) -> bool:
 
 
 def _api_uninstall_plugin(plugin_id: str) -> bool:
-    """Send a hot-uninstall request to the running QwenPaw API.
+    """Send a hot-uninstall request to the running OpenSpider API.
 
     Args:
         plugin_id: ID of the plugin to remove
@@ -303,14 +303,14 @@ def _install_requirements_cli(
 
 
 def _is_running() -> bool:
-    """Return whether QwenPaw is currently running.
+    """Return whether OpenSpider is currently running.
 
     Returns:
         ``True`` if the API is reachable, ``False`` otherwise.
     """
-    from ..config.utils import is_qwenpaw_running
+    from ..config.utils import is_openspider_running
 
-    return is_qwenpaw_running()
+    return is_openspider_running()
 
 
 def _safe_extract_zip(zip_ref: zipfile.ZipFile, extract_path: Path):
@@ -507,19 +507,19 @@ def plugin():
 def install(source: str, force: bool):
     """Install a plugin from local path or URL.
 
-    When QwenPaw is running, the plugin is hot-loaded immediately via
-    the API (no restart required).  When QwenPaw is stopped, the
+    When OpenSpider is running, the plugin is hot-loaded immediately via
+    the API (no restart required).  When OpenSpider is stopped, the
     plugin files are copied and will be loaded on next start.
 
     Examples:
-        qwenpaw plugin install examples/plugins/idealab-provider
-        qwenpaw plugin install /path/to/plugin
-        qwenpaw plugin install https://example.com/plugin.zip
+        OpenSpider plugin install examples/plugins/idealab-provider
+        OpenSpider plugin install /path/to/plugin
+        OpenSpider plugin install https://example.com/plugin.zip
     """
     # If the app is running, delegate to the live API for hot-install
     if _is_running():
         click.echo(
-            "QwenPaw is running — using hot-install via API...",
+            "OpenSpider is running — using hot-install via API...",
         )
         is_url = source.startswith(("http://", "https://"))
         if is_url:
@@ -665,7 +665,7 @@ def install(source: str, force: bool):
             pass
 
     click.echo("\nNext steps:")
-    click.echo("   1. Start QwenPaw to load the plugin")
+    click.echo("   1. Start OpenSpider to load the plugin")
     click.echo("   2. Configure the plugin in the web UI")
 
 
@@ -797,8 +797,8 @@ def uninstall(plugin_id: str):
     PLUGIN_ID may be either the plugin's ID (e.g. ``gpt-image2-tool``)
     or a path to the plugin directory (e.g. ``plugins/tool/gpt-image2``).
 
-    When QwenPaw is running, the plugin is unloaded immediately via
-    the API (no restart required).  When QwenPaw is stopped, only the
+    When OpenSpider is running, the plugin is unloaded immediately via
+    the API (no restart required).  When OpenSpider is stopped, only the
     plugin files are removed from disk.
     """
     # Support passing a directory path in addition to a bare plugin ID
@@ -813,7 +813,7 @@ def uninstall(plugin_id: str):
     # If the app is running, delegate to the live API for hot-uninstall
     if _is_running():
         click.echo(
-            "QwenPaw is running — using hot-uninstall via API...",
+            "OpenSpider is running — using hot-uninstall via API...",
         )
         if not click.confirm(
             f"Uninstall plugin '{resolved_id}'?",

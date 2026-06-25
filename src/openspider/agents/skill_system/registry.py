@@ -236,7 +236,7 @@ def _skill_config_env_var_name(skill_name: str) -> str:
         for char in str(skill_name or "").upper()
     ]
     return (
-        f"QWENPAW_SKILL_CONFIG_{''.join(normalized).strip('_') or 'DEFAULT'}"
+        f"OPENSPIDER_SKILL_CONFIG_{''.join(normalized).strip('_') or 'DEFAULT'}"
     )
 
 

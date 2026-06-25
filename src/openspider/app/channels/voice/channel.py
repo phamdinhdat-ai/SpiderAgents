@@ -127,8 +127,8 @@ class VoiceChannel(BaseChannel):
             return
 
         # Start Cloudflare tunnel pointing at the app's serving port
-        from qwenpaw.tunnel import CloudflareTunnelDriver
-        from qwenpaw.config.utils import read_last_api
+        from openspider.tunnel import CloudflareTunnelDriver
+        from openspider.config.utils import read_last_api
 
         self.tunnel_mgr = CloudflareTunnelDriver()
         api_info = read_last_api()

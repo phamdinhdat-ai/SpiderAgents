@@ -50,7 +50,7 @@ from ..utils.logging import setup_logger, SuppressPathAccessLogFilter
     default=None,
     help="[DEPRECATED] Number of worker processes. "
     "This option is deprecated and will be removed in a future version. "
-    "QwenPaw always uses 1 worker.",
+    "OpenSpider always uses 1 worker.",
 )
 def app_cmd(
     host: str,
@@ -60,7 +60,7 @@ def app_cmd(
     log_level: str,
     hide_access_paths: tuple[str, ...],
 ) -> None:
-    """Run QwenPaw FastAPI app."""
+    """Run OpenSpider FastAPI app."""
     # Handle deprecated --workers parameter
     if workers is not None:
         click.echo(
@@ -69,7 +69,7 @@ def app_cmd(
             err=True,
         )
         click.echo(
-            "   QwenPaw always uses 1 worker for stability. "
+            "   OpenSpider always uses 1 worker for stability. "
             "Your specified value will be ignored.",
             err=True,
         )
@@ -85,9 +85,9 @@ def app_cmd(
     # Signal reload mode to browser_control.py for Windows
     # compatibility: use sync Playwright + ThreadPool only when reload=True
     if reload:
-        os.environ["QWENPAW_RELOAD_MODE"] = "1"
+        os.environ["OPENSPIDER_RELOAD_MODE"] = "1"
     else:
-        os.environ.pop("QWENPAW_RELOAD_MODE", None)
+        os.environ.pop("OPENSPIDER_RELOAD_MODE", None)
 
     setup_logger(log_level)
     if log_level in ("debug", "trace"):
@@ -102,7 +102,7 @@ def app_cmd(
         )
 
     uvicorn.run(
-        "qwenpaw.app._app:app",
+        "openspider.app._app:app",
         host=host,
         port=port,
         reload=reload,

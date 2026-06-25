@@ -415,7 +415,7 @@ def format_background_status_text(
 async def list_agents(
     base_url: Optional[str] = None,
 ) -> ToolResponse:
-    """List all configured agents from the QwenPaw service.
+    """List all configured agents from the OpenSpider service.
 
     Returns:
         `ToolResponse`:

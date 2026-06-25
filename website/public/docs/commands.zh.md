@@ -426,7 +426,7 @@ Example: `/model openai:gpt-4o`
 
 - 🖼️ - 支持图片输入
 - 🎥 - 支持视频输入
-- _(user-added)_ - 用户手动添加的模型（通过 `qwenpaw models add-model` 命令）
+- _(user-added)_ - 用户手动添加的模型（通过 `openspider models add-model` 命令）
 
 ---
 
@@ -528,9 +528,9 @@ Use `/model openai:gpt-4o` to switch to this model.
 
 ## 系统控制命令
 
-控制和监控 QwenPaw 运行状态的命令，无需通过 Agent 理解意图，直接执行。
+控制和监控 openspider 运行状态的命令，无需通过 Agent 理解意图，直接执行。
 
-可在对话中发送 `/daemon <子命令>` 或短名（如 `/status`），也可在终端执行 `qwenpaw daemon <子命令>`。
+可在对话中发送 `/daemon <子命令>` 或短名（如 `/status`），也可在终端执行 `openspider daemon <子命令>`。
 
 | 命令                                | 说明                                                                         | 对话 | 终端 |
 | ----------------------------------- | ---------------------------------------------------------------------------- | ---- | ---- |
@@ -540,7 +540,7 @@ Use `/model openai:gpt-4o` to switch to this model.
 | `/daemon restart` 或 `/restart`     | 零停机重载（对话中）；终端中打印说明                                         | ✅   | ✅   |
 | `/daemon reload-config`             | 重新读取并校验配置文件                                                       | ✅   | ✅   |
 | `/daemon version`                   | 版本号、工作目录与日志路径                                                   | ✅   | ✅   |
-| `/daemon logs` 或 `/daemon logs 50` | 查看最近 N 行日志（默认 100 行，最大 2000 行，来自工作目录下 `qwenpaw.log`） | ✅   | ✅   |
+| `/daemon logs` 或 `/daemon logs 50` | 查看最近 N 行日志（默认 100 行，最大 2000 行，来自工作目录下 `openspider.log`） | ✅   | ✅   |
 | `/approval approve [request_id]`    | 批准待审的工具调用（无 ID 则批准队首）                                       | ✅   | ❌   |
 | `/approval deny [request_id]`       | 拒绝待审的工具调用，可附理由                                                 | ✅   | ❌   |
 | `/approval list`                    | 列出所有待审批请求                                                           | ✅   | ❌   |
@@ -573,7 +573,7 @@ Use `/model openai:gpt-4o` to switch to this model.
 
 ```
 /status                    # 在对话中
-qwenpaw daemon status        # 在终端
+openspider daemon status        # 在终端
 ```
 
 ---
@@ -586,7 +586,7 @@ qwenpaw daemon status        # 在终端
 
 ```
 /restart                   # 在对话中
-qwenpaw daemon restart       # 在终端（仅打印说明）
+openspider daemon restart       # 在终端（仅打印说明）
 ```
 
 > 💡 **提示**：修改频道或 MCP 配置后，先用 `/daemon reload-config` 验证配置正确性，再用 `/daemon restart` 使其生效。
@@ -601,34 +601,34 @@ qwenpaw daemon restart       # 在终端（仅打印说明）
 
 ```
 /daemon reload-config           # 在对话中
-qwenpaw daemon reload-config      # 在终端
+openspider daemon reload-config      # 在终端
 ```
 
 ---
 
 ### `/daemon version` - 版本信息
 
-显示 QwenPaw 版本号、工作目录路径、日志文件路径。
+显示 openspider 版本号、工作目录路径、日志文件路径。
 
 **用法：**
 
 ```
 /daemon version            # 在对话中
-qwenpaw daemon version       # 在终端
+openspider daemon version       # 在终端
 ```
 
 ---
 
 ### `/daemon logs` - 查看日志
 
-查看工作目录下 `qwenpaw.log` 的最近 N 行日志。默认 100 行，最大 2000 行。
+查看工作目录下 `openspider.log` 的最近 N 行日志。默认 100 行，最大 2000 行。
 
 **用法：**
 
 ```
 /daemon logs               # 默认 100 行
 /daemon logs 50            # 指定 50 行
-qwenpaw daemon logs -n 200   # 在终端指定 200 行
+openspider daemon logs -n 200   # 在终端指定 200 行
 ```
 
 > 💡 **提示**：日志文件较大时，此命令只读取文件末尾最多 512KB 内容，确保响应速度。
@@ -667,18 +667,18 @@ qwenpaw daemon logs -n 200   # 在终端指定 200 行
 所有 daemon 命令都支持在终端中使用（除 `/stop` 和 `/approval` 仅在对话中有效）：
 
 ```bash
-qwenpaw daemon status
-qwenpaw daemon restart
-qwenpaw daemon reload-config
-qwenpaw daemon version
-qwenpaw daemon logs -n 50
+openspider daemon status
+openspider daemon restart
+openspider daemon reload-config
+openspider daemon version
+openspider daemon logs -n 50
 ```
 
 **多智能体支持：** 所有终端命令都支持 `--agent-id` 参数（默认为 `default`）。
 
 ```bash
-qwenpaw daemon status --agent-id abc123
-qwenpaw daemon version --agent-id abc123
+openspider daemon status --agent-id abc123
+openspider daemon version --agent-id abc123
 ```
 
 ---
@@ -803,7 +803,7 @@ Agent 会修改 PRD，再次等待确认。
 - Phase: execution
 - Project: todo-cli-app
 - Progress: 2/4 stories passed
-- Loop dir: ~/.copaw/workspaces/default/missions/mission-20260415-123456
+- Loop dir: ~/.openspider/workspaces/default/missions/mission-20260415-123456
 
   ✅ US-001: 添加任务功能
   ✅ US-002: 列出任务功能
@@ -819,7 +819,7 @@ Agent 会修改 PRD，再次等待确认。
 
 ### 工作目录结构
 
-每个 mission 在 `~/.copaw/workspaces/default/missions/mission-<timestamp>/` 下创建工作目录：
+每个 mission 在 `~/.openspider/workspaces/default/missions/mission-<timestamp>/` 下创建工作目录：
 
 ```
 mission-20260415-123456/

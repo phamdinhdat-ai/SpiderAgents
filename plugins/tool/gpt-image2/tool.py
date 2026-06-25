@@ -11,7 +11,7 @@ from typing import List, Optional
 import httpx
 from agentscope.message import ImageBlock, TextBlock
 from agentscope.tool import ToolResponse
-from qwenpaw.constant import DEFAULT_MEDIA_DIR
+from openspider.constant import DEFAULT_MEDIA_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -584,8 +584,8 @@ def _get_tool_config(tool_name: str = "generate_image_gpt") -> Optional[dict]:
         dict or None: Tool config if configured, None otherwise
     """
     try:
-        from qwenpaw.plugins.registry import PluginRegistry
-        from qwenpaw.app.agent_context import get_current_agent_id
+        from openspider.plugins.registry import PluginRegistry
+        from openspider.app.agent_context import get_current_agent_id
 
         registry = PluginRegistry()
         if not registry:

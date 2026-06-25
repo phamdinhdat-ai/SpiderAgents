@@ -1,6 +1,6 @@
 # Long-term Memory
 
-**Long-term Memory** gives QwenPaw persistent memory across conversations: writes key information to Markdown files for
+**Long-term Memory** gives openspider persistent memory across conversations: writes key information to Markdown files for
 long-term storage, with semantic search for recall at any time.
 
 > The long-term memory mechanism is inspired by [OpenClaw](https://github.com/openclaw/openclaw) and implemented via **ReMeLight** from [ReMe](https://github.com/agentscope-ai/ReMe) — a file-based memory backend where memories are plain Markdown files that can be read, edited, and migrated directly.
@@ -175,13 +175,13 @@ graph LR
 
 ## Backup & Restore
 
-Backup & Restore is QwenPaw's backup and recovery capability, enabling safe saving and restoration of the entire agent environment for scenarios like version upgrades, cross-device migration, or undoing mistakes. Access: Console → Settings → Backup.
+Backup & Restore is openspider's backup and recovery capability, enabling safe saving and restoration of the entire agent environment for scenarios like version upgrades, cross-device migration, or undoing mistakes. Access: Console → Settings → Backup.
 
 ### Creating Backups
 
 **Backup Storage**
 
-All backups are saved as independent zip packages in `~/.qwenpaw/backups` (alongside the working directory `~/.qwenpaw`). Each backup contains `meta.json` metadata and packaged content files. The zip file is exported for easy migration. Note that backups do not include local model files; re-download is required for cross-device migration.
+All backups are saved as independent zip packages in `~/.openspider/backups` (alongside the working directory `~/.openspider`). Each backup contains `meta.json` metadata and packaged content files. The zip file is exported for easy migration. Note that backups do not include local model files; re-download is required for cross-device migration.
 
 **Backup Scope**
 

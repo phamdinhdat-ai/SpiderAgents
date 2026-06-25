@@ -625,7 +625,7 @@ def _extract_emoji_from_metadata(metadata: Any) -> str:
     """Extract emoji from metadata.qwenpaw.emoji."""
     if not isinstance(metadata, dict):
         return ""
-    qwenpaw = metadata.get("qwenpaw")
+    OpenSpider = metadata.get("qwenpaw")
     if isinstance(qwenpaw, dict):
         return str(qwenpaw.get("emoji", "") or "")
     return ""
@@ -752,7 +752,7 @@ def _extract_zip_skills(data: bytes) -> tuple[Path, list[tuple[Path, str]]]:
         raise SkillsError(
             message="Uploaded file is not a valid zip archive",
         )
-    tmp_dir = Path(tempfile.mkdtemp(prefix="qwenpaw_skill_upload_"))
+    tmp_dir = Path(tempfile.mkdtemp(prefix="OPENSPIDER_skill_upload_"))
     _extract_and_validate_zip(data, tmp_dir)
     real_entries = [
         path for path in tmp_dir.iterdir() if not _is_hidden(path.name)
@@ -788,7 +788,7 @@ def _scan_skill_dir_or_raise(skill_dir: Path, skill_name: str) -> None:
 def _staged_skill_dir(skill_name: str) -> Iterator[Path]:
     """Create a temporary skill directory used for staged writes."""
     temp_root = Path(
-        tempfile.mkdtemp(prefix=f"qwenpaw_skill_stage_{skill_name}_"),
+        tempfile.mkdtemp(prefix=f"OPENSPIDER_skill_stage_{skill_name}_"),
     )
     stage_dir = temp_root / skill_name
     try:

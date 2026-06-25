@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Context management module for QwenPaw agents."""
+"""Context management module for OpenSpider agents."""
 
 from .agent_context import AgentContext
 from .as_msg_handler import AsMsgHandler

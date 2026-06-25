@@ -1,10 +1,10 @@
 # Security
 
-QwenPaw includes built-in security features to protect your agent from malicious inputs and unsafe skills. These are configured in the Console under **Settings → Security**, or via `config.json`.
+openspider includes built-in security features to protect your agent from malicious inputs and unsafe skills. These are configured in the Console under **Settings → Security**, or via `config.json`.
 
 ## Overview
 
-QwenPaw's security system consists of three core security layers:
+openspider's security system consists of three core security layers:
 
 ```
 Security Architecture:
@@ -78,7 +78,7 @@ In `config.json`:
 
 | Field                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`              | Enable or disable Tool Guard entirely. Can also be set via the `QWENPAW_TOOL_GUARD_ENABLED` environment variable (takes precedence).                                                                                                                                                                                                                                                                                                  |
+| `enabled`              | Enable or disable Tool Guard entirely. Can also be set via the `openspider_TOOL_GUARD_ENABLED` environment variable (takes precedence).                                                                                                                                                                                                                                                                                                  |
 | `guarded_tools`        | Specify guard scope:<br>• `null` (default) — guard all built-in tools<br>• `[]` — guard nothing<br>• `["tool_a", "tool_b"]` — guard only listed tools                                                                                                                                                                                                                                                                                 |
 | `denied_tools`         | Tools that are always blocked regardless of parameters.                                                                                                                                                                                                                                                                                                                                                                               |
 | `custom_rules`         | User-defined regex rules (see format below).                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -285,7 +285,7 @@ File Guard operates as the "File Path Guardian" within the Tool Guard engine, wo
 4. **Recursive directory protection** — Paths ending with `/` are treated as directories; all files and subdirectories within are recursively blocked
 5. **Blocking mechanism** — When a match is found, the tool call is blocked with a HIGH-severity finding
 
-**Default protection**: The `{WORKING_DIR}.secret/` directory (which stores API keys, authentication credentials, and provider configurations) is included in the sensitive-file list by default. By default, `WORKING_DIR` is `~/.qwenpaw/`, making the full path `~/.qwenpaw.secret/`.
+**Default protection**: The `{WORKING_DIR}.secret/` directory (which stores API keys, authentication credentials, and provider configurations) is included in the sensitive-file list by default. By default, `WORKING_DIR` is `~/.openspider/`, making the full path `~/.openspider.secret/`.
 
 ### Configuration
 
@@ -296,7 +296,7 @@ In `config.json`:
   "security": {
     "file_guard": {
       "enabled": true,
-      "sensitive_files": ["~/.ssh/", "/etc/passwd", "~/.qwenpaw.secret/"]
+      "sensitive_files": ["~/.ssh/", "/etc/passwd", "~/.openspider.secret/"]
     }
   }
 }
@@ -365,7 +365,7 @@ The **Skill Scanner** automatically scans skills for security threats before the
 | **Warn**  | Scan and record findings, but allow the skill to proceed. Shows warning notification and logs to Scan Alerts. (default) |
 | **Off**   | Disable scanning entirely; all skills pass through directly.                                                            |
 
-**Configuration priority**: Environment variable `QWENPAW_SKILL_SCAN_MODE` > Console settings > `config.json`
+**Configuration priority**: Environment variable `openspider_SKILL_SCAN_MODE` > Console settings > `config.json`
 
 Valid values: `block`, `warn`, `off`
 
@@ -443,11 +443,11 @@ In the Console under **Settings → Security → Skill Scanner** tab, you can:
 
 For scenarios requiring deep customization, the scanner supports programmatic configuration:
 
-The scanner uses YAML rule files in `src/qwenpaw/security/skill_scanner/rules/signatures/`. You can customize the scan policy via a YAML policy file:
+The scanner uses YAML rule files in `src/openspider/security/skill_scanner/rules/signatures/`. You can customize the scan policy via a YAML policy file:
 
 ```python
-from qwenpaw.security.skill_scanner import SkillScanner
-from qwenpaw.security.skill_scanner.scan_policy import ScanPolicy
+from openspider.security.skill_scanner import SkillScanner
+from openspider.security.skill_scanner.scan_policy import ScanPolicy
 
 policy = ScanPolicy.from_yaml("my_org_policy.yaml")
 scanner = SkillScanner(policy=policy)
@@ -563,7 +563,7 @@ Here's a complete `config.json` with all security features configured:
       "enabled": true,
       "sensitive_files": [
         "~/.ssh/",
-        "~/.qwenpaw.secret/",
+        "~/.openspider.secret/",
         "/etc/passwd",
         "/etc/shadow",
         ".env",
@@ -589,13 +589,13 @@ Here's a complete `config.json` with all security features configured:
 
 ## Web Authentication
 
-QwenPaw supports optional web login authentication to protect the Console from unauthorized access. Authentication is **disabled by default** and must be explicitly enabled via the `QWENPAW_AUTH_ENABLED` environment variable.
+openspider supports optional web login authentication to protect the Console from unauthorized access. Authentication is **disabled by default** and must be explicitly enabled via the `openspider_AUTH_ENABLED` environment variable.
 
 ![login](https://img.alicdn.com/imgextra/i1/O1CN01wh3Sv01SxPEXpb6Wj_!!6000000002313-2-tps-3822-2070.png)
 
 ### How it works
 
-1. **Enable authentication** — Set `QWENPAW_AUTH_ENABLED=true` and start QwenPaw
+1. **Enable authentication** — Set `openspider_AUTH_ENABLED=true` and start openspider
 2. **Registration flow**:
    - On first visit, the Console shows a **registration page**
    - Create the single admin account (username + password)
@@ -605,10 +605,10 @@ QwenPaw supports optional web login authentication to protect the Console from u
    - After entering credentials, a signed token is generated (valid for 7 days)
    - Token is stored in browser localStorage and automatically attached to all API requests
 4. **Auto-registration** (optional):
-   - Set `QWENPAW_AUTH_USERNAME` and `QWENPAW_AUTH_PASSWORD` environment variables
-   - QwenPaw automatically creates the admin account on startup, skipping web registration
+   - Set `openspider_AUTH_USERNAME` and `openspider_AUTH_PASSWORD` environment variables
+   - openspider automatically creates the admin account on startup, skipping web registration
    - Useful for Docker, Kubernetes, server management panels, and other automated deployments
-5. **Localhost bypass** — Requests from localhost (`127.0.0.1` / `::1`) automatically skip authentication; CLI commands (`qwenpaw app`, `qwenpaw chat`, etc.) work without a token
+5. **Localhost bypass** — Requests from localhost (`127.0.0.1` / `::1`) automatically skip authentication; CLI commands (`openspider app`, `openspider chat`, etc.) work without a token
 
 **Security features**:
 
@@ -621,9 +621,9 @@ QwenPaw supports optional web login authentication to protect the Console from u
 
 | Variable                | Description                                  | Required |
 | ----------------------- | -------------------------------------------- | -------- |
-| `QWENPAW_AUTH_ENABLED`  | Set to `true` to enable authentication       | **Yes**  |
-| `QWENPAW_AUTH_USERNAME` | Pre-set admin username for auto-registration | Optional |
-| `QWENPAW_AUTH_PASSWORD` | Pre-set admin password for auto-registration | Optional |
+| `openspider_AUTH_ENABLED`  | Set to `true` to enable authentication       | **Yes**  |
+| `openspider_AUTH_USERNAME` | Pre-set admin username for auto-registration | Optional |
+| `openspider_AUTH_PASSWORD` | Pre-set admin password for auto-registration | Optional |
 
 ### Auth-bypass host whitelist
 
@@ -647,8 +647,8 @@ This can also be managed from the Console under **Settings → Security**.
 
 **Configuration notes**:
 
-- `QWENPAW_AUTH_ENABLED=true` is the only required variable to enable authentication
-- `QWENPAW_AUTH_USERNAME` and `QWENPAW_AUTH_PASSWORD` are used together:
+- `openspider_AUTH_ENABLED=true` is the only required variable to enable authentication
+- `openspider_AUTH_USERNAME` and `openspider_AUTH_PASSWORD` are used together:
   - Both set → Auto-creates admin account on startup (for automated deployments)
   - Not set or only one set → Register via web UI on first visit (interactive deployments)
 - If a user is already registered, auto-registration environment variables are ignored
@@ -663,14 +663,14 @@ Set environment variables before starting:
 
 ```bash
 # Basic enable (web registration)
-export QWENPAW_AUTH_ENABLED=true
-qwenpaw app
+export openspider_AUTH_ENABLED=true
+openspider app
 
 # Or: Auto-registration mode
-export QWENPAW_AUTH_ENABLED=true
-export QWENPAW_AUTH_USERNAME=admin
-export QWENPAW_AUTH_PASSWORD=mypassword
-qwenpaw app
+export openspider_AUTH_ENABLED=true
+export openspider_AUTH_USERNAME=admin
+export openspider_AUTH_PASSWORD=mypassword
+openspider app
 ```
 
 To make it permanent, add the `export` lines to your `~/.bashrc`, `~/.zshrc`, or equivalent.
@@ -678,21 +678,21 @@ To make it permanent, add the `export` lines to your `~/.bashrc`, `~/.zshrc`, or
 **Windows (CMD):**
 
 ```cmd
-set QWENPAW_AUTH_ENABLED=true
+set openspider_AUTH_ENABLED=true
 rem Optional: auto-registration
-rem set QWENPAW_AUTH_USERNAME=admin
-rem set QWENPAW_AUTH_PASSWORD=mypassword
-qwenpaw app
+rem set openspider_AUTH_USERNAME=admin
+rem set openspider_AUTH_PASSWORD=mypassword
+openspider app
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-$env:QWENPAW_AUTH_ENABLED = "true"
+$env:openspider_AUTH_ENABLED = "true"
 # Optional: auto-registration
-# $env:QWENPAW_AUTH_USERNAME = "admin"
-# $env:QWENPAW_AUTH_PASSWORD = "mypassword"
-qwenpaw app
+# $env:openspider_AUTH_USERNAME = "admin"
+# $env:openspider_AUTH_PASSWORD = "mypassword"
+openspider app
 ```
 
 #### Docker
@@ -700,34 +700,34 @@ qwenpaw app
 Pass environment variables with `-e` (recommended with auto-registration):
 
 ```bash
-docker run -e QWENPAW_AUTH_ENABLED=true \
-  -e QWENPAW_AUTH_USERNAME=admin \
-  -e QWENPAW_AUTH_PASSWORD=mypassword \
+docker run -e openspider_AUTH_ENABLED=true \
+  -e openspider_AUTH_USERNAME=admin \
+  -e openspider_AUTH_PASSWORD=mypassword \
   -p 127.0.0.1:8088:8088 \
-  -v qwenpaw-data:/app/working \
-  -v qwenpaw-secrets:/app/working.secret \
-  -v qwenpaw-backups:/app/working.backups \
-  agentscope/qwenpaw:latest
+  -v openspider-data:/app/working \
+  -v openspider-secrets:/app/working.secret \
+  -v openspider-backups:/app/working.backups \
+  agentscope/openspider:latest
 ```
 
-> **Tip**: To skip auto-registration, remove `QWENPAW_AUTH_USERNAME` and `QWENPAW_AUTH_PASSWORD` and register via browser on first visit.
+> **Tip**: To skip auto-registration, remove `openspider_AUTH_USERNAME` and `openspider_AUTH_PASSWORD` and register via browser on first visit.
 
 #### docker-compose.yml
 
 ```yaml
 services:
-  qwenpaw:
-    image: agentscope/qwenpaw:latest
+  openspider:
+    image: agentscope/openspider:latest
     ports:
       - "127.0.0.1:8088:8088"
     environment:
-      - QWENPAW_AUTH_ENABLED=true
-      - QWENPAW_AUTH_USERNAME=admin
-      - QWENPAW_AUTH_PASSWORD=mypassword
+      - openspider_AUTH_ENABLED=true
+      - openspider_AUTH_USERNAME=admin
+      - openspider_AUTH_PASSWORD=mypassword
     volumes:
-      - qwenpaw-data:/app/working
-      - qwenpaw-secrets:/app/working.secret
-      - qwenpaw-backups:/app/working.backups
+      - openspider-data:/app/working
+      - openspider-secrets:/app/working.secret
+      - openspider-backups:/app/working.backups
 ```
 
 #### Environment file (.env)
@@ -735,24 +735,24 @@ services:
 You can also use a `.env` file:
 
 ```
-QWENPAW_AUTH_ENABLED=true
-QWENPAW_AUTH_USERNAME=admin
-QWENPAW_AUTH_PASSWORD=mypassword
+openspider_AUTH_ENABLED=true
+openspider_AUTH_USERNAME=admin
+openspider_AUTH_PASSWORD=mypassword
 ```
 
-Then pass it to Docker with `--env-file .env`, or source it in your shell before running `qwenpaw app`.
+Then pass it to Docker with `--env-file .env`, or source it in your shell before running `openspider app`.
 
 ### Disable authentication
 
-Remove or unset the environment variable and restart QwenPaw:
+Remove or unset the environment variable and restart openspider:
 
 ```bash
 # Linux / macOS
-unset QWENPAW_AUTH_ENABLED
-qwenpaw app
+unset openspider_AUTH_ENABLED
+openspider app
 
 # Docker — simply remove the -e flag. The example below includes volumes for persistence.
-docker run -p 127.0.0.1:8088:8088 -v qwenpaw-data:/app/working -v qwenpaw-secrets:/app/working.secret -v qwenpaw-backups:/app/working.backups agentscope/qwenpaw:latest
+docker run -p 127.0.0.1:8088:8088 -v openspider-data:/app/working -v openspider-secrets:/app/working.secret -v openspider-backups:/app/working.backups agentscope/openspider:latest
 ```
 
 ### Password reset
@@ -760,7 +760,7 @@ docker run -p 127.0.0.1:8088:8088 -v qwenpaw-data:/app/working -v qwenpaw-secret
 If you forget your password, use the CLI to reset:
 
 ```bash
-qwenpaw auth reset-password
+openspider auth reset-password
 ```
 
 This command will:
@@ -772,7 +772,7 @@ This command will:
 **Docker deployments**:
 
 ```bash
-docker exec -it <container_name> qwenpaw auth reset-password
+docker exec -it <container_name> openspider auth reset-password
 ```
 
 **Alternative approach**:
@@ -781,9 +781,9 @@ To completely reset the authentication system:
 
 ```bash
 # Delete the auth file
-rm ~/.qwenpaw.secret/auth.json  # or $WORKING_DIR.secret/auth.json
-# Restart QwenPaw; re-register on next visit
-qwenpaw app
+rm ~/.openspider.secret/auth.json  # or $WORKING_DIR.secret/auth.json
+# Restart openspider; re-register on next visit
+openspider app
 ```
 
 ### Logout

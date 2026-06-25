@@ -6,12 +6,12 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 
-from qwenpaw.config.config import (
+from openspider.config.config import (
     AgentProfileConfig,
     AgentProfileRef,
     Config,
 )
-from qwenpaw.app.routers import agents as agents_router
+from openspider.app.routers import agents as agents_router
 
 
 def _build_config(

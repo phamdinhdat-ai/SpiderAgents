@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# QwenPaw Installer
+# openspider Installer
 # Usage: curl -fsSL <url>/install.sh | bash
 #    or: bash install.sh [--version X.Y.Z] [--from-source]
 #
-# Installs QwenPaw into ~/.qwenpaw with a uv-managed Python environment.
+# Installs openspider into ~/.openspider with a uv-managed Python environment.
 # Users do NOT need Python pre-installed — uv handles everything.
 set -euo pipefail
 
@@ -18,17 +18,17 @@ else
     BOLD="" GREEN="" YELLOW="" RED="" RESET=""
 fi
 
-info()  { printf "${GREEN}[qwenpaw]${RESET} %s\n" "$*"; }
-warn()  { printf "${YELLOW}[qwenpaw]${RESET} %s\n" "$*"; }
-error() { printf "${RED}[qwenpaw]${RESET} %s\n" "$*" >&2; }
+info()  { printf "${GREEN}[openspider]${RESET} %s\n" "$*"; }
+warn()  { printf "${YELLOW}[openspider]${RESET} %s\n" "$*"; }
+error() { printf "${RED}[openspider]${RESET} %s\n" "$*" >&2; }
 die()   { error "$@"; exit 1; }
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
-QWENPAW_HOME="${QWENPAW_HOME:-$HOME/.qwenpaw}"
-QWENPAW_VENV="$QWENPAW_HOME/venv"
-QWENPAW_BIN="$QWENPAW_HOME/bin"
+openspider_HOME="${openspider_HOME:-$HOME/.openspider}"
+openspider_VENV="$openspider_HOME/venv"
+openspider_BIN="$openspider_HOME/bin"
 PYTHON_VERSION="3.12"
-QWENPAW_REPO="https://github.com/agentscope-ai/QwenPaw.git"
+openspider_REPO="https://github.com/agentscope-ai/openspider.git"
 
 # New: Intelligent selection of PyPI source (automatically using Alibaba Cloud mirror for domestic users, and official source for overseas users)
 choose_pypi_mirror() {
@@ -71,7 +71,7 @@ while [[ $# -gt 0 ]]; do
             EXTRAS="$2"; shift 2 ;;
         -h|--help)
             cat <<EOF
-QwenPaw Installer
+openspider Installer
 
 Usage: bash install.sh [OPTIONS]
 
@@ -84,7 +84,7 @@ Options:
   -h, --help            Show this help
 
 Environment:
-  QWENPAW_HOME        Installation directory (default: ~/.qwenpaw)
+  openspider_HOME        Installation directory (default: ~/.openspider)
 EOF
             exit 0 ;;
         *)
@@ -99,7 +99,7 @@ case "$OS" in
     *) die "Unsupported OS: $OS. This installer supports Linux and macOS only." ;;
 esac
 
-printf "${GREEN}[qwenpaw]${RESET} Installing QwenPaw into ${BOLD}%s${RESET}\n" "$QWENPAW_HOME"
+printf "${GREEN}[openspider]${RESET} Installing openspider into ${BOLD}%s${RESET}\n" "$openspider_HOME"
 
 # ── Step 1: Ensure uv is available ───────────────────────────────────────────
 ensure_uv() {
@@ -134,33 +134,33 @@ ensure_uv() {
 ensure_uv
 
 # ── Step 2: Create / update virtual environment ──────────────────────────────
-if [ -d "$QWENPAW_VENV" ]; then
+if [ -d "$openspider_VENV" ]; then
     info "Existing environment found, upgrading..."
 else
     info "Creating Python $PYTHON_VERSION environment..."
 fi
 
-uv venv "$QWENPAW_VENV" --python "$PYTHON_VERSION" --quiet
+uv venv "$openspider_VENV" --python "$PYTHON_VERSION" --quiet
 
 # Verify the venv was created
-[ -x "$QWENPAW_VENV/bin/python" ] || die "Failed to create virtual environment"
-info "Python environment ready ($("$QWENPAW_VENV/bin/python" --version))"
+[ -x "$openspider_VENV/bin/python" ] || die "Failed to create virtual environment"
+info "Python environment ready ($("$openspider_VENV/bin/python" --version))"
 
-# ── Step 3: Install QwenPaw ────────────────────────────────────────────────────
+# ── Step 3: Install openspider ────────────────────────────────────────────────────
 # Build extras suffix: "" or "[dev,whisper]"
 EXTRAS_SUFFIX=""
 if [ -n "$EXTRAS" ]; then
     EXTRAS_SUFFIX="[$EXTRAS]"
 fi
 
-## Ensure console frontend assets are in src/qwenpaw/console/ for source installs.
+## Ensure console frontend assets are in src/openspider/console/ for source installs.
 ## Sets _CONSOLE_COPIED=1 if we populated the directory (so we can clean up).
 _CONSOLE_COPIED=0
 _CONSOLE_AVAILABLE=0
 prepare_console() {
     local repo_dir="$1"
     local console_src="$repo_dir/console/dist"
-    local console_dest="$repo_dir/src/qwenpaw/console"
+    local console_dest="$repo_dir/src/openspider/console"
 
     # Already populated
     if [ -f "$console_dest/index.html" ]; then
@@ -209,63 +209,63 @@ prepare_console() {
 cleanup_console() {
     local repo_dir="$1"
     if [ "$_CONSOLE_COPIED" = 1 ]; then
-        rm -rf "$repo_dir/src/qwenpaw/console/"*
+        rm -rf "$repo_dir/src/openspider/console/"*
     fi
 }
 
 if [ "$FROM_SOURCE" = true ]; then
     if [ -n "$SOURCE_DIR" ]; then
-        info "Installing QwenPaw from local source: $SOURCE_DIR"
+        info "Installing openspider from local source: $SOURCE_DIR"
         prepare_console "$SOURCE_DIR"
         info "Installing package from source..."
-        uv pip install "${SOURCE_DIR}${EXTRAS_SUFFIX}" --python "$QWENPAW_VENV/bin/python" --prerelease=allow --index-url "$PYPI_MIRROR"
+        uv pip install "${SOURCE_DIR}${EXTRAS_SUFFIX}" --python "$openspider_VENV/bin/python" --prerelease=allow --index-url "$PYPI_MIRROR"
         cleanup_console "$SOURCE_DIR"
     else
-        info "Installing QwenPaw from source (GitHub)..."
+        info "Installing openspider from source (GitHub)..."
         CLONE_DIR="$(mktemp -d)"
         trap 'rm -rf "$CLONE_DIR"' EXIT
-        git clone --depth 1 "$QWENPAW_REPO" "$CLONE_DIR"
+        git clone --depth 1 "$openspider_REPO" "$CLONE_DIR"
         prepare_console "$CLONE_DIR"
         info "Installing package from source..."
-        uv pip install "${CLONE_DIR}${EXTRAS_SUFFIX}" --python "$QWENPAW_VENV/bin/python" --prerelease=allow --index-url "$PYPI_MIRROR"
+        uv pip install "${CLONE_DIR}${EXTRAS_SUFFIX}" --python "$openspider_VENV/bin/python" --prerelease=allow --index-url "$PYPI_MIRROR"
         # CLONE_DIR is cleaned up by trap; no need for cleanup_console
     fi
 else
-    PACKAGE="qwenpaw"
+    PACKAGE="openspider"
     if [ -n "$VERSION" ]; then
-        PACKAGE="qwenpaw==$VERSION"
+        PACKAGE="openspider==$VERSION"
     fi
 
     info "Installing ${PACKAGE}${EXTRAS_SUFFIX} from PyPI..."
-    uv pip install "${PACKAGE}${EXTRAS_SUFFIX}" --python "$QWENPAW_VENV/bin/python" --prerelease=allow --quiet --index-url "$PYPI_MIRROR" --refresh-package qwenpaw
+    uv pip install "${PACKAGE}${EXTRAS_SUFFIX}" --python "$openspider_VENV/bin/python" --prerelease=allow --quiet --index-url "$PYPI_MIRROR" --refresh-package openspider
 fi
 
 # Verify the CLI entry point exists
-[ -x "$QWENPAW_VENV/bin/qwenpaw" ] || die "Installation failed: qwenpaw CLI not found in venv"
-info "QwenPaw installed successfully"
+[ -x "$openspider_VENV/bin/openspider" ] || die "Installation failed: openspider CLI not found in venv"
+info "openspider installed successfully"
 
 # Check console availability (for PyPI installs, check the installed package)
 if [ "$_CONSOLE_AVAILABLE" = 0 ]; then
     # Check if console assets were included in the installed package
-    CONSOLE_CHECK="$("$QWENPAW_VENV/bin/python" -c "import importlib.resources, qwenpaw; p=importlib.resources.files('qwenpaw')/'console'/'index.html'; print('yes' if p.is_file() else 'no')" 2>/dev/null || echo 'no')"
+    CONSOLE_CHECK="$("$openspider_VENV/bin/python" -c "import importlib.resources, openspider; p=importlib.resources.files('openspider')/'console'/'index.html'; print('yes' if p.is_file() else 'no')" 2>/dev/null || echo 'no')"
     if [ "$CONSOLE_CHECK" = "yes" ]; then
         _CONSOLE_AVAILABLE=1
     fi
 fi
 
 # ── Step 4: Create wrapper script ────────────────────────────────────────────
-mkdir -p "$QWENPAW_BIN"
+mkdir -p "$openspider_BIN"
 
-cat > "$QWENPAW_BIN/qwenpaw" << 'WRAPPER'
+cat > "$openspider_BIN/openspider" << 'WRAPPER'
 #!/usr/bin/env bash
-# QwenPaw CLI wrapper — delegates to the uv-managed environment.
+# openspider CLI wrapper — delegates to the uv-managed environment.
 set -euo pipefail
 
-QWENPAW_HOME="${QWENPAW_HOME:-$HOME/.qwenpaw}"
-REAL_BIN="$QWENPAW_HOME/venv/bin/qwenpaw"
+openspider_HOME="${openspider_HOME:-$HOME/.openspider}"
+REAL_BIN="$openspider_HOME/venv/bin/openspider"
 
 if [ ! -x "$REAL_BIN" ]; then
-    echo "Error: QwenPaw environment not found at $QWENPAW_HOME/venv" >&2
+    echo "Error: openspider environment not found at $openspider_HOME/venv" >&2
     echo "Please reinstall: curl -fsSL <install-url> | bash" >&2
     exit 1
 fi
@@ -273,19 +273,19 @@ fi
 exec "$REAL_BIN" "$@"
 WRAPPER
 
-chmod +x "$QWENPAW_BIN/qwenpaw"
-info "Wrapper created at $QWENPAW_BIN/qwenpaw"
+chmod +x "$openspider_BIN/openspider"
+info "Wrapper created at $openspider_BIN/openspider"
 
 # ── Step 5: Update PATH in shell profile ─────────────────────────────────────
-PATH_ENTRY="export PATH=\"\$HOME/.qwenpaw/bin:\$PATH\""
+PATH_ENTRY="export PATH=\"\$HOME/.openspider/bin:\$PATH\""
 
 add_to_profile() {
     local profile="$1"
-    if [ -f "$profile" ] && grep -qF '.qwenpaw/bin' "$profile"; then
+    if [ -f "$profile" ] && grep -qF '.openspider/bin' "$profile"; then
         return 0  # already present
     fi
     if [ -f "$profile" ] || [ "$2" = "create" ]; then
-        printf '\n# QwenPaw\n%s\n' "$PATH_ENTRY" >> "$profile"
+        printf '\n# openspider\n%s\n' "$PATH_ENTRY" >> "$profile"
         info "Updated $profile"
         return 0
     fi
@@ -309,12 +309,12 @@ esac
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
-printf "${GREEN}${BOLD}QwenPaw installed successfully!${RESET}\n"
+printf "${GREEN}${BOLD}openspider installed successfully!${RESET}\n"
 echo ""
 
 # Install summary
-printf "  Install location:  ${BOLD}%s${RESET}\n" "$QWENPAW_HOME"
-printf "  Python:            ${BOLD}%s${RESET}\n" "$("$QWENPAW_VENV/bin/python" --version 2>&1)"
+printf "  Install location:  ${BOLD}%s${RESET}\n" "$openspider_HOME"
+printf "  Python:            ${BOLD}%s${RESET}\n" "$("$openspider_VENV/bin/python" --version 2>&1)"
 if [ "$_CONSOLE_AVAILABLE" = 1 ]; then
     printf "  Console (web UI):  ${GREEN}available${RESET}\n"
 else
@@ -332,8 +332,8 @@ fi
 
 echo "Then run:"
 echo ""
-printf "  ${BOLD}qwenpaw init${RESET}       # first-time setup\n"
-printf "  ${BOLD}qwenpaw app${RESET}        # start QwenPaw\n"
+printf "  ${BOLD}openspider init${RESET}       # first-time setup\n"
+printf "  ${BOLD}openspider app${RESET}        # start openspider\n"
 echo ""
 printf "To upgrade later, re-run this installer.\n"
-printf "To uninstall, run: ${BOLD}qwenpaw uninstall${RESET}\n"
+printf "To uninstall, run: ${BOLD}openspider uninstall${RESET}\n"

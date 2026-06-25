@@ -14,8 +14,8 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from qwenpaw.config.timezone import normalize_tz
-from qwenpaw.config.utils import load_config
+from openspider.config.timezone import normalize_tz
+from openspider.config.utils import load_config
 
 from .service_manager import ServiceDescriptor, ServiceManager
 from .service_factories import (

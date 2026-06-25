@@ -1,18 +1,18 @@
 # RESTful API
 
-This document will guide you through using the RESTful API to interact with QwenPaw Agents.
+This document will guide you through using the RESTful API to interact with openspider Agents.
 
-> **Protocol Details**: QwenPaw's API is based on an extension of the AgentScope Runtime protocol. For more details, see:
+> **Protocol Details**: openspider's API is based on an extension of the AgentScope Runtime protocol. For more details, see:
 > [AgentScope Runtime Protocol Documentation (English)](https://runtime.agentscope.io/en/protocol.html)
 
 > ⚠️ **Security Warning**:
-> If your QwenPaw instance is **exposed to the public internet**, strongly recommend enabling [Web Login Authentication](./security#web-authentication)!
+> If your openspider instance is **exposed to the public internet**, strongly recommend enabling [Web Login Authentication](./security#web-authentication)!
 > Public instances without authentication pose serious security risks, allowing anyone to access and control your Agents.
 > See the [Web Authentication Token](#web-authentication-token-optional) section at the end of this document.
 
 ## Overview
 
-QwenPaw provides a RESTful API interface that allows you to interact with Agents via HTTP requests. Through the API, you can:
+openspider provides a RESTful API interface that allows you to interact with Agents via HTTP requests. Through the API, you can:
 
 - Send messages to Agents and receive responses
 - Manage multiple Agent instances
@@ -49,7 +49,7 @@ Specify the Agent to interact with via the `X-Agent-Id` header:
 ⚠️ **Important Notice**:
 
 - **Requests from `localhost` (127.0.0.1 or ::1) automatically bypass Web authentication**
-- This is designed for local development and CLI tools (`qwenpaw`) convenience
+- This is designed for local development and CLI tools (`openspider`) convenience
 - Even if Web authentication is enabled, local requests do **NOT** require an `Authorization` token
 - If accessing from a **remote machine**, you must provide a valid authentication token
 
@@ -175,7 +175,7 @@ data: {"sequence_number":0,"object":"response","status":"created",...}
 
 data: {"sequence_number":1,"object":"response","status":"in_progress",...}
 
-data: {"sequence_number":2,"object":"response","status":"in_progress","output":[{"role":"assistant","content":[{"type":"text","text":"Hello! I'm QwenPaw..."}]}],...}
+data: {"sequence_number":2,"object":"response","status":"in_progress","output":[{"role":"assistant","content":[{"type":"text","text":"Hello! I'm openspider..."}]}],...}
 
 data: {"sequence_number":3,"object":"response","status":"completed",...}
 ```
@@ -200,7 +200,7 @@ data: {"sequence_number":3,"object":"response","status":"completed",...}
 
 ## Multi-turn Conversation
 
-QwenPaw automatically manages conversation context through `session_id` and `user_id`. Simply use the same `session_id` across different requests, and the system will automatically save and load conversation history:
+openspider automatically manages conversation context through `session_id` and `user_id`. Simply use the same `session_id` across different requests, and the system will automatically save and load conversation history:
 
 **First turn**:
 
@@ -605,11 +605,11 @@ curl -X POST http://localhost:8088/api/console/chat \
 
 ### Web Authentication Token (Optional)
 
-If [Web Login Authentication](./security#web-authentication) is enabled (`QWENPAW_AUTH_ENABLED=true`), all API requests require an authentication token.
+If [Web Login Authentication](./security#web-authentication) is enabled (`openspider_AUTH_ENABLED=true`), all API requests require an authentication token.
 
 #### Register Account
 
-**First-time setup requires registering an admin account** (QwenPaw uses single-user mode):
+**First-time setup requires registering an admin account** (openspider uses single-user mode):
 
 ```bash
 curl -X POST http://localhost:8088/api/auth/register \
@@ -654,20 +654,20 @@ curl -X POST http://localhost:8088/api/auth/register \
 Method 1: Use CLI to reset password
 
 ```bash
-qwenpaw auth reset-password
+openspider auth reset-password
 ```
 
 Method 2: Delete auth file and re-register
 
 ```bash
 # Delete auth file
-rm ~/.qwenpaw.secret/auth.json
+rm ~/.openspider.secret/auth.json
 
-# Or use QWENPAW_SECRET_DIR environment variable
-rm "${QWENPAW_SECRET_DIR}/auth.json"
+# Or use openspider_SECRET_DIR environment variable
+rm "${openspider_SECRET_DIR}/auth.json"
 
-# Restart QwenPaw and re-register
-qwenpaw app
+# Restart openspider and re-register
+openspider app
 ```
 
 **Docker Deployment**:
@@ -677,18 +677,18 @@ qwenpaw app
 docker exec -it <container_name> rm /app/working.secret/auth.json
 
 # Or use CLI to reset password
-docker exec -it <container_name> qwenpaw auth reset-password
+docker exec -it <container_name> openspider auth reset-password
 ```
 
 **Auto-Registration** (Optional):
 
-You can also auto-create an account via environment variables when starting QwenPaw:
+You can also auto-create an account via environment variables when starting openspider:
 
 ```bash
-export QWENPAW_AUTH_ENABLED=true
-export QWENPAW_AUTH_USERNAME=admin
-export QWENPAW_AUTH_PASSWORD=admin123
-qwenpaw app
+export openspider_AUTH_ENABLED=true
+export openspider_AUTH_USERNAME=admin
+export openspider_AUTH_PASSWORD=admin123
+openspider app
 ```
 
 This eliminates the need to manually call the registration API.
@@ -868,28 +868,28 @@ If you don't want to use Web authentication, you can disable it:
 
 ```bash
 # Linux / macOS
-unset QWENPAW_AUTH_ENABLED
-qwenpaw app
+unset openspider_AUTH_ENABLED
+openspider app
 
 # Windows (CMD)
-set QWENPAW_AUTH_ENABLED=
-qwenpaw app
+set openspider_AUTH_ENABLED=
+openspider app
 
 # Windows (PowerShell)
-Remove-Item Env:\QWENPAW_AUTH_ENABLED
-qwenpaw app
+Remove-Item Env:\openspider_AUTH_ENABLED
+openspider app
 ```
 
 **Method 2: Docker Deployment**
 
-Remove the `-e QWENPAW_AUTH_ENABLED=true` parameter:
+Remove the `-e openspider_AUTH_ENABLED=true` parameter:
 
 ```bash
 docker run -p 127.0.0.1:8088:8088 \
-  -v qwenpaw-data:/app/working \
-  -v qwenpaw-secrets:/app/working.secret \
-  -v qwenpaw-backups:/app/working.backups \
-  agentscope/qwenpaw:latest
+  -v openspider-data:/app/working \
+  -v openspider-secrets:/app/working.secret \
+  -v openspider-backups:/app/working.backups \
+  agentscope/openspider:latest
 ```
 
 **Important**:
@@ -902,7 +902,7 @@ docker run -p 127.0.0.1:8088:8088 \
 
 ### Cannot Connect to Server
 
-Verify QwenPaw service is running:
+Verify openspider service is running:
 
 ```bash
 # Check service status
@@ -939,4 +939,4 @@ If you encounter issues using the API:
 
 1. Check the [FAQ](./faq) for common questions
 2. Join the [Community](./community) for assistance
-3. Submit an [Issue](https://github.com/agentscope-ai/QwenPaw/issues) on GitHub
+3. Submit an [Issue](https://github.com/agentscope-ai/openspider/issues) on GitHub

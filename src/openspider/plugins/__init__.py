@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""QwenPaw Plugin System."""
+"""OpenSpider Plugin System."""
 
 from .loader import PluginLoader
 from .registry import PluginRegistry

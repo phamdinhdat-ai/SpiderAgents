@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Shared fixtures for integration tests.
 
-These fixtures start a real QwenPaw app subprocess with isolated workspace
+These fixtures start a real openspider app subprocess with isolated workspace
 directories and a sanitized environment to avoid touching local secrets.
 """
 from __future__ import annotations
@@ -126,7 +126,7 @@ class AppServer:
 
 @pytest.fixture
 def app_server(tmp_path: Path) -> Iterator[AppServer]:
-    """Start one isolated qwenpaw app process for a test."""
+    """Start one isolated openspider app process for a test."""
     host = "127.0.0.1"
     port = _find_free_port(host)
 
@@ -141,10 +141,10 @@ def app_server(tmp_path: Path) -> Iterator[AppServer]:
     for key in _SENSITIVE_ENV_VARS:
         env.pop(key, None)
 
-    env["QWENPAW_WORKING_DIR"] = str(working_dir)
-    env["QWENPAW_SECRET_DIR"] = str(secret_dir)
-    env["QWENPAW_BACKUP_DIR"] = str(backups_dir)
-    env["QWENPAW_AUTH_ENABLED"] = "false"
+    env["OPENSPIDER_WORKING_DIR"] = str(working_dir)
+    env["OPENSPIDER_SECRET_DIR"] = str(secret_dir)
+    env["OPENSPIDER_BACKUP_DIR"] = str(backups_dir)
+    env["OPENSPIDER_AUTH_ENABLED"] = "false"
     env["NO_PROXY"] = "*"
     env["PYTHONUNBUFFERED"] = "1"
 
@@ -186,7 +186,7 @@ def app_server(tmp_path: Path) -> Iterator[AppServer]:
             while time.time() - start_at < max_wait_seconds:
                 if process.poll() is not None:
                     raise AssertionError(
-                        "qwenpaw app exited during startup.\n"
+                        "openspider app exited during startup.\n"
                         f"exit_code={process.returncode}\n"
                         f"logs:\n{''.join(logs)[-4000:]}",
                     )
@@ -200,7 +200,7 @@ def app_server(tmp_path: Path) -> Iterator[AppServer]:
                 time.sleep(0.5)
             else:
                 raise AssertionError(
-                    "qwenpaw app did not become ready in time.\n"
+                    "openspider app did not become ready in time.\n"
                     f"last_error={last_error}\n"
                     f"logs:\n{''.join(logs)[-4000:]}",
                 )

@@ -112,3 +112,4 @@ src/.hypothesis/
 # Worktrees
 .worktrees/
 src/openspider/console/
+proxy_http.txt

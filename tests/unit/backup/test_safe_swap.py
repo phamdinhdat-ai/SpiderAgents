@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from qwenpaw.backup._utils._mount_swap import (
+from openspider.backup._utils._mount_swap import (
     OLD_CONTENT_DIR_NAME,
     RESERVED_NAMES,
     STATE_COMMITTED,
@@ -19,8 +19,8 @@ from qwenpaw.backup._utils._mount_swap import (
     STATE_INSTALLING_NEW,
     STATE_TMP_FILE_NAME,
 )
-from qwenpaw.backup._utils import _mount_swap
-from qwenpaw.backup._utils.safe_swap import (
+from openspider.backup._utils import _mount_swap
+from openspider.backup._utils.safe_swap import (
     cleanup_stale_restore_artifacts,
     cleanup_startup_restore_artifacts,
     commit_tmp,
@@ -64,10 +64,10 @@ def test_normal_directory_uses_rename_swap(secrets_dir: Path) -> None:
 
     zf = _make_zip({"data/secrets/new.txt": "new"})
     with patch(
-        "qwenpaw.backup._utils._mount_swap.is_mount_point",
+        "openspider.backup._utils._mount_swap.is_mount_point",
         return_value=False,
     ), patch(
-        "qwenpaw.backup._utils._mount_swap.swap_mount_point_contents",
+        "openspider.backup._utils._mount_swap.swap_mount_point_contents",
     ) as mount_swap:
         extract_to_tmp(zf, "data/secrets/", dst, zip_slip_base=dst)
         commit_tmp(dst)
@@ -91,7 +91,7 @@ def test_mount_point_swap_replaces_contents(secrets_dir: Path) -> None:
         },
     )
     with patch(
-        "qwenpaw.backup._utils._mount_swap.is_mount_point",
+        "openspider.backup._utils._mount_swap.is_mount_point",
         return_value=True,
     ):
         extract_to_tmp(zf, "data/secrets/", dst, zip_slip_base=dst)
@@ -121,7 +121,7 @@ def test_ebusy_rename_falls_back_to_mount_point_swap(
 
     zf = _make_zip({"data/secrets/new.txt": "new"})
     with patch(
-        "qwenpaw.backup._utils._mount_swap.is_mount_point",
+        "openspider.backup._utils._mount_swap.is_mount_point",
         return_value=False,
     ), patch.object(Path, "rename", rename_or_ebusy):
         extract_to_tmp(zf, "data/secrets/", dst, zip_slip_base=dst)
@@ -148,10 +148,10 @@ def test_mount_point_swap_failure_restores_old_contents(
         return original_move_children(*args, **kwargs)
 
     with patch(
-        "qwenpaw.backup._utils._mount_swap.is_mount_point",
+        "openspider.backup._utils._mount_swap.is_mount_point",
         return_value=True,
     ), patch(
-        "qwenpaw.backup._utils._mount_swap._move_children",
+        "openspider.backup._utils._mount_swap._move_children",
         move_or_fail,
     ), pytest.raises(
         OSError,
@@ -262,7 +262,7 @@ def test_mount_point_restore_rejects_existing_markerless_old_dir(
 
     zf = _make_zip({"data/secrets/new.txt": "new"})
     with patch(
-        "qwenpaw.backup._utils._mount_swap.is_mount_point",
+        "openspider.backup._utils._mount_swap.is_mount_point",
         return_value=True,
     ), pytest.raises(RuntimeError, match="Reserved restore directory exists"):
         extract_to_tmp(zf, "data/secrets/", dst, zip_slip_base=dst)
@@ -297,7 +297,7 @@ def test_startup_cleanup_recovers_all_restore_targets(
         _tmp_dir(target).mkdir()
 
     with patch(
-        "qwenpaw.backup._utils.safe_swap._startup_restore_targets",
+        "openspider.backup._utils.safe_swap._startup_restore_targets",
         return_value=targets,
     ):
         cleanup_startup_restore_artifacts()

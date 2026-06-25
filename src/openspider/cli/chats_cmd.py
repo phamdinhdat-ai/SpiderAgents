@@ -18,11 +18,11 @@ def chats_group() -> None:
 
     \b
     Common examples:
-      qwenpaw chats list                    # List all chats
-      qwenpaw chats list --user-id alice    # Filter by user
-      qwenpaw chats get <chat_id>           # View details
-      qwenpaw chats create --session-id s1 --user-id u1
-      qwenpaw chats delete <chat_id>        # Delete a chat
+      openspider chats list                    # List all chats
+      openspider chats list --user-id alice    # Filter by user
+      openspider chats get <chat_id>           # View details
+      openspider chats create --session-id s1 --user-id u1
+      openspider chats delete <chat_id>        # Delete a chat
     """
 
 
@@ -59,10 +59,10 @@ def list_chats(
 
     \b
     Examples:
-      qwenpaw chats list
-      qwenpaw chats list --user-id alice
-      qwenpaw chats list --channel discord
-      qwenpaw chats list --user-id alice --channel discord
+      openspider chats list
+      openspider chats list --user-id alice
+      openspider chats list --channel discord
+      openspider chats list --user-id alice --channel discord
     """
     base_url = resolve_base_url(ctx, base_url)
     params: dict[str, str] = {}
@@ -95,11 +95,11 @@ def get_chat(
     """View details of a specific chat (including message history).
 
     \b
-    CHAT_ID  Chat UUID, obtainable via `qwenpaw chats list`.
+    CHAT_ID  Chat UUID, obtainable via `openspider chats list`.
 
     \b
     Examples:
-      qwenpaw chats get 823845fe-dd13-43c2-ab8b-d05870602fd8
+      openspider chats get 823845fe-dd13-43c2-ab8b-d05870602fd8
     """
     base_url = resolve_base_url(ctx, base_url)
     with client(base_url) as c:
@@ -166,14 +166,14 @@ def create_chat(
 
     \b
     Inline creation examples:
-      qwenpaw chats create --session-id "discord:alice" \\
+      openspider chats create --session-id "discord:alice" \\
         --user-id alice --name "My Chat"
-      qwenpaw chats create --session-id s1 --user-id u1 \\
+      openspider chats create --session-id s1 --user-id u1 \\
         --channel imessage
 
     \b
     JSON file creation example:
-      qwenpaw chats create -f chat.json
+      openspider chats create -f chat.json
     """
     base_url = resolve_base_url(ctx, base_url)
     if file_ is not None:
@@ -222,11 +222,11 @@ def update_chat(
     """Update chat name.
 
     \b
-    CHAT_ID  Chat UUID, obtainable via `qwenpaw chats list`.
+    CHAT_ID  Chat UUID, obtainable via `openspider chats list`.
 
     \b
     Examples:
-      qwenpaw chats update <chat_id> --name "Renamed Chat"
+      openspider chats update <chat_id> --name "Renamed Chat"
     """
     base_url = resolve_base_url(ctx, base_url)
     headers = {"X-Agent-Id": agent_id}
@@ -259,11 +259,11 @@ def delete_chat(
     Only deletes Chat metadata; does not clear Redis session state.
 
     \b
-    CHAT_ID  Chat UUID, obtainable via `qwenpaw chats list`.
+    CHAT_ID  Chat UUID, obtainable via `openspider chats list`.
 
     \b
     Examples:
-      qwenpaw chats delete 823845fe-dd13-43c2-ab8b-d05870602fd8
+      openspider chats delete 823845fe-dd13-43c2-ab8b-d05870602fd8
     """
     base_url = resolve_base_url(ctx, base_url)
     with client(base_url) as c:

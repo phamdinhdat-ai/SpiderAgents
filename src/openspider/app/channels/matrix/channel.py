@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-MatrixChannel: QwenPaw BaseChannel implementation for Matrix (via matrix-nio).
+MatrixChannel: OpenSpider BaseChannel implementation for Matrix (via matrix-nio).
 
 """
 from __future__ import annotations
@@ -65,7 +65,7 @@ TYPING_RENEWAL_INTERVAL_S = 25
 TYPING_MAX_DURATION_S = 120
 DM_CACHE_TTL_MS = 30_000
 
-# Known QwenPaw slash commands — used to decide whether to strip
+# Known OpenSpider slash commands — used to decide whether to strip
 # @mention prefix
 _SLASH_COMMANDS = frozenset(
     {
@@ -211,7 +211,7 @@ def _normalize_user_id(uid: str) -> str:
 
 
 class MatrixChannel(BaseChannel):
-    """QwenPaw channel that connects to a Matrix homeserver via matrix-nio."""
+    """OpenSpider channel that connects to a Matrix homeserver via matrix-nio."""
 
     channel = CHANNEL_KEY  # type: ignore[assignment]
     uses_manager_queue: bool = True
@@ -1876,13 +1876,13 @@ class MatrixChannel(BaseChannel):
 
     # ------------------------------------------------------------------
     # build_agent_request_from_native (BaseChannel protocol)
-    # native content_parts → QwenPaw Content; same
+    # native content_parts → OpenSpider Content; same
     # vision_enabled guard as inbound media for image parts (§11).
     # ------------------------------------------------------------------
 
     # pylint: disable=too-many-return-statements
     def _build_content_part(self, p: dict[str, Any]) -> Any:
-        """Convert a native content-part dict to a QwenPaw Content object."""
+        """Convert a native content-part dict to a OpenSpider Content object."""
         t = p.get("type")
         if t == "text" and p.get("text"):
             return TextContent(type=ContentType.TEXT, text=p["text"])

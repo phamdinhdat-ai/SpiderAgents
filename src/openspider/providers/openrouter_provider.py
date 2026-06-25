@@ -9,7 +9,7 @@ from typing import Any, List, Optional
 from agentscope.model import ChatModelBase
 from openai import APIError, AsyncOpenAI
 
-from qwenpaw.providers.provider import (
+from openspider.providers.provider import (
     Provider,
     ExtendedModelInfo,
     ModelInfo,
@@ -20,7 +20,7 @@ class OpenRouterProvider(Provider):
     """OpenRouter provider with required HTTP-Referer and X-Title headers."""
 
     _DEFAULT_HEADERS = {
-        "HTTP-Referer": "https://qwenpaw.agentscope.io/",
+        "HTTP-Referer": "https://openspider.agentscope.io/",
         "X-Title": "QwenPaw",
         "User-Agent": "QwenPaw/1.1",
     }

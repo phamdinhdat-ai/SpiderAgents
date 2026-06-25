@@ -10,14 +10,14 @@ from agentscope_runtime.engine.schemas.exception import (
     ModelNotFoundException,
 )
 
-import qwenpaw.providers.provider_manager as provider_manager_module
-from qwenpaw.exceptions import ProviderError
-from qwenpaw.providers.anthropic_provider import AnthropicProvider
-from qwenpaw.config.config import ModelSlotConfig
-from qwenpaw.providers.openai_provider import OpenAIProvider
-from qwenpaw.providers.provider import ModelInfo
-from qwenpaw.providers.provider_manager import ProviderManager
-from qwenpaw.local_models.llamacpp import LlamaCppServerSetupResult
+import openspider.providers.provider_manager as provider_manager_module
+from openspider.exceptions import ProviderError
+from openspider.providers.anthropic_provider import AnthropicProvider
+from openspider.config.config import ModelSlotConfig
+from openspider.providers.openai_provider import OpenAIProvider
+from openspider.providers.provider import ModelInfo
+from openspider.providers.provider_manager import ProviderManager
+from openspider.local_models.llamacpp import LlamaCppServerSetupResult
 
 
 LEGACY_PROVIDER = {

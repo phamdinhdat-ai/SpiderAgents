@@ -480,7 +480,7 @@ class LightContextManager(BaseContextManager):
 
         # Create ReActAgent for compaction
         agent = ReActAgent(
-            name="qwenpaw_compactor",
+            name="OPENSPIDER_compactor",
             model=as_llm,
             sys_prompt=system_prompt,
             formatter=as_llm_formatter,

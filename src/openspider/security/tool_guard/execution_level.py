@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tool execution security levels for QwenPaw agent.
+"""Tool execution security levels for OpenSpider agent.
 
 Defines different approval strategies for tool execution:
 - STRICT: All tools require approval

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Memory management module for QwenPaw agents."""
+"""Memory management module for OpenSpider agents."""
 
 from typing import TYPE_CHECKING
 

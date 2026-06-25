@@ -209,7 +209,7 @@ class DynamicMultiAgentRunner:
 runner = DynamicMultiAgentRunner()
 
 agent_app = AgentApp(
-    app_name="QwenPaw",
+    app_name="OpenSpider",
     app_description="A helpful assistant with background task support",
     runner=runner,
     enable_stream_task=True,
@@ -234,7 +234,7 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
         cleanup_startup_restore_artifacts()
     except Exception as exc:
         message = (
-            "QwenPaw startup failed because restore artifact cleanup did not "
+            "OpenSpider startup failed because restore artifact cleanup did not "
             "complete. Another restore or cleanup may still be running, or "
             "a previous restore may need recovery before startup can safely "
             "read restored files."
@@ -563,7 +563,7 @@ if CORS_ORIGINS:
     )
 
 
-_CONSOLE_STATIC_ENV = "QWENPAW_CONSOLE_STATIC_DIR"
+_CONSOLE_STATIC_ENV = "OPENSPIDER_CONSOLE_STATIC_DIR"
 
 
 def _resolve_console_static_dir() -> str:

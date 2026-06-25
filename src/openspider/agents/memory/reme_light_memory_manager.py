@@ -140,7 +140,7 @@ class ReMeLightMemoryManager(BaseMemoryManager):
         )
 
         self.summary_toolkit = Toolkit()
-        from qwenpaw.agents.tools import (
+        from openspider.agents.tools import (
             read_file,
             write_file,
             edit_file,

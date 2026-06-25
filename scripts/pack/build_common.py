@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-statements
 """
-Create a temporary conda env, install QwenPaw from a wheel, run conda-pack.
+Create a temporary conda env, install OpenSpider from a wheel, run conda-pack.
 Used by build_macos.sh and build_win.ps1. Run from repo root.
 """
 from __future__ import annotations
@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-ENV_PREFIX = "qwenpaw_pack_"
+ENV_PREFIX = "openspider_pack_"
 
 # Packages affected by conda-unpack bug on Windows (conda-pack Issue #154)
 # conda-unpack modifies Python source files to replace path prefixes, but uses
@@ -61,7 +61,7 @@ def _pick_wheel(wheel_arg: str | None) -> Path:
         return wheel_path
 
     wheels = sorted(
-        (REPO_ROOT / "dist").glob("qwenpaw-*.whl"),
+        (REPO_ROOT / "dist").glob("openspider-*.whl"),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
@@ -74,7 +74,7 @@ def _pick_wheel(wheel_arg: str | None) -> Path:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Conda-pack QwenPaw (temp env).",
+        description="Conda-pack OpenSpider (temp env).",
     )
     parser.add_argument(
         "--output",
@@ -99,7 +99,7 @@ def main() -> int:
         default=None,
         help=(
             "Wheel path to install. If omitted, pick the newest "
-            "dist/qwenpaw-*.whl."
+            "dist/openspider-*.whl."
         ),
     )
     parser.add_argument(
@@ -132,7 +132,7 @@ def main() -> int:
                 "-y",
             ],
         )
-        # Install qwenpaw with all dependencies
+        # Install openspider with all dependencies
         # Scope CMAKE_ARGS to this specific command to avoid affecting other
         # CMake-based packages. Only set if we need to compile from source.
         install_env = {}
@@ -147,7 +147,7 @@ def main() -> int:
                 "-m",
                 "pip",
                 "install",
-                f"qwenpaw[full] @ {wheel_uri}",
+                f"openspider[full] @ {wheel_uri}",
             ],
             env=install_env,
         )
@@ -187,7 +187,7 @@ def main() -> int:
                 ],
             )
         # pip may uninstall/reinstall files owned by conda while resolving
-        # qwenpaw[full]. Restore conda-managed packaging tools before packing.
+        # openspider[full]. Restore conda-managed packaging tools before packing.
         _run(
             [
                 conda,

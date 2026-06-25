@@ -6,7 +6,7 @@ import time
 from .utils.logging import setup_logger
 
 # Fallback before we can safely read canonical constant definitions.
-LOG_LEVEL_ENV = "QWENPAW_LOG_LEVEL"
+LOG_LEVEL_ENV = "OPENSPIDER_LOG_LEVEL"
 
 _bootstrap_err: Exception | None = None
 try:
@@ -23,7 +23,7 @@ _t0 = time.perf_counter()
 setup_logger(os.environ.get(LOG_LEVEL_ENV, "info"))
 if _bootstrap_err is not None:
     logging.getLogger(__name__).warning(
-        "qwenpaw: failed to load persisted envs on init: %s",
+        "openspider: failed to load persisted envs on init: %s",
         _bootstrap_err,
     )
 logging.getLogger(__name__).debug(

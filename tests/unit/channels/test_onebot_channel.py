@@ -11,7 +11,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     TextContent,
 )
 
-from qwenpaw.app.channels.onebot.channel import OneBotChannel
+from openspider.app.channels.onebot.channel import OneBotChannel
 
 
 # ---------------------------------------------------------------------------

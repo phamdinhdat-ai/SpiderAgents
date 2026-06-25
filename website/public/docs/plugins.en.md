@@ -1,6 +1,6 @@
 # Plugin System
 
-QwenPaw provides a plugin system that allows users to extend QwenPaw's functionality.
+openspider provides a plugin system that allows users to extend openspider's functionality.
 
 ## Overview
 
@@ -20,27 +20,27 @@ The plugin system supports the following extension capabilities:
 Install from local directory:
 
 ```bash
-qwenpaw plugin install /path/to/plugin
+openspider plugin install /path/to/plugin
 ```
 
 Install from URL (supports ZIP files):
 
 ```bash
-qwenpaw plugin install https://example.com/plugin.zip
+openspider plugin install https://example.com/plugin.zip
 ```
 
 Force reinstall:
 
 ```bash
-qwenpaw plugin install /path/to/plugin --force
+openspider plugin install /path/to/plugin --force
 ```
 
-**Note**: Plugin operations can only be performed when QwenPaw is offline.
+**Note**: Plugin operations can only be performed when openspider is offline.
 
 ### List Installed Plugins
 
 ```bash
-qwenpaw plugin list
+openspider plugin list
 ```
 
 Example output:
@@ -52,19 +52,19 @@ Installed Plugins:
 my-provider (v1.0.0)
   Custom LLM provider integration
   Author: Developer Name
-  Path: /Users/user/.qwenpaw/plugins/my-provider
+  Path: /Users/user/.openspider/plugins/my-provider
 ```
 
 ### View Plugin Details
 
 ```bash
-qwenpaw plugin info <plugin-id>
+openspider plugin info <plugin-id>
 ```
 
 ### Uninstall Plugin
 
 ```bash
-qwenpaw plugin uninstall <plugin-id>
+openspider plugin uninstall <plugin-id>
 ```
 
 ## Plugin Development
@@ -106,7 +106,7 @@ my-plugin/
 # -*- coding: utf-8 -*-
 """My Plugin Entry Point."""
 
-from qwenpaw.plugins.api import PluginApi
+from openspider.plugins.api import PluginApi
 import logging
 
 logger = logging.getLogger(__name__)
@@ -166,18 +166,18 @@ my-plugin/
 #### src/index.tsx
 
 ```tsx
-const { React, antd } = (window as any).QwenPaw.host;
+const { React, antd } = (window as any).openspider.host;
 
 class MyPlugin {
   readonly id = "my-plugin";
 
   setup(): void {
     // Register sidebar pages
-    // (window as any).QwenPaw.registerRoutes?.(this.id, [...]);
+    // (window as any).openspider.registerRoutes?.(this.id, [...]);
     // Register tool-call renderers
-    // (window as any).QwenPaw.registerToolRender?.(this.id, {...});
+    // (window as any).openspider.registerToolRender?.(this.id, {...});
     // Access and modify application internal modules
-    // const mod = (window as any).QwenPaw?.modules?.['xxxx'];
+    // const mod = (window as any).openspider?.modules?.['xxxx'];
   }
 }
 
@@ -237,11 +237,11 @@ export default defineConfig({
 
 ```bash
 npm install && npm run build
-cp -r . ~/.qwenpaw/plugins/my-plugin/
-qwenpaw app
+cp -r . ~/.openspider/plugins/my-plugin/
+openspider app
 ```
 
-**Notes**: `window.QwenPaw.host` provides the following shared libraries — plugins do not need to bundle them:
+**Notes**: `window.openspider.host` provides the following shared libraries — plugins do not need to bundle them:
 
 | Name              | Type                       | Description                  |
 | ----------------- | -------------------------- | ---------------------------- |
@@ -255,7 +255,7 @@ qwenpaw app
 - `jsxRuntime: "classic"` — Compiles JSX to `React.createElement`, using the host-provided `React`; no import needed in the plugin
 - `external: ["react", "react-dom"]` — Don't bundle React; use the version already loaded by the application
 
-**`window.QwenPaw.modules`**: At startup, the application auto-registers all modules under `src/pages/` into this object. Plugins can access and replace internal exports by module.
+**`window.openspider.modules`**: At startup, the application auto-registers all modules under `src/pages/` into this object. Plugins can access and replace internal exports by module.
 
 > ⚠️ **Warning**: The module structure inside `modules` is not maintained as a public API and may change across versions. Always verify compatibility before use.
 
@@ -299,8 +299,8 @@ cd my-llm-provider
 # -*- coding: utf-8 -*-
 """My LLM Provider Implementation."""
 
-from qwenpaw.providers.openai_provider import OpenAIProvider
-from qwenpaw.providers.provider import ModelInfo
+from openspider.providers.openai_provider import OpenAIProvider
+from openspider.providers.provider import ModelInfo
 from typing import List
 
 
@@ -342,7 +342,7 @@ import importlib.util
 import logging
 import os
 
-from qwenpaw.plugins.api import PluginApi
+from openspider.plugins.api import PluginApi
 
 logger = logging.getLogger(__name__)
 
@@ -390,15 +390,15 @@ plugin = MyLLMProviderPlugin()
 
 ```bash
 # Install plugin
-qwenpaw plugin install my-llm-provider
+openspider plugin install my-llm-provider
 
-# Start QwenPaw
-qwenpaw app
+# Start openspider
+openspider app
 ```
 
 ### Example 2: Add Startup Hook
 
-Let's say you want to initialize a monitoring service when QwenPaw starts.
+Let's say you want to initialize a monitoring service when openspider starts.
 
 #### 1. Create Plugin
 
@@ -430,7 +430,7 @@ cd monitoring-hook
 # -*- coding: utf-8 -*-
 """Monitoring Hook Plugin Entry Point."""
 
-from qwenpaw.plugins.api import PluginApi
+from openspider.plugins.api import PluginApi
 import logging
 
 logger = logging.getLogger(__name__)
@@ -454,7 +454,7 @@ class MonitoringHookPlugin:
 
                 # Initialize your monitoring service
                 # from my_monitoring import init_monitoring
-                # init_monitoring(app_name="QwenPaw")
+                # init_monitoring(app_name="openspider")
 
                 logger.info("✓ Monitoring initialized successfully")
 
@@ -481,8 +481,8 @@ plugin = MonitoringHookPlugin()
 #### 4. Install
 
 ```bash
-qwenpaw plugin install monitoring-hook
-qwenpaw app
+openspider plugin install monitoring-hook
+openspider app
 ```
 
 ### Example 3: Add Custom Command
@@ -551,7 +551,7 @@ Please present this information in a clear format."""
 
 import logging
 
-from qwenpaw.plugins.api import PluginApi
+from openspider.plugins.api import PluginApi
 
 logger = logging.getLogger(__name__)
 
@@ -578,7 +578,7 @@ class StatusCommandPlugin:
 
     def _patch_query_handler(self):
         """Patch AgentRunner.query_handler to rewrite /status queries."""
-        from qwenpaw.app.runner.runner import AgentRunner
+        from openspider.app.runner.runner import AgentRunner
         from .query_rewriter import StatusQueryRewriter
 
         original_query_handler = AgentRunner.query_handler
@@ -624,8 +624,8 @@ plugin = StatusCommandPlugin()
 #### 5. Install and Use
 
 ```bash
-qwenpaw plugin install status-command
-qwenpaw app
+openspider plugin install status-command
+openspider app
 
 # Use the command
 /status
@@ -657,14 +657,14 @@ mkdir welcome-plugin && cd welcome-plugin
 #### 3. Create src/index.tsx
 
 ```tsx
-const { React, antd } = (window as any).QwenPaw.host;
+const { React, antd } = (window as any).openspider.host;
 const { Typography, Card } = antd;
 const { Title, Paragraph } = Typography;
 
 function WelcomePage() {
   return (
     <Card style={{ maxWidth: 480, margin: "40px auto" }}>
-      <Title level={2}>Welcome to QwenPaw 👋</Title>
+      <Title level={2}>Welcome to openspider 👋</Title>
       <Paragraph>Plugin system is working!</Paragraph>
     </Card>
   );
@@ -674,7 +674,7 @@ class WelcomePlugin {
   readonly id = "welcome-plugin";
 
   setup(): void {
-    (window as any).QwenPaw.registerRoutes?.(this.id, [
+    (window as any).openspider.registerRoutes?.(this.id, [
       {
         path: "/plugin/welcome-plugin/home",
         component: WelcomePage,
@@ -743,8 +743,8 @@ export default defineConfig({
 
 ```bash
 npm install && npm run build
-cp -r . ~/.qwenpaw/plugins/welcome-plugin/
-qwenpaw app
+cp -r . ~/.openspider/plugins/welcome-plugin/
+openspider app
 ```
 
 ### Example 5: Custom Tool-Call Renderer
@@ -773,7 +773,7 @@ mkdir tool-render-plugin && cd tool-render-plugin
 #### 3. Create src/index.tsx
 
 ```tsx
-const { React, antd } = (window as any).QwenPaw.host;
+const { React, antd } = (window as any).openspider.host;
 const { Card, Descriptions } = antd;
 
 function WeatherToolCard({ result }) {
@@ -806,7 +806,7 @@ class ToolRenderPlugin {
   readonly id = "tool-render-plugin";
 
   setup(): void {
-    (window as any).QwenPaw.registerToolRender?.(this.id, {
+    (window as any).openspider.registerToolRender?.(this.id, {
       get_weather: WeatherToolCard, // Tool name must match Agent's return
     });
   }
@@ -823,8 +823,8 @@ Reuse `package.json`, `tsconfig.json`, `vite.config.ts` from Example 4, changing
 
 ```bash
 npm install && npm run build
-cp -r . ~/.qwenpaw/plugins/tool-render-plugin/
-qwenpaw app
+cp -r . ~/.openspider/plugins/tool-render-plugin/
+openspider app
 ```
 
 ### Example 6: Modify Component Behavior
@@ -857,7 +857,7 @@ class CustomGreetingPlugin {
   readonly id = "custom-greeting-plugin";
 
   setup(): void {
-    const mod = (window as any).QwenPaw?.modules?.[
+    const mod = (window as any).openspider?.modules?.[
       "Chat/OptionsPanel/defaultConfig"
     ];
     if (!mod?.configProvider) {
@@ -866,7 +866,7 @@ class CustomGreetingPlugin {
     }
 
     // Replace chat greeting
-    mod.configProvider.getGreeting = () => "Hello! I'm customized QwenPaw 👋";
+    mod.configProvider.getGreeting = () => "Hello! I'm customized openspider 👋";
 
     // Replace chat description
     mod.configProvider.getDescription = () =>
@@ -892,8 +892,8 @@ Reuse `package.json`, `tsconfig.json`, `vite.config.ts` from Example 4, changing
 
 ```bash
 npm install && npm run build
-cp -r . ~/.qwenpaw/plugins/custom-greeting-plugin/
-qwenpaw app
+cp -r . ~/.openspider/plugins/custom-greeting-plugin/
+openspider app
 ```
 
 ## Dependency Management
@@ -992,18 +992,18 @@ api.register_startup_hook("late", callback, priority=200)
 1. Check if plugin is installed:
 
    ```bash
-   qwenpaw plugin list
+   openspider plugin list
    ```
 
-2. View QwenPaw logs:
+2. View openspider logs:
 
    ```bash
-   tail -f ~/.qwenpaw/logs/qwenpaw.log | grep -i plugin
+   tail -f ~/.openspider/logs/openspider.log | grep -i plugin
    ```
 
 3. Verify plugin manifest format:
    ```bash
-   qwenpaw plugin info <plugin-id>
+   openspider plugin info <plugin-id>
    ```
 
 ### Dependency Installation Failed
@@ -1017,7 +1017,7 @@ api.register_startup_hook("late", callback, priority=200)
 
 ### Provider Not Showing
 
-1. Confirm plugin is installed and restart QwenPaw
+1. Confirm plugin is installed and restart openspider
 2. Check the model management page in Web UI
 3. Review provider registration info in logs
 
@@ -1029,10 +1029,10 @@ api.register_startup_hook("late", callback, priority=200)
 
 ## Security Considerations
 
-1. **Only install trusted plugins**: Plugin code executes in the QwenPaw process
+1. **Only install trusted plugins**: Plugin code executes in the openspider process
 2. **Check dependencies**: Ensure plugin dependencies come from trusted sources
 3. **Review code**: Review plugin source code before installation
-4. **Offline operations**: Plugin install/uninstall requires QwenPaw to be offline
+4. **Offline operations**: Plugin install/uninstall requires openspider to be offline
 
 ## PluginApi Reference
 
@@ -1078,12 +1078,12 @@ api.register_shutdown_hook(
 
 ### Monkey Patching
 
-For plugins that need to modify QwenPaw behavior (like custom commands), you can use monkey patching:
+For plugins that need to modify openspider behavior (like custom commands), you can use monkey patching:
 
 ```python
 def _patch_query_handler(self):
     """Patch AgentRunner to intercept queries."""
-    from qwenpaw.app.runner.runner import AgentRunner
+    from openspider.app.runner.runner import AgentRunner
 
     original_handler = AgentRunner.query_handler
 
@@ -1123,12 +1123,12 @@ zip -r my-plugin-1.0.0.zip my-plugin/
 Users can install via URL:
 
 ```bash
-qwenpaw plugin install https://example.com/my-plugin-1.0.0.zip
+openspider plugin install https://example.com/my-plugin-1.0.0.zip
 ```
 
 ## FAQ
 
-### Q: What QwenPaw APIs can plugins access?
+### Q: What openspider APIs can plugins access?
 
 A: Plugins access core functionality through `PluginApi`, including:
 
@@ -1136,7 +1136,7 @@ A: Plugins access core functionality through `PluginApi`, including:
 - Hook registration
 - Runtime helpers (provider_manager, etc.)
 
-### Q: Can plugins modify QwenPaw's core behavior?
+### Q: Can plugins modify openspider's core behavior?
 
 A: Yes, through monkey patching or hook mechanisms. But use with caution to avoid breaking core functionality.
 
@@ -1148,26 +1148,26 @@ A: If multiple plugins register the same provider_id or command_name, the later 
 
 ### GPT Image 2 Tool Plugin
 
-A tool plugin that adds OpenAI's GPT Image 2 image generation capability to QwenPaw agents.
+A tool plugin that adds OpenAI's GPT Image 2 image generation capability to openspider agents.
 
 **Requirements:**
 
-- Minimum QwenPaw version: `1.1.5`
+- Minimum openspider version: `1.1.5`
 
 **Installation:**
 
 ```bash
-# Clone the QwenPaw repository (if not already cloned)
-git clone https://github.com/agentscope-ai/QwenPaw.git
-cd QwenPaw
+# Clone the openspider repository (if not already cloned)
+git clone https://github.com/agentscope-ai/openspider.git
+cd openspider
 
 # Install the plugin
-qwenpaw plugin install plugins/tool/gpt-image2
+openspider plugin install plugins/tool/gpt-image2
 ```
 
 **Configuration:**
 
-1. After installation, restart QwenPaw
+1. After installation, restart openspider
 2. Go to Agent Settings → Tools
 3. Find "generate_image_gpt" tool
 4. Click "Configure" and enter your OpenAI API Key

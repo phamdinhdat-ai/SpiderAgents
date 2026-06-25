@@ -5,7 +5,7 @@ import importlib.util
 import logging
 import os
 
-from qwenpaw.plugins.api import PluginApi
+from openspider.plugins.api import PluginApi
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class GPTImage2ToolPlugin:
             edit_image_gpt = tool_module.edit_image_gpt
 
             # Register tool functions globally
-            import qwenpaw.agents.tools as tools_module
+            import openspider.agents.tools as tools_module
 
             setattr(tools_module, "generate_image_gpt", generate_image_gpt)
             if "generate_image_gpt" not in tools_module.__all__:
@@ -72,12 +72,12 @@ class GPTImage2ToolPlugin:
             )
 
             # Add tools to current agent's config
-            from qwenpaw.config.config import (
+            from openspider.config.config import (
                 BuiltinToolConfig,
                 load_agent_config,
                 save_agent_config,
             )
-            from qwenpaw.app.agent_context import get_current_agent_id
+            from openspider.app.agent_context import get_current_agent_id
 
             tools_to_register = [
                 {
@@ -112,7 +112,7 @@ class GPTImage2ToolPlugin:
 
                 # Ensure tools config exists
                 if not agent_config.tools:
-                    from qwenpaw.config.config import ToolsConfig
+                    from openspider.config.config import ToolsConfig
 
                     agent_config.tools = ToolsConfig()
 

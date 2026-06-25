@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""QwenPaw Agents Module.
+"""OpenSpider Agents Module.
 
 This module provides the main agent implementation and supporting utilities
 for building AI agents with tools, skills, and memory management.
@@ -9,7 +9,7 @@ Public API:
 - create_model_and_formatter: Factory for creating models and formatters
 
 Example:
-    >>> from qwenpaw.agents import QwenPawAgent, create_model_and_formatter
+    >>> from openspider.agents import QwenPawAgent, create_model_and_formatter
     >>> agent = QwenPawAgent()
     >>> # Or with custom model
     >>> model, formatter = create_model_and_formatter()

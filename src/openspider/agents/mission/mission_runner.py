@@ -98,7 +98,7 @@ MISSION_IMPL_GROUP = "mission_impl"
 # implement features; it delegates all coding to workers.
 # NOTE: execute_shell_command and write_file are intentionally kept
 # available because the master needs shell to dispatch workers
-# (`qwenpaw agents chat --background …`) and write_file to update
+# (`openspider agents chat --background …`) and write_file to update
 # prd.json / progress.txt.
 IMPLEMENTATION_TOOLS = frozenset(
     {
@@ -249,7 +249,7 @@ def _remaining_summary(
         "3. Parse verifier VERDICT: PASS → set `passes: true` "
         "in prd.json; FAIL → retry with error context\n\n"
         "Remember: you are the CONTROLLER — delegate ALL work "
-        "via `qwenpaw agents chat --background`."
+        "via `openspider agents chat --background`."
     )
 
 

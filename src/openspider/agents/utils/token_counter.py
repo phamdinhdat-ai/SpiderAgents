@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from .estimate_token_counter import EstimatedTokenCounter
 
 if TYPE_CHECKING:
-    from qwenpaw.config.config import AgentProfileConfig
+    from openspider.config.config import AgentProfileConfig
 
 
 def get_token_counter(

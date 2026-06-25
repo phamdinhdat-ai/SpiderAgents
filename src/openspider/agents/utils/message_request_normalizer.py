@@ -76,7 +76,7 @@ def _clone_messages(msgs: list[Msg]) -> list[Msg]:
 def _strip_media_blocks_in_place(msgs: list[Msg]) -> int:
     """Strip media blocks from copied messages only.
 
-    Mirrors the fallback logic in ``QwenPawAgent`` but operates on normalized
+    Mirrors the fallback logic in ``OpenSpiderAgent`` but operates on normalized
     copies so the stored memory remains untouched.
     """
     total_stripped = 0

@@ -11,14 +11,14 @@ from typing import Any, List
 from agentscope.model import ChatModelBase
 import anthropic
 
-from qwenpaw.providers.multimodal_prober import (
+from openspider.providers.multimodal_prober import (
     ProbeResult,
     _PROBE_IMAGE_B64,
     _IMAGE_PROBE_PROMPT,
     _is_media_keyword_error,
     evaluate_image_probe_answer,
 )
-from qwenpaw.providers.provider import ModelInfo, Provider
+from openspider.providers.provider import ModelInfo, Provider
 
 logger = logging.getLogger(__name__)
 

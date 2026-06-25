@@ -36,7 +36,7 @@ TOOL_GUARD_ACTION_TYPE = "tool_guard_approval"
 # Docs anchor shown when the ``card.action.trigger`` event is not
 # subscribed and the buttons silently fail on click.
 _FEISHU_CALLBACK_CONFIG_DOC_URL = (
-    "https://qwenpaw.agentscope.io/docs/channels#feishu-callback-config"
+    "https://openspider.agentscope.io/docs/channels#feishu-callback-config"
 )
 
 

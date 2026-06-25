@@ -19,7 +19,7 @@ from typing import (
     Optional,
 )
 
-from qwenpaw.config.config import SIPChannelConfig
+from openspider.config.config import SIPChannelConfig
 
 from ._audioop_compat import audioop  # noqa: F401  # must be first
 from ..base import BaseChannel, OnReplySent, ProcessHandler

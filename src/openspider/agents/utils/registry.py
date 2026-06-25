@@ -10,7 +10,7 @@ class Registry(Generic[T]):
     """Generic registry for registering and retrieving implementations.
 
     Example:
-        from qwenpaw.agents.context.base_context_manager import (
+        from openspider.agents.context.base_context_manager import (
             context_registry,
         )
 

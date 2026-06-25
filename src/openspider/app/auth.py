@@ -334,7 +334,7 @@ def is_auth_enabled() -> bool:
     user is checked separately by the middleware so that the first
     user can still reach the registration page.
     """
-    env_flag = EnvVarLoader.get_str("QWENPAW_AUTH_ENABLED", "").strip().lower()
+    env_flag = EnvVarLoader.get_str("OPENSPIDER_AUTH_ENABLED", "").strip().lower()
     return env_flag in ("true", "1", "yes")
 
 
@@ -404,8 +404,8 @@ def auto_register_from_env() -> None:
     if has_registered_users():
         return
 
-    username = EnvVarLoader.get_str("QWENPAW_AUTH_USERNAME", "").strip()
-    password = EnvVarLoader.get_str("QWENPAW_AUTH_PASSWORD", "").strip()
+    username = EnvVarLoader.get_str("OPENSPIDER_AUTH_USERNAME", "").strip()
+    password = EnvVarLoader.get_str("OPENSPIDER_AUTH_PASSWORD", "").strip()
     if not username or not password:
         return
 

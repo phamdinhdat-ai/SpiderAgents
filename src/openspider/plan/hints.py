@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Custom plan-to-hint generator for QwenPaw.
+"""Custom plan-to-hint generator for OpenSpider.
 
 Differences from AgentScope's DefaultPlanToHint:
 

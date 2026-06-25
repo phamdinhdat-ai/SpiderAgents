@@ -8,7 +8,7 @@ Run from **repo root**.
 bash scripts/wheel_build.sh
 ```
 
-- Builds the console frontend (`console/`), copies `console/dist` to `src/qwenpaw/console/dist`, then builds the wheel. Output: `dist/*.whl`.
+- Builds the console frontend (`console/`), copies `console/dist` to `src/openspider/console/dist`, then builds the wheel. Output: `dist/*.whl`.
 
 ## Build website
 
@@ -24,8 +24,8 @@ bash scripts/website_build.sh
 bash scripts/docker_build.sh [IMAGE_TAG] [EXTRA_ARGS...]
 ```
 
-- Default tag: `qwenpaw:latest`. Uses `deploy/Dockerfile` (multi-stage: builds console then Python app).
-- Example: `bash scripts/docker_build.sh myreg/qwenpaw:v1 --no-cache`.
+- Default tag: `openspider:latest`. Uses `deploy/Dockerfile` (multi-stage: builds console then Python app).
+- Example: `bash scripts/docker_build.sh myreg/openspider:v1 --no-cache`.
 
 ## Run Test
 
@@ -67,6 +67,6 @@ Optional flags:
 ```bash
 python scripts/run_dev.py --no-backend
 python scripts/run_dev.py --no-frontend
-python scripts/run_dev.py --backend-cmd "python -m qwenpaw app"
+python scripts/run_dev.py --backend-cmd "python -m openspider app"
 python scripts/run_dev.py --frontend-cmd "npm run dev -- --port 5174"
 ```

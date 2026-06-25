@@ -25,7 +25,7 @@ from .process_utils import (
     _base_url,
     _candidate_hosts,
     _extract_port_from_command,
-    _is_qwenpaw_service_command,
+    _is_openspider_service_command,
     _process_table,
 )
 
@@ -48,7 +48,7 @@ def _subprocess_text_kwargs() -> dict[str, Any]:
 
 @dataclass(frozen=True)
 class InstallInfo:
-    """Information about the current QwenPaw installation."""
+    """Information about the current OpenSpider installation."""
 
     package_dir: str
     python_executable: str
@@ -61,7 +61,7 @@ class InstallInfo:
 
 @dataclass(frozen=True)
 class RunningServiceInfo:
-    """Detected QwenPaw service endpoint state."""
+    """Detected OpenSpider service endpoint state."""
 
     is_running: bool
     base_url: str | None = None
@@ -91,7 +91,7 @@ def _is_newer_version(latest: str, current: str) -> bool | None:
 
 
 def _fetch_latest_version() -> str:
-    """Fetch the latest published QwenPaw version from PyPI."""
+    """Fetch the latest published OpenSpider version from PyPI."""
     try:
         resp = httpx.get(
             _PYPI_JSON_URL,
@@ -102,17 +102,17 @@ def _fetch_latest_version() -> str:
         data = resp.json()
     except httpx.HTTPError as exc:
         raise click.ClickException(
-            f"Failed to fetch the latest QwenPaw version from PyPI: {exc}",
+            f"Failed to fetch the latest OpenSpider version from PyPI: {exc}",
         ) from exc
     except json.JSONDecodeError as exc:
         raise click.ClickException(
             "Received an invalid response from PyPI when checking for the "
-            f"latest QwenPaw version: {exc}",
+            f"latest OpenSpider version: {exc}",
         ) from exc
     version = str(data.get("info", {}).get("version", "")).strip()
     if not version:
         raise click.ClickException(
-            "Unable to determine the latest QwenPaw version.",
+            "Unable to determine the latest OpenSpider version.",
         )
     return version
 
@@ -169,7 +169,7 @@ def _detect_installation() -> InstallInfo:
 
 
 def _probe_service(base_url: str) -> RunningServiceInfo:
-    """Probe a possible running QwenPaw HTTP service."""
+    """Probe a possible running OpenSpider HTTP service."""
     try:
         resp = httpx.get(
             f"{base_url.rstrip('/')}/api/version",
@@ -191,10 +191,10 @@ def _probe_service(base_url: str) -> RunningServiceInfo:
 
 
 def _process_candidate_ports() -> list[int]:
-    """Infer candidate local QwenPaw service ports from running processes."""
+    """Infer candidate local OpenSpider service ports from running processes."""
     ports: list[int] = []
     for _pid, command in _process_table():
-        if not _is_qwenpaw_service_command(command):
+        if not _is_openspider_service_command(command):
             continue
 
         port = _extract_port_from_command(command)
@@ -227,7 +227,7 @@ def _detect_running_service(
     host: str | None,
     port: int | None,
 ) -> RunningServiceInfo:
-    """Detect whether a QwenPaw HTTP service is currently running."""
+    """Detect whether a OpenSpider HTTP service is currently running."""
     candidates: list[str] = []
     seen: set[str] = set()
     preferred_hosts: list[str] = []
@@ -268,17 +268,17 @@ def _detect_running_service(
 def _running_service_display(running: RunningServiceInfo) -> str:
     """Build a concise running-service description for user prompts."""
     if not running.base_url:
-        return "a running QwenPaw service"
+        return "a running OpenSpider service"
     version_suffix = f" (version {running.version})" if running.version else ""
-    return f"QwenPaw service at {running.base_url}{version_suffix}"
+    return f"OpenSpider service at {running.base_url}{version_suffix}"
 
 
 def _confirm_force_shutdown(running: RunningServiceInfo) -> bool:
-    """Ask whether `qwenpaw shutdown` should be used before updating."""
+    """Ask whether `openspider shutdown` should be used before updating."""
     click.echo("")
     click.secho("!" * 72, fg="yellow", bold=True)
     click.secho(
-        "WARNING: RUNNING QWENPAW SERVICE DETECTED",
+        "WARNING: RUNNING OpenSpider service DETECTED",
         fg="yellow",
         bold=True,
     )
@@ -289,8 +289,8 @@ def _confirm_force_shutdown(running: RunningServiceInfo) -> bool:
         bold=True,
     )
     click.secho(
-        "Running `qwenpaw shutdown` will forcibly terminate the current "
-        "QwenPaw backend/frontend processes.",
+        "Running `openspider shutdown` will forcibly terminate the current "
+        "OpenSpider backend/frontend processes.",
         fg="red",
         bold=True,
     )
@@ -302,7 +302,7 @@ def _confirm_force_shutdown(running: RunningServiceInfo) -> bool:
     )
     click.echo("")
     return click.confirm(
-        "Run `qwenpaw shutdown` now and continue with the update?",
+        "Run `openspider shutdown` now and continue with the update?",
         default=False,
     )
 
@@ -311,7 +311,7 @@ def _run_shutdown_for_update(
     info: InstallInfo,
     running: RunningServiceInfo,
 ) -> None:
-    """Run `qwenpaw shutdown` in the current environment before updating."""
+    """Run `openspider shutdown` in the current environment before updating."""
     command = [info.python_executable, "-m", "qwenpaw"]
     parsed = urlparse(running.base_url or "")
     if parsed.port is not None:
@@ -319,7 +319,7 @@ def _run_shutdown_for_update(
     command.append("shutdown")
 
     click.echo("")
-    click.echo("Running `qwenpaw shutdown` before updating...")
+    click.echo("Running `openspider shutdown` before updating...")
 
     try:
         result = subprocess.run(
@@ -331,7 +331,7 @@ def _run_shutdown_for_update(
         )
     except OSError as exc:
         raise click.ClickException(
-            "Failed to run `qwenpaw shutdown`: " f"{exc}",
+            "Failed to run `openspider shutdown`: " f"{exc}",
         ) from exc
 
     output = (result.stdout or "").strip()
@@ -340,8 +340,8 @@ def _run_shutdown_for_update(
 
     if result.returncode != 0:
         raise click.ClickException(
-            "`qwenpaw shutdown` failed. Please stop the running QwenPaw "
-            "service manually before running `qwenpaw update`.",
+            "`openspider shutdown` failed. Please stop the running OpenSpider "
+            "service manually before running `openspider update`.",
         )
 
 
@@ -404,7 +404,7 @@ def _spawn_update_worker(
 ) -> subprocess.Popen[str]:
     """Spawn the worker that performs the actual package upgrade."""
     worker_code = (
-        "from qwenpaw.cli.update_cmd import run_update_worker; "
+        "from openspider.cli.update_cmd import run_update_worker; "
         "import sys; "
         "sys.exit(run_update_worker(sys.argv[1]))"
     )
@@ -517,7 +517,7 @@ def _run_update_worker_foreground(plan_path: Path) -> int:
             return proc.wait()
     except KeyboardInterrupt:
         click.echo("")
-        click.echo("[qwenpaw] Update interrupted. Stopping installer...")
+        click.echo("`[openspider`] Update interrupted. Stopping installer...")
         _terminate_update_worker(proc)
         return 130
 
@@ -547,10 +547,10 @@ def run_update_worker(plan_path: str | Path) -> int:
 
     click.echo("")
     click.echo(
-        "[qwenpaw] Updating QwenPaw "
+        "`[openspider`] Updating OpenSpider "
         f"{plan['current_version']} -> {plan['latest_version']}...",
     )
-    click.echo(f"[qwenpaw] Using installer: {plan['installer_label']}")
+    click.echo(f"`[openspider`] Using installer: {plan['installer_label']}")
 
     try:
         with subprocess.Popen(
@@ -565,7 +565,7 @@ def run_update_worker(plan_path: str | Path) -> int:
                     click.echo(line.rstrip())
             return_code = proc.wait()
     except FileNotFoundError as exc:
-        click.echo(f"[qwenpaw] Update failed: {exc}")
+        click.echo(f"`[openspider`] Update failed: {exc}")
         return_code = 1
     finally:
         try:
@@ -574,16 +574,16 @@ def run_update_worker(plan_path: str | Path) -> int:
             pass
 
     if return_code == 0:
-        click.echo("[qwenpaw] Update completed successfully.")
+        click.echo("`[openspider`] Update completed successfully.")
         click.echo(
-            "[qwenpaw] Please restart any running QwenPaw service "
+            "`[openspider`] Please restart any running OpenSpider service "
             "to use the new version.",
         )
     else:
-        click.echo(f"[qwenpaw] Update failed with exit code {return_code}.")
+        click.echo(f"`[openspider`] Update failed with exit code {return_code}.")
         click.echo(
-            "[qwenpaw] Please fix the error above and run "
-            "`qwenpaw update` again.",
+            "`[openspider`] Please fix the error above and run "
+            "`openspider update` again.",
         )
 
     return return_code
@@ -637,7 +637,7 @@ def _confirm_source_override(info: InstallInfo, yes: bool) -> bool:
 )
 @click.pass_context
 def update_cmd(ctx: click.Context, yes: bool) -> None:
-    """Upgrade QwenPaw in the current Python environment."""
+    """Upgrade OpenSpider in the current Python environment."""
     info = _detect_installation()
     latest_version = _fetch_latest_version()
 
@@ -645,7 +645,7 @@ def update_cmd(ctx: click.Context, yes: bool) -> None:
 
     version_check = _is_newer_version(latest_version, __version__)
     if version_check is False:
-        click.echo("QwenPaw is already up to date.")
+        click.echo("OpenSpider is already up to date.")
         return
 
     if not _confirm_source_override(info, yes):
@@ -677,8 +677,8 @@ def update_cmd(ctx: click.Context, yes: bool) -> None:
             raise click.ClickException(
                 "Detected "
                 f"{_running_service_display(running)}. "
-                "Please stop it before running `qwenpaw update`, or rerun "
-                "without `--yes` to confirm a forced `qwenpaw shutdown`.",
+                "Please stop it before running `openspider update`, or rerun "
+                "without `--yes` to confirm a forced `openspider shutdown`.",
             )
         if not _confirm_force_shutdown(running):
             click.echo("Cancelled.")
@@ -691,12 +691,12 @@ def update_cmd(ctx: click.Context, yes: bool) -> None:
         if running.is_running:
             raise click.ClickException(
                 f"Detected {_running_service_display(running)} "
-                "after `qwenpaw shutdown`. "
-                "Please stop it manually before running `qwenpaw update`.",
+                "after `openspider shutdown`. "
+                "Please stop it manually before running `openspider update`.",
             )
 
     if not yes and not click.confirm(
-        f"Update QwenPaw to {latest_version} in the current environment?",
+        f"Update OpenSpider to {latest_version} in the current environment?",
         default=True,
     ):
         click.echo("Cancelled.")
@@ -713,7 +713,7 @@ def update_cmd(ctx: click.Context, yes: bool) -> None:
     }
     plan_path = _write_worker_plan(plan)
     click.echo("")
-    click.echo("Starting QwenPaw update...")
+    click.echo("Starting OpenSpider update...")
 
     if sys.platform == "win32":
         _run_update_worker_detached(plan_path)

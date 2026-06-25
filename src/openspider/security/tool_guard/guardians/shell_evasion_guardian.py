@@ -520,7 +520,7 @@ def _load_check_enabled_map() -> dict[str, bool]:
     Unknown keys are ignored. Missing keys default to disabled.
     """
     try:
-        from qwenpaw.config import load_config
+        from openspider.config import load_config
 
         raw = load_config().security.tool_guard.shell_evasion_checks
     except Exception:

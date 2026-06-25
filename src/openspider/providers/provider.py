@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from pydantic import ConfigDict
 
 from agentscope.model import ChatModelBase
-from qwenpaw.exceptions import ProviderError
+from openspider.exceptions import ProviderError
 
 if TYPE_CHECKING:
     from .multimodal_prober import ProbeResult

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""QwenPaw Agent - Main agent implementation.
+"""OpenSpider Agent - Main agent implementation.
 
-This module provides the main QwenPawAgent class built on ReActAgent,
+This module provides the main OpenSpiderAgent class built on ReActAgent,
 with integrated tools, skills, and memory management.
 """
 
@@ -78,7 +78,7 @@ NamesakeStrategy = Literal["override", "skip", "raise", "rename"]
 
 
 class QwenPawAgent(ToolGuardMixin, ReActAgent):
-    """QwenPaw Agent with integrated tools, skills, and memory management.
+    """OpenSpider Agent with integrated tools, skills, and memory management.
 
     This agent extends ReActAgent with:
     - Built-in tools (shell, file operations, browser, etc.)
@@ -660,7 +660,7 @@ class QwenPawAgent(ToolGuardMixin, ReActAgent):
     @staticmethod
     def _rebuild_mcp_client(client: Any) -> Any | None:
         """Rebuild a fresh MCP client instance from stored config metadata."""
-        rebuild_info = getattr(client, "_qwenpaw_rebuild_info", None)
+        rebuild_info = getattr(client, "_openspider_rebuild_info", None)
         if not isinstance(rebuild_info, dict):
             return None
 
@@ -676,7 +676,7 @@ class QwenPawAgent(ToolGuardMixin, ReActAgent):
                     env=rebuild_info.get("env", {}),
                     cwd=rebuild_info.get("cwd"),
                 )
-                setattr(rebuilt_client, "_qwenpaw_rebuild_info", rebuild_info)
+                setattr(rebuilt_client, "_openspider_rebuild_info", rebuild_info)
                 return rebuilt_client
 
             raw_headers = rebuild_info.get("headers") or {}
@@ -919,7 +919,7 @@ class QwenPawAgent(ToolGuardMixin, ReActAgent):
         formatter = getattr(self, "formatter", None)
         if formatter is None:
             return
-        setattr(formatter, "_qwenpaw_force_strip_media", enabled)
+        setattr(formatter, "_openspider_force_strip_media", enabled)
 
     # pylint: disable=too-many-branches
     async def _reasoning(

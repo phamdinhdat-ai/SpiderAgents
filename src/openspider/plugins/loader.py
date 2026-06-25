@@ -301,7 +301,7 @@ class PluginLoader:
 
         Tries ``python -m pip`` first (conda / pip-installed envs).
         If pip is not available in the current interpreter — which is
-        the case for uv-managed venvs created by the QwenPaw script
+        the case for uv-managed venvs created by the OpenSpider script
         installer — falls back to ``uv pip install``.
 
         Intended to be called via ``asyncio.to_thread`` so that the

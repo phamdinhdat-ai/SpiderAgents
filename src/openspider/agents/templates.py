@@ -28,8 +28,8 @@ SUPPORTED_AGENT_TEMPLATES = (
 
 LOCAL_TEMPLATE_SKILL_NAMES = ("make_plan",)
 QA_TEMPLATE_DESCRIPTION = (
-    "Builtin Q&A helper for QwenPaw setup, local config under "
-    "QWENPAW_WORKING_DIR, and documentation. Prefer reading files "
+    "Builtin Q&A helper for OpenSpider setup, local config under "
+    "OPENSPIDER_WORKING_DIR, and documentation. Prefer reading files "
     "before answering; use absolute paths for code outside this "
     "workspace."
 )

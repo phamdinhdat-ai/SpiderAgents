@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Extensible hooks for `qwenpaw doctor`
+"""Extensible hooks for `openspider doctor`
 (entry points + programmatic registration).
 
 Plugins can expose a setuptools entry point in group ``qwenpaw.doctor``::

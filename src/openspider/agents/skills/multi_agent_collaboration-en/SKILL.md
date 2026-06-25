@@ -1,6 +1,6 @@
 ---
 name: multi_agent_collaboration
-description: Use this skill when another agent's expertise or context is needed, or when the user explicitly asks to involve another agent. First list agents, then use qwenpaw agents chat for two-way communication with replies.
+description: Use this skill when another agent's expertise or context is needed, or when the user explicitly asks to involve another agent. First list agents, then use openspider agents chat for two-way communication with replies.
 metadata:
   builtin_skill_version: "1.4"
   qwenpaw:
@@ -41,13 +41,13 @@ If the **user explicitly asks a specific agent to participate/assist/answer**, y
 ### 1) First Query Available Agents
 
 ```bash
-qwenpaw agents list
+openspider agents list
 ```
 
 ### 2) Start a New Conversation (Real-time Mode)
 
 ```bash
-qwenpaw agents chat \
+openspider agents chat \
   --from-agent <your_agent> \
   --to-agent <target_agent> \
   --text "[Agent <your_agent> requesting] ..."
@@ -58,7 +58,7 @@ qwenpaw agents chat \
 **Complex tasks** include: data analysis, report generation, batch processing, external API calls, etc.
 
 ```bash
-qwenpaw agents chat --background \
+openspider agents chat --background \
   --from-agent <your_agent> \
   --to-agent <target_agent> \
   --text "[Agent <your_agent> requesting] ..."
@@ -73,7 +73,7 @@ qwenpaw agents chat --background \
 ### 4) Query Background Task Status
 
 ```bash
-qwenpaw agents chat --background --task-id <task_id>
+openspider agents chat --background --task-id <task_id>
 ```
 
 **Important**: Do not query frequently! After submitting a task:
@@ -87,7 +87,7 @@ qwenpaw agents chat --background --task-id <task_id>
 ### 5) Continue an Existing Conversation
 
 ```bash
-qwenpaw agents chat \
+openspider agents chat \
   --from-agent <your_agent> \
   --to-agent <target_agent> \
   --session-id "<session_id>" \
@@ -107,8 +107,8 @@ qwenpaw agents chat \
 
 | Task Type | Mode to Use | Command |
 |-----------|-------------|---------|
-| Simple quick query | Real-time mode | `qwenpaw agents chat` |
-| Complex task (data analysis, batch processing, etc.) | Background mode | `qwenpaw agents chat --background` |
+| Simple quick query | Real-time mode | `openspider agents chat` |
+| Complex task (data analysis, batch processing, etc.) | Background mode | `openspider agents chat --background` |
 
 **Examples of complex tasks**:
 - Analyzing large amounts of data or log files
@@ -127,8 +127,8 @@ qwenpaw agents chat \
 
 ```
 1. Determine whether another agent is needed, or whether the user explicitly requested it
-2. qwenpaw agents list
-3. qwenpaw agents chat to start a conversation
+2. openspider agents list
+3. openspider agents chat to start a conversation
 4. Record [SESSION: ...] from the output
 5. Include --session-id when context continuation is needed later
 ```
@@ -137,8 +137,8 @@ qwenpaw agents chat \
 
 ```
 1. Determine whether the task is complex (data analysis, report generation, etc.)
-2. qwenpaw agents list
-3. qwenpaw agents chat --background to submit the task
+2. openspider agents list
+3. openspider agents chat --background to submit the task
 4. Record [TASK_ID: ...] from the output
 5. Continue handling other work
 6. Wait a reasonable time (30-60 seconds) before querying status
@@ -151,7 +151,7 @@ qwenpaw agents chat \
 
 ### Required Parameters
 
-`qwenpaw agents chat` must include all of the following:
+`openspider agents chat` must include all of the following:
 - `--from-agent`
 - `--to-agent`
 - `--text`
@@ -181,9 +181,9 @@ For subsequent follow-ups, you must copy this session_id and pass it via `--sess
 ### User Explicitly Requests Invoking Another Agent
 
 ```bash
-qwenpaw agents list
+openspider agents list
 
-qwenpaw agents chat \
+openspider agents chat \
   --from-agent scheduler_bot \
   --to-agent finance_bot \
   --text "[Agent scheduler_bot requesting] User explicitly asked to consult finance_bot. Please answer what pending financial tasks are there."
@@ -192,7 +192,7 @@ qwenpaw agents chat \
 ### New Conversation
 
 ```bash
-qwenpaw agents chat \
+openspider agents chat \
   --from-agent scheduler_bot \
   --to-agent finance_bot \
   --text "[Agent scheduler_bot requesting] What pending financial tasks are there today?"
@@ -201,7 +201,7 @@ qwenpaw agents chat \
 ### Continue Conversation
 
 ```bash
-qwenpaw agents chat \
+openspider agents chat \
   --from-agent scheduler_bot \
   --to-agent finance_bot \
   --session-id "scheduler_bot:to:finance_bot:1710912345:a1b2c3d4" \
@@ -217,7 +217,7 @@ qwenpaw agents chat \
 Do not guess agent IDs. First run:
 
 ```bash
-qwenpaw agents list
+openspider agents list
 ```
 
 ### Mistake 2: Wanting to continue a conversation but not passing session-id
@@ -235,13 +235,13 @@ If you just received a message from Agent B, do not call Agent B again.
 ### View Existing Sessions
 
 ```bash
-qwenpaw chats list --agent-id <your_agent>
+openspider chats list --agent-id <your_agent>
 ```
 
 ### Streaming Output
 
 ```bash
-qwenpaw agents chat \
+openspider agents chat \
   --from-agent <your_agent> \
   --to-agent <target_agent> \
   --mode stream \
@@ -251,7 +251,7 @@ qwenpaw agents chat \
 ### JSON Output
 
 ```bash
-qwenpaw agents chat \
+openspider agents chat \
   --from-agent <your_agent> \
   --to-agent <target_agent> \
   --json-output \
@@ -262,14 +262,14 @@ qwenpaw agents chat \
 
 ## Full Parameter Reference
 
-### qwenpaw agents list
+### openspider agents list
 
 **Parameters**:
 - `--base-url` (optional): Override the API address
 
 **No required parameters** -- just run it directly.
 
-### qwenpaw agents chat
+### openspider agents chat
 
 **Required parameters** (real-time mode):
 - `--from-agent`: Sender agent ID
@@ -312,7 +312,7 @@ When the task is a **complex task**, use `--background` to submit it to the back
 #### Submitting a Complex Task
 
 ```bash
-qwenpaw agents chat --background \
+openspider agents chat --background \
   --from-agent scheduler \
   --to-agent data_analyst \
   --text "[Agent scheduler requesting] Analyze user behavior in /data/logs/2026-03-26.log and generate a detailed report"
@@ -326,7 +326,7 @@ qwenpaw agents chat --background \
 ✅ Task submitted successfully
 
 Check status with:
-  qwenpaw agents chat --background --task-id 20802ea3-...
+  openspider agents chat --background --task-id 20802ea3-...
 ```
 
 #### Querying Task Status
@@ -341,11 +341,11 @@ Check status with:
 # Method 1: Query after handling other tasks (recommended)
 # After submitting the task, continue with the user's other requests
 # Query at an appropriate time:
-qwenpaw agents chat --background \
+openspider agents chat --background \
   --task-id 20802ea3-832d-4fb4-86f0-666ad79fcc80
 
 # Method 2: If you must wait, use a reasonable interval
-sleep 30 && qwenpaw agents chat --background \
+sleep 30 && openspider agents chat --background \
   --task-id 20802ea3-832d-4fb4-86f0-666ad79fcc80
 ```
 
@@ -366,7 +366,7 @@ Task status has two layers:
 
 💡 Don't wait - continue with other work!
    Check again in a few seconds:
-  qwenpaw agents chat --background --task-id 20802ea3-...
+  openspider agents chat --background --task-id 20802ea3-...
 ```
 
 2. **Pending**:
@@ -378,7 +378,7 @@ Task status has two layers:
 
 💡 Don't wait - handle other work first!
    Check again in a few seconds:
-  qwenpaw agents chat --background --task-id 20802ea3-...
+  openspider agents chat --background --task-id 20802ea3-...
 ```
 
 4. **Running**:
@@ -391,7 +391,7 @@ Task status has two layers:
 
 💡 Don't wait - continue with other tasks first!
    Check again later (10-30s):
-  qwenpaw agents chat --background --task-id 20802ea3-...
+  openspider agents chat --background --task-id 20802ea3-...
 ```
 
 5. **Completed successfully**:
@@ -434,7 +434,7 @@ Error: (Error message...)
 **Method 1: Query after handling other tasks** (recommended)
 ```bash
 # 1. Submit the task, record the task_id
-qwenpaw agents chat --background ...
+openspider agents chat --background ...
 # Returns task_id
 
 # 2. Continue handling the user's other requests or tasks
@@ -442,15 +442,15 @@ qwenpaw agents chat --background ...
 
 # 3. Query the result at an appropriate time
 # (e.g., after finishing the current task, or when the user asks about progress)
-qwenpaw agents chat --background --task-id <id>
+openspider agents chat --background --task-id <id>
 ```
 
 **Method 2: Timed polling** (if you must wait)
 ```bash
 # Incrementally increasing intervals, fast first then slow
-sleep 10 && qwenpaw agents chat --background --task-id <id>
-sleep 20 && qwenpaw agents chat --background --task-id <id>
-sleep 30 && qwenpaw agents chat --background --task-id <id>
+sleep 10 && openspider agents chat --background --task-id <id>
+sleep 20 && openspider agents chat --background --task-id <id>
+sleep 30 && openspider agents chat --background --task-id <id>
 ```
 
 #### Do Not Do This
@@ -458,7 +458,7 @@ sleep 30 && qwenpaw agents chat --background --task-id <id>
 ```bash
 # Wrong: querying too frequently
 while true; do
-    qwenpaw agents chat --background --task-id <id>
+    openspider agents chat --background --task-id <id>
     sleep 1  # Too frequent!
 done
 ```
@@ -470,7 +470,7 @@ done
 Use `-h` at any time to view detailed help:
 
 ```bash
-qwenpaw agents -h
-qwenpaw agents list -h
-qwenpaw agents chat -h
+openspider agents -h
+openspider agents list -h
+openspider agents chat -h
 ```

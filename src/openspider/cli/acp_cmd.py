@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""``qwenpaw acp`` — run QwenPaw as an ACP agent over stdio."""
+"""``openspider acp`` — run OpenSpider as an ACP agent over stdio."""
 from __future__ import annotations
 
 import asyncio
@@ -31,7 +31,7 @@ def acp_cmd(
     workspace: str | None,
     debug: bool,
 ) -> None:
-    """Start QwenPaw as an ACP agent (stdio)."""
+    """Start OpenSpider as an ACP agent (stdio)."""
     from pathlib import Path
 
     level = logging.DEBUG if debug else logging.WARNING
