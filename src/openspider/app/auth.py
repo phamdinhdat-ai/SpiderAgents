@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Authentication module: password hashing, JWT tokens, and FastAPI middleware.
+"""Authentication module: password hashing, tokens, and FastAPI middleware.
 
-Login is disabled by default and only enabled when the environment
-variable ``QWENPAW_AUTH_ENABLED`` is set to a truthy value (``true``,
-``1``, ``yes``).  Credentials are created through a web-based
-registration flow rather than environment variables, so that agents
-running inside the process cannot read plaintext passwords.
+Authentication is enabled by default and can be disabled by setting
+``OPENSPIDER_AUTH_ENABLED=false``.  Credentials are created through a
+web-based registration flow rather than environment variables, so that
+agents running inside the process cannot read plaintext passwords.
 
-Single-user design: only one account can be registered.  If the user
-forgets their password, delete ``auth.json`` from ``SECRET_DIR`` and
-restart the service to re-register.
+Multi-user design: the first registered user is always an admin.  Admins
+can create additional users with different roles via the admin API.
+Users are stored in ``auth.json`` under ``SECRET_DIR``.
 
 Uses only Python stdlib (hashlib, hmac, secrets) to avoid adding new
 dependencies.  The password is stored as a salted SHA-256 hash in
@@ -26,7 +25,7 @@ import secrets
 import time
 from typing import Optional
 
-from fastapi import Request, Response
+from fastapi import Depends, HTTPException, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from ..constant import SECRET_DIR, EnvVarLoader
@@ -146,9 +145,13 @@ def create_token(username: str, expiry_seconds: Optional[int] = None) -> str:
     secret = _get_jwt_secret()
     # Generate unique token ID (jti) for revocation support
     token_id = secrets.token_hex(16)
+    # Read the user's actual role from stored data
+    user_data = _get_user(username)
+    role = user_data.get("role", "user") if user_data else "admin"
     payload = json.dumps(
         {
             "sub": username,
+            "role": role,
             "exp": int(time.time()) + expiry_seconds,
             "iat": int(time.time()),
             "jti": token_id,  # JWT ID for individual revocation
@@ -163,10 +166,11 @@ def create_token(username: str, expiry_seconds: Optional[int] = None) -> str:
     return f"{payload_b64}.{sig}"
 
 
-def verify_token(token: str) -> Optional[str]:
-    """Verify *token*, return username if valid, ``None`` otherwise.
+def verify_token(token: str) -> Optional[tuple[str, str]]:
+    """Verify *token*, return ``(username, role)`` if valid, ``None`` otherwise.
 
     Also checks if the token has been revoked (appears in the revocation list).
+    Legacy tokens without a ``role`` claim default to ``"admin"``.
     """
     import base64
 
@@ -192,10 +196,54 @@ def verify_token(token: str) -> Optional[str]:
         if jti and _is_token_revoked(jti):
             return None
 
-        return payload.get("sub")
+        username = payload.get("sub")
+        role = payload.get("role", "admin")  # Default to admin for legacy tokens
+        return (username, role)
     except (json.JSONDecodeError, KeyError, ValueError, TypeError) as exc:
         logger.debug("Token verification failed: %s", exc)
         return None
+
+
+def get_current_user(request: Request) -> Optional[tuple[str, str]]:
+    """Extract and verify the Bearer token from *request*.
+
+    Returns ``(username, role)`` if valid, ``None`` otherwise.
+    Prefers token cached in ``request.scope`` by ``AuthMiddleware``.
+    """
+    # Check if middleware already verified and cached
+    cached_user = request.scope.get("auth_user")
+    cached_role = request.scope.get("auth_role")
+    if cached_user and cached_role:
+        return (cached_user, cached_role)
+
+    # Fallback: extract and verify from header
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
+    if not token:
+        return None
+    return verify_token(token)
+
+
+def get_current_admin(request: Request) -> str:
+    """FastAPI dependency: returns the admin username, or raises 403.
+
+    Usage::
+
+        @router.get("/admin/endpoint")
+        async def admin_endpoint(admin: str = Depends(get_current_admin)):
+            ...
+    """
+    result = get_current_user(request)
+    if result is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    username, role = result
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return username
+
+
+# Backward-compatible alias for the dependency name used in routers
+require_admin = get_current_admin
 
 
 # ---------------------------------------------------------------------------
@@ -212,6 +260,7 @@ def _load_auth_data() -> dict:
 
     Encrypted fields (``jwt_secret``) are transparently decrypted.
     Legacy plaintext values trigger an automatic re-encryption.
+    Legacy single-user ``"user"`` key is auto-migrated to ``"users"``.
     """
     if AUTH_FILE.is_file():
         try:
@@ -225,6 +274,17 @@ def _load_auth_data() -> dict:
                 for field in AUTH_SECRET_FIELDS
             )
             data = decrypt_dict_fields(data, AUTH_SECRET_FIELDS)
+
+            # Auto-migrate legacy single-user format to multi-user
+            if "user" in data and "users" not in data:
+                legacy_user = data.pop("user")
+                username = legacy_user.get("username", "admin")
+                data["users"] = {username: legacy_user}
+                logger.info(
+                    "Migrated legacy single-user auth.json to multi-user format"
+                )
+                needs_rewrite = True
+
             if needs_rewrite:
                 try:
                     _save_auth_data(data)
@@ -239,6 +299,17 @@ def _load_auth_data() -> dict:
             logger.error("Failed to load auth file %s: %s", AUTH_FILE, exc)
             return {"_auth_load_error": True}
     return {}
+
+
+def _get_users() -> dict:
+    """Return the users dict from auth.json, keyed by username."""
+    data = _load_auth_data()
+    return data.get("users", {})
+
+
+def _get_user(username: str) -> dict | None:
+    """Return a single user's data by username, or None."""
+    return _get_users().get(username)
 
 
 def _save_auth_data(data: dict) -> None:
@@ -327,21 +398,32 @@ def _clean_expired_revocations() -> None:
 
 
 def is_auth_enabled() -> bool:
-    """Check whether authentication is enabled via environment variable.
+    """Check whether authentication is enabled.
 
-    Returns ``True`` when ``QWENPAW_AUTH_ENABLED`` is set to a truthy
-    value (``true``, ``1``, ``yes``).  The presence of a registered
-    user is checked separately by the middleware so that the first
-    user can still reach the registration page.
+    Authentication is **enabled by default**.  It is disabled only when
+    the environment variable ``OPENSPIDER_AUTH_ENABLED`` is explicitly set
+    to ``"false"``, ``"0"``, ``"no"``, or ``"disabled"``.
+
+    This ensures new deployments require authentication out of the box
+    without extra configuration, while existing deployments that already
+    set ``OPENSPIDER_AUTH_ENABLED=true`` are unaffected.
     """
     env_flag = EnvVarLoader.get_str("OPENSPIDER_AUTH_ENABLED", "").strip().lower()
-    return env_flag in ("true", "1", "yes")
+    if env_flag == "":
+        return True  # Default: enabled
+    if env_flag in ("false", "0", "no", "disabled"):
+        return False
+    return True  # Any other value ("true", "1", "yes", etc.) → enabled
 
 
 def has_registered_users() -> bool:
-    """Return ``True`` if a user has been registered."""
-    data = _load_auth_data()
-    return bool(data.get("user"))
+    """Return ``True`` if any user has been registered."""
+    return len(_get_users()) > 0
+
+
+def get_user_count() -> int:
+    """Return the number of registered users."""
+    return len(_get_users())
 
 
 # ---------------------------------------------------------------------------
@@ -353,35 +435,42 @@ def register_user(
     username: str,
     password: str,
     expiry_seconds: Optional[int] = None,
+    role: str | None = None,
 ) -> Optional[str]:
-    """Register the single user account.
+    """Register a user account.
 
-    Args:
-        username: The username to register.
-        password: The password to register.
-        expiry_seconds: Custom token expiry time in seconds.
+    If no users exist yet, the first user is always an admin.
+    Otherwise the *role* parameter determines the role (default ``"user"``).
 
-    Returns a token on success, ``None`` if a user already exists.
+    Returns a token on success, ``None`` if the username already exists.
     """
     data = _load_auth_data()
+    users = data.get("users", {})
 
-    # Only one user allowed
-    if data.get("user"):
+    # Check for duplicate username
+    if username in users:
+        logger.warning("Attempt to register duplicate user '%s'", username)
         return None
 
+    # First user is always admin; subsequent users use explicit role or default
+    if role is None:
+        role = "admin" if not users else "user"
+
     pw_hash, salt = _hash_password(password)
-    data["user"] = {
+    users[username] = {
         "username": username,
         "password_hash": pw_hash,
         "password_salt": salt,
+        "role": role,
     }
+    data["users"] = users
 
     # Ensure jwt_secret exists
     if not data.get("jwt_secret"):
         data["jwt_secret"] = secrets.token_hex(32)
 
     _save_auth_data(data)
-    logger.info("User '%s' registered", username)
+    logger.info("User '%s' registered (role=%s)", username, role)
     return create_token(username, expiry_seconds)
 
 
@@ -419,11 +508,12 @@ def auto_register_from_env() -> None:
 
 def update_credentials(
     current_password: str,
+    current_username: str,
     new_username: Optional[str] = None,
     new_password: Optional[str] = None,
     expiry_seconds: Optional[int] = None,
 ) -> Optional[str]:
-    """Update the registered user's username and/or password.
+    """Update a user's username and/or password.
 
     Requires the current password for verification.  Returns a new
     token on success (because the username may have changed), or
@@ -431,12 +521,14 @@ def update_credentials(
 
     Args:
         current_password: The current password for verification.
+        current_username: The username whose credentials are being updated.
         new_username: The new username (optional).
         new_password: The new password (optional).
         expiry_seconds: Custom token expiry time in seconds.
     """
     data = _load_auth_data()
-    user = data.get("user")
+    users = data.get("users", {})
+    user = users.get(current_username)
     if not user:
         return None
 
@@ -446,7 +538,12 @@ def update_credentials(
         return None
 
     if new_username and new_username.strip():
-        user["username"] = new_username.strip()
+        new_uname = new_username.strip()
+        if new_uname != current_username and new_uname in users:
+            return None  # Username already taken
+        del users[current_username]
+        user["username"] = new_uname
+        users[new_uname] = user
 
     if new_password:
         pw_hash, salt = _hash_password(new_password)
@@ -455,7 +552,7 @@ def update_credentials(
         # Rotate JWT secret to invalidate all existing sessions
         data["jwt_secret"] = secrets.token_hex(32)
 
-    data["user"] = user
+    data["users"] = users
     _save_auth_data(data)
     logger.info("Credentials updated for user '%s'", user["username"])
     return create_token(user["username"], expiry_seconds)
@@ -479,10 +576,9 @@ def authenticate(
         expiry_seconds: Custom token expiry time in seconds.
     """
     data = _load_auth_data()
-    user = data.get("user")
+    users = data.get("users", {})
+    user = users.get(username)
     if not user:
-        return None
-    if user.get("username") != username:
         return None
     stored_hash = user.get("password_hash", "")
     stored_salt = user.get("password_salt", "")
@@ -560,6 +656,74 @@ def revoke_all_tokens() -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Admin user management (multi-user CRUD)
+# ---------------------------------------------------------------------------
+
+
+def list_users() -> list[dict]:
+    """Return a list of all registered users with their roles (no password data)."""
+    users = _get_users()
+    return [
+        {"username": u["username"], "role": u.get("role", "user")}
+        for u in users.values()
+    ]
+
+
+def create_user_admin(
+    username: str,
+    password: str,
+    role: str = "user",
+) -> Optional[str]:
+    """Create a new user (admin-only).  Returns a token or None if duplicate."""
+    valid_roles = ("admin", "user")
+    if role not in valid_roles:
+        logger.warning("Invalid role '%s' — must be one of %s", role, valid_roles)
+        return None
+    return register_user(username, password, role=role)
+
+
+def update_user_role(username: str, new_role: str) -> bool:
+    """Change a user's role.  Returns True on success."""
+    valid_roles = ("admin", "user")
+    if new_role not in valid_roles:
+        logger.warning("Invalid role '%s'", new_role)
+        return False
+
+    data = _load_auth_data()
+    users = data.get("users", {})
+    if username not in users:
+        return False
+
+    users[username]["role"] = new_role
+    data["users"] = users
+    _save_auth_data(data)
+    logger.info("User '%s' role changed to '%s'", username, new_role)
+    return True
+
+
+def delete_user(username: str, admin_username: str) -> bool:
+    """Delete a user.  Admin cannot delete themselves."""
+    if username == admin_username:
+        logger.warning("Admin '%s' attempted to delete themselves", admin_username)
+        return False
+
+    data = _load_auth_data()
+    users = data.get("users", {})
+    if username not in users:
+        return False
+
+    del users[username]
+    data["users"] = users
+    _save_auth_data(data)
+
+    # Rotate JWT secret to invalidate the deleted user's tokens
+    data["jwt_secret"] = secrets.token_hex(32)
+    _save_auth_data(data)
+    logger.info("User '%s' deleted by admin '%s'", username, admin_username)
+    return True
+
+
+# ---------------------------------------------------------------------------
 # FastAPI middleware
 # ---------------------------------------------------------------------------
 
@@ -584,8 +748,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 media_type="application/json",
             )
 
-        user = verify_token(token)
-        if user is None:
+        result = verify_token(token)
+        if result is None:
             return Response(
                 content=json.dumps(
                     {"detail": "Invalid or expired token"},
@@ -594,7 +758,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 media_type="application/json",
             )
 
-        request.state.user = user
+        username, role = result
+        request.state.user = username
+        request.scope["auth_user"] = username
+        request.scope["auth_role"] = role
         return await call_next(request)
 
     @staticmethod

@@ -272,6 +272,9 @@ class AgentRunner(Runner):
             f"user's task: {user_input}\n\n"
             f"{post.content}"
         )
+        # Work on a copy so the original message (visible to user) is
+        # not mutated.
+        msgs = list(msgs)
         AgentRunner._rewrite_last_message_text(msgs, merged)
         logger.info("Skill invocation: %s", name)
         return None
@@ -410,6 +413,12 @@ class AgentRunner(Runner):
                 "agent_id": self.agent_id,
             }
 
+            # Per-request tool execution level override from channel_meta
+            # (set by console chat mode selector in the frontend)
+            req_approval_level = channel_meta.get("approval_level")
+            if req_approval_level and isinstance(req_approval_level, str):
+                base_request_context["approval_level"] = req_approval_level
+
             # Extract root_session_id from request payload (agent chat)
             payload_root_session = getattr(request, "root_session_id", "")
             if payload_root_session and isinstance(payload_root_session, str):
@@ -491,6 +500,9 @@ class AgentRunner(Runner):
                 else:
                     refresher = f"[Mission active — dir: `{loop_dir}`]\n---\n"
                 original = query or ""
+                # Work on a copy so the original messages (stored/echoed
+                # to the user) do not leak mission instructions.
+                msgs = list(msgs)
                 self._rewrite_last_message_text(
                     msgs,
                     refresher + original,
@@ -523,6 +535,9 @@ class AgentRunner(Runner):
                         plan_desc = query.strip()[6:].strip()
                         if plan_desc:
                             set_plan_gate(plan_notebook, enabled=True)
+                            # Work on a copy so the original message is
+                            # not mutated for user display.
+                            msgs = list(msgs)
                             self._rewrite_last_message_text(
                                 msgs,
                                 plan_desc,

@@ -80,11 +80,11 @@ export const FileListPanel: React.FC<FileListPanelProps> = ({
         style={{ flex: 1, minHeight: 0 }}
       >
         <div className={styles.headerRow}>
-          <h3 className={styles.sectionTitle}>{t("workspace.coreFiles")}</h3>
+          <h3 className={styles.sectionTitle}>{t("workspace.userDocuments")}</h3>
           <Button size="small" onClick={onRefresh} icon={<ReloadOutlined />} />
         </div>
 
-        <p className={styles.infoText}>{t("workspace.coreFilesDesc")}</p>
+        <p className={styles.infoText}>{t("workspace.userDocumentsDesc")}</p>
         <div className={styles.divider} />
 
         <div className={styles.scrollContainer}>

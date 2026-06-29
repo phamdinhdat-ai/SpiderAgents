@@ -32,6 +32,10 @@ import { ApprovalCard } from "../../components/ApprovalCard/ApprovalCard";
 import { commandsApi } from "../../api/modules/commands";
 import { useApprovalContext } from "../../contexts/ApprovalContext";
 import { planApi } from "../../api/modules/plan";
+import {
+  ToolExecutionModeSelect,
+  type ToolExecutionLevel,
+} from "./components/ToolExecutionModeSelect";
 
 interface ApprovalMessageData {
   requestId: string;
@@ -517,6 +521,8 @@ export default function ChatPage() {
     Map<string, ApprovalMessageData>
   >(new Map());
   const [planEnabled, setPlanEnabled] = useState(false);
+  const [toolExecutionMode, setToolExecutionMode] =
+    useState<ToolExecutionLevel>("SMART");
 
   useEffect(() => {
     let cancelled = false;
@@ -911,6 +917,7 @@ export default function ChatPage() {
         user_id: window.currentUserId || session?.user_id || DEFAULT_USER_ID,
         channel: window.currentChannel || session?.channel || DEFAULT_CHANNEL,
         stream: true,
+        approval_level: toolExecutionMode.toLowerCase(),
         ...biz_params,
       };
 
@@ -938,7 +945,7 @@ export default function ChatPage() {
 
       return response;
     },
-    [selectedAgent],
+    [selectedAgent, toolExecutionMode],
   );
 
   const handleFileUpload = useCallback(
@@ -1050,12 +1057,20 @@ export default function ChatPage() {
         ...(i18nConfig as any)?.sender,
         beforeSubmit: handleBeforeSubmit,
         allowSpeech: !whisperEnabled,
-        prefix: whisperEnabled ? (
-          <WhisperSpeechButton
-            ref={whisperSpeechRef}
-            onTranscription={handleWhisperTranscription}
-          />
-        ) : undefined,
+        prefix: (
+          <>
+            <ToolExecutionModeSelect
+              value={toolExecutionMode}
+              onChange={setToolExecutionMode}
+            />
+            {whisperEnabled ? (
+              <WhisperSpeechButton
+                ref={whisperSpeechRef}
+                onTranscription={handleWhisperTranscription}
+              />
+            ) : null}
+          </>
+        ),
         attachments: {
           multiple: true,
           trigger: function (props: any) {
@@ -1160,6 +1175,7 @@ export default function ChatPage() {
     toolRenderConfig,
     scheduleHistoryClear,
     planEnabled,
+    toolExecutionMode,
   ]);
 
   return (

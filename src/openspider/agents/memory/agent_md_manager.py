@@ -7,6 +7,17 @@ from pathlib import Path
 from ..utils.file_handling import read_text_file_with_encoding_fallback
 from ...config.config import load_agent_config
 
+# Files that are part of the agent's core configuration / identity.
+# These are NOT user documents — they belong in Settings, not the Files tab.
+_SYSTEM_FILE_NAMES: frozenset[str] = frozenset({
+    "SOUL.md",
+    "AGENTS.md",
+    "BOOTSTRAP.md",
+    "HEARTBEAT.md",
+    "PROFILE.md",
+    "MEMORY.md",
+})
+
 
 class AgentMdManager:
     """Manager for reading and writing markdown files in working and memory
@@ -37,8 +48,17 @@ class AgentMdManager:
         self.memory_dir: Path = self.working_dir / memory_dir_name
         self.memory_dir.mkdir(parents=True, exist_ok=True)
 
-    def list_working_mds(self) -> list[dict]:
-        """List all markdown files with metadata in the working dir.
+    def list_working_mds(
+        self,
+        *,
+        include_system: bool = False,
+    ) -> list[dict]:
+        """List markdown files with metadata in the working dir.
+
+        Args:
+            include_system: If False (default), system config files
+                (SOUL.md, BOOTSTRAP.md, etc.) are excluded so the
+                Files tab only shows user documents.
 
         Returns files sorted by modification time descending (newest first).
 
@@ -56,6 +76,9 @@ class AgentMdManager:
         result = []
         for f in md_files:
             if f.is_file():
+                # Exclude system config files from user document view
+                if not include_system and f.name in _SYSTEM_FILE_NAMES:
+                    continue
                 stat = f.stat()
                 result.append(
                     {
@@ -71,6 +94,36 @@ class AgentMdManager:
                     },
                 )
         return result
+
+    def _file_info(self, f: Path) -> dict:
+        """Build a file-info dict for a single file."""
+        stat = f.stat()
+        return {
+            "filename": f.name,
+            "size": stat.st_size,
+            "path": str(f),
+            "created_time": datetime.fromtimestamp(
+                stat.st_ctime,
+            ).isoformat(),
+            "modified_time": datetime.fromtimestamp(
+                stat.st_mtime,
+            ).isoformat(),
+        }
+
+    def list_documents(self) -> list[dict]:
+        """List all files in the ``documents/`` subdirectory.
+
+        These are user-uploaded documents (PDFs, images, text files, etc.).
+        Returns files sorted by modification time descending (newest first).
+        """
+        docs_dir = self.working_dir / "documents"
+        if not docs_dir.is_dir():
+            return []
+
+        all_files = [f for f in docs_dir.iterdir() if f.is_file()]
+        all_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+
+        return [self._file_info(f) for f in all_files]
 
     def read_working_md(self, md_name: str) -> str:
         """Read markdown file content from the working directory.

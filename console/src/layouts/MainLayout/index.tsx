@@ -36,6 +36,10 @@ const BackupsPage = lazyImportWithRetry("../../pages/Settings/Backups");
 const PluginManagerPage = lazyImportWithRetry(
   "../../pages/Settings/PluginManager",
 );
+const AdminSettingsPage = lazyImportWithRetry("../../pages/Settings/Admin");
+const UserManagementPage = lazyImportWithRetry(
+  "../../pages/Settings/UserManagement",
+);
 
 const { Content } = Layout;
 
@@ -59,6 +63,8 @@ const pathToKey: Record<string, string> = {
   "/agent-stats": "agent-stats",
   "/backups": "backups",
   "/plugin-manager": "plugin-manager",
+  "/admin-settings": "admin-settings",
+  "/user-management": "user-management",
 };
 
 export default function MainLayout() {
@@ -119,6 +125,14 @@ export default function MainLayout() {
                   <Route
                     path="/plugin-manager"
                     element={<PluginManagerPage />}
+                  />
+                  <Route
+                    path="/admin-settings"
+                    element={<AdminSettingsPage />}
+                  />
+                  <Route
+                    path="/user-management"
+                    element={<UserManagementPage />}
                   />
 
                   {/* Plugin routes — dynamically injected at runtime */}

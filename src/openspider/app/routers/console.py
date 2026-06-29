@@ -86,6 +86,13 @@ def _extract_session_and_payload(request_data: Union[AgentRequest, dict]):
             elif isinstance(content_part, dict) and "content" in content_part:
                 content_parts.extend(content_part["content"] or [])
 
+    # Per-request tool execution level override (console chat mode selector)
+    approval_level = None
+    if isinstance(request_data, dict):
+        approval_level = request_data.get("approval_level")
+        if approval_level and not isinstance(approval_level, str):
+            approval_level = None
+
     native_payload = {
         "channel_id": channel_id,
         "sender_id": sender_id,
@@ -93,6 +100,7 @@ def _extract_session_and_payload(request_data: Union[AgentRequest, dict]):
         "meta": {
             "session_id": session_id,
             "user_id": sender_id,
+            **({"approval_level": approval_level} if approval_level else {}),
         },
     }
     return native_payload

@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Button, Form, Input } from "antd";
+import { Alert, Button, Form, Input } from "antd";
 import { useAppMessage } from "../../hooks/useAppMessage";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { authApi } from "../../api/modules/auth";
 import { setAuthToken } from "../../api/config";
 import { useTheme } from "../../contexts/ThemeContext";
+import styles from "./index.module.less";
+
+const OPENSPIDER_VERSION = "2.0.0";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -72,47 +75,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: isDark
-          ? "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)"
-          : "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-      }}
-    >
-      <div
-        style={{
-          width: 400,
-          padding: 32,
-          borderRadius: 12,
-          background: isDark ? "#1f1f1f" : "#fff",
-          boxShadow: isDark
-            ? "0 4px 24px rgba(0,0,0,0.4)"
-            : "0 4px 24px rgba(0,0,0,0.1)",
-        }}
-      >
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+    <div className={styles.loginContainer}>
+      <div className={styles.loginCard}>
+        <div className={styles.logoSection}>
           <img
             src={isDark ? "/logo-dark.svg" : "/logo-light.svg"}
             alt="OpenSpider"
-            style={{ height: 48, marginBottom: 12 }}
+            className={styles.logo}
           />
-          <h2 style={{ margin: 0, fontWeight: 600, fontSize: 20 }}>
+          <h2 className={styles.title}>
             {isRegister ? t("login.registerTitle") : t("login.title")}
           </h2>
+          <p className={styles.tagline}>{t("login.tagline")}</p>
           {!hasUsers && (
-            <p
-              style={{
-                margin: "8px 0 0",
-                color: isDark ? "rgba(255,255,255,0.45)" : "#666",
-                fontSize: 13,
-              }}
-            >
-              {t("login.firstUserHint")}
-            </p>
+            <div className={styles.firstUserAlert}>
+              <Alert
+                type="info"
+                showIcon
+                message={t("login.firstUserHint")}
+              />
+            </div>
           )}
         </div>
 
@@ -161,12 +143,16 @@ export default function LoginPage() {
               htmlType="submit"
               loading={loading}
               block
-              style={{ height: 44, borderRadius: 8, fontWeight: 500 }}
+              className={styles.submitBtn}
             >
               {isRegister ? t("login.register") : t("login.submit")}
             </Button>
           </Form.Item>
         </Form>
+
+        <div className={styles.version}>
+          OpenSpider v{OPENSPIDER_VERSION}
+        </div>
       </div>
     </div>
   );

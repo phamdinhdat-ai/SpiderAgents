@@ -43,181 +43,181 @@ logger = logging.getLogger(__name__)
 # Built-in provider definitions and their default models.
 # -------------------------------------------------------
 
-MODELSCOPE_MODELS: List[ModelInfo] = [
-    ModelInfo(
-        id="Qwen/Qwen3.5-122B-A10B",
-        name="Qwen3.5-122B-A10B",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="ZhipuAI/GLM-5",
-        name="GLM-5",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-]
+# MODELSCOPE_MODELS: List[ModelInfo] = [
+#     ModelInfo(
+#         id="Qwen/Qwen3.5-122B-A10B",
+#         name="Qwen3.5-122B-A10B",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="ZhipuAI/GLM-5",
+#         name="GLM-5",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+# ]
 
-DASHSCOPE_MODELS: List[ModelInfo] = [
-    ModelInfo(
-        id="qwen3-max",
-        name="Qwen3 Max",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="qwen3-235b-a22b-thinking-2507",
-        name="Qwen3 235B A22B Thinking",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="deepseek-v3.2",
-        name="DeepSeek-V3.2",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-]
+# DASHSCOPE_MODELS: List[ModelInfo] = [
+#     ModelInfo(
+#         id="qwen3-max",
+#         name="Qwen3 Max",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="qwen3-235b-a22b-thinking-2507",
+#         name="Qwen3 235B A22B Thinking",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="deepseek-v3.2",
+#         name="DeepSeek-V3.2",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+# ]
 
-ALIYUN_TOKENPLAN_MODELS: List[ModelInfo] = [
-    ModelInfo(
-        id="qwen3.6-plus",
-        name="Qwen3.6 Plus",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="glm-5",
-        name="GLM-5",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="MiniMax-M2.5",
-        name="MiniMax M2.5",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="deepseek-v3.2",
-        name="DeepSeek-V3.2",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="kimi-k2.5",
-        name="Kimi K2.5",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-]
+# ALIYUN_TOKENPLAN_MODELS: List[ModelInfo] = [
+#     ModelInfo(
+#         id="qwen3.6-plus",
+#         name="Qwen3.6 Plus",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="glm-5",
+#         name="GLM-5",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="MiniMax-M2.5",
+#         name="MiniMax M2.5",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="deepseek-v3.2",
+#         name="DeepSeek-V3.2",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="kimi-k2.5",
+#         name="Kimi K2.5",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+# ]
 
-ALIYUN_CODINGPLAN_MODELS: List[ModelInfo] = [
-    ModelInfo(
-        id="qwen3.6-plus",
-        name="Qwen3.6 Plus",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="qwen3.5-plus",
-        name="Qwen3.5 Plus",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="glm-5",
-        name="GLM-5",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="glm-4.7",
-        name="GLM-4.7",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="MiniMax-M2.5",
-        name="MiniMax M2.5",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="kimi-k2.5",
-        name="Kimi K2.5",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="qwen3-max-2026-01-23",
-        name="Qwen3 Max 2026-01-23",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="qwen3-coder-next",
-        name="Qwen3 Coder Next",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="qwen3-coder-plus",
-        name="Qwen3 Coder Plus",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-]
+# ALIYUN_CODINGPLAN_MODELS: List[ModelInfo] = [
+#     ModelInfo(
+#         id="qwen3.6-plus",
+#         name="Qwen3.6 Plus",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="qwen3.5-plus",
+#         name="Qwen3.5 Plus",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="glm-5",
+#         name="GLM-5",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="glm-4.7",
+#         name="GLM-4.7",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="MiniMax-M2.5",
+#         name="MiniMax M2.5",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="kimi-k2.5",
+#         name="Kimi K2.5",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="qwen3-max-2026-01-23",
+#         name="Qwen3 Max 2026-01-23",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="qwen3-coder-next",
+#         name="Qwen3 Coder Next",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="qwen3-coder-plus",
+#         name="Qwen3 Coder Plus",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+# ]
 
-ZHIPU_MODELS: List[ModelInfo] = [
-    ModelInfo(
-        id="glm-5",
-        name="glm-5",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="glm-5.1",
-        name="glm-5.1",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="glm-5-turbo",
-        name="glm-5-turbo",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="glm-5v-turbo",
-        name="glm-5v-turbo",
-        supports_image=True,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-]
+# ZHIPU_MODELS: List[ModelInfo] = [
+#     ModelInfo(
+#         id="glm-5",
+#         name="glm-5",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="glm-5.1",
+#         name="glm-5.1",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="glm-5-turbo",
+#         name="glm-5-turbo",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="glm-5v-turbo",
+#         name="glm-5v-turbo",
+#         supports_image=True,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+# ]
 
 OPENAI_MODELS: List[ModelInfo] = [
     ModelInfo(
@@ -255,127 +255,127 @@ OPENAI_MODELS: List[ModelInfo] = [
         supports_video=True,
         probe_source="documentation",
     ),
-    ModelInfo(
-        id="gpt-4.1-mini",
-        name="GPT-4.1 Mini",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="gpt-4.1-nano",
-        name="GPT-4.1 Nano",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="o3",
-        name="o3",
-        supports_image=True,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="o4-mini",
-        name="o4-mini",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="gpt-4o",
-        name="GPT-4o",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="gpt-4o-mini",
-        name="GPT-4o Mini",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
+    # ModelInfo(
+    #     id="gpt-4.1-mini",
+    #     name="GPT-4.1 Mini",
+    #     supports_image=True,
+    #     supports_video=True,
+    #     probe_source="documentation",
+    # ),
+    # ModelInfo(
+    #     id="gpt-4.1-nano",
+    #     name="GPT-4.1 Nano",
+    #     supports_image=True,
+    #     supports_video=True,
+    #     probe_source="documentation",
+    # ),
+    # ModelInfo(
+    #     id="o3",
+    #     name="o3",
+    #     supports_image=True,
+    #     supports_video=False,
+    #     probe_source="documentation",
+    # ),
+    # ModelInfo(
+    #     id="o4-mini",
+    #     name="o4-mini",
+    #     supports_image=True,
+    #     supports_video=True,
+    #     probe_source="documentation",
+    # ),
+    # ModelInfo(
+    #     id="gpt-4o",
+    #     name="GPT-4o",
+    #     supports_image=True,
+    #     supports_video=True,
+    #     probe_source="documentation",
+    # ),
+    # ModelInfo(
+    #     id="gpt-4o-mini",
+    #     name="GPT-4o Mini",
+    #     supports_image=True,
+    #     supports_video=True,
+    #     probe_source="documentation",
+    # ),
 ]
 
-OPENCODE_MODELS: List[ModelInfo] = [
-    ModelInfo(
-        id="big-pickle",
-        name="Big Pickle",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-        is_free=True,
-    ),
-    ModelInfo(
-        id="nemotron-3-super-free",
-        name="Nemotron 3 Super Free",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-        is_free=True,
-    ),
-]
+# OPENCODE_MODELS: List[ModelInfo] = [
+#     ModelInfo(
+#         id="big-pickle",
+#         name="Big Pickle",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#         is_free=True,
+#     ),
+#     ModelInfo(
+#         id="nemotron-3-super-free",
+#         name="Nemotron 3 Super Free",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#         is_free=True,
+#     ),
+# ]
 
-AZURE_OPENAI_MODELS: List[ModelInfo] = [
-    ModelInfo(
-        id="gpt-5-chat",
-        name="GPT-5 Chat",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="gpt-5-mini",
-        name="GPT-5 Mini",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="gpt-5-nano",
-        name="GPT-5 Nano",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="gpt-4.1",
-        name="GPT-4.1",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="gpt-4.1-mini",
-        name="GPT-4.1 Mini",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="gpt-4.1-nano",
-        name="GPT-4.1 Nano",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="gpt-4o",
-        name="GPT-4o",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="gpt-4o-mini",
-        name="GPT-4o Mini",
-        supports_image=True,
-        supports_video=True,
-        probe_source="documentation",
-    ),
-]
+# AZURE_OPENAI_MODELS: List[ModelInfo] = [
+#     ModelInfo(
+#         id="gpt-5-chat",
+#         name="GPT-5 Chat",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="gpt-5-mini",
+#         name="GPT-5 Mini",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="gpt-5-nano",
+#         name="GPT-5 Nano",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="gpt-4.1",
+#         name="GPT-4.1",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="gpt-4.1-mini",
+#         name="GPT-4.1 Mini",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="gpt-4.1-nano",
+#         name="GPT-4.1 Nano",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="gpt-4o",
+#         name="GPT-4o",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="gpt-4o-mini",
+#         name="GPT-4o Mini",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="documentation",
+#     ),
+# ]
 
 MINIMAX_MODELS: List[ModelInfo] = [
     ModelInfo(
@@ -484,71 +484,71 @@ DEEPSEEK_MODELS: List[ModelInfo] = [
     ),
 ]
 
-VOLCENGINE_MODELS: List[ModelInfo] = [
-    ModelInfo(
-        id="doubao-seed-2-0-code-preview-260215",
-        name="Doubao-Seed-2.0-Code",
-        supports_image=True,
-        supports_video=True,
-        probe_source="probed",
-    ),
-    ModelInfo(
-        id="doubao-seed-2-0-pro-260215",
-        name="Doubao-Seed-2.0-pro",
-        supports_image=True,
-        supports_video=True,
-        probe_source="probed",
-    ),
-    ModelInfo(
-        id="doubao-seed-2-0-lite-260428",
-        name="Doubao-Seed-2.0-lite",
-        supports_image=True,
-        supports_video=True,
-        probe_source="probed",
-    ),
-    ModelInfo(
-        id="doubao-seed-code-preview-251028",
-        name="Doubao-Seed-Code",
-        supports_image=True,
-        supports_video=True,
-        probe_source="probed",
-    ),
-    ModelInfo(
-        id="glm-4-7-251222",
-        name="GLM-4.7",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="deepseek-v3-2-251201",
-        name="DeepSeek-V3.2",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-    ModelInfo(
-        id="doubao-seed-1-8-251228",
-        name="Doubao-Seed-1.8",
-        supports_image=True,
-        supports_video=True,
-        probe_source="probed",
-    ),
-    ModelInfo(
-        id="doubao-seed-2-0-mini-260428",
-        name="Doubao-Seed-2.0-mini",
-        supports_image=True,
-        supports_video=True,
-        probe_source="probed",
-    ),
-    ModelInfo(
-        id="doubao-seed-character-251128",
-        name="Doubao-Seed-Character",
-        supports_image=False,
-        supports_video=False,
-        probe_source="documentation",
-    ),
-]
+# VOLCENGINE_MODELS: List[ModelInfo] = [
+#     ModelInfo(
+#         id="doubao-seed-2-0-code-preview-260215",
+#         name="Doubao-Seed-2.0-Code",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="probed",
+#     ),
+#     ModelInfo(
+#         id="doubao-seed-2-0-pro-260215",
+#         name="Doubao-Seed-2.0-pro",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="probed",
+#     ),
+#     ModelInfo(
+#         id="doubao-seed-2-0-lite-260428",
+#         name="Doubao-Seed-2.0-lite",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="probed",
+#     ),
+#     ModelInfo(
+#         id="doubao-seed-code-preview-251028",
+#         name="Doubao-Seed-Code",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="probed",
+#     ),
+#     ModelInfo(
+#         id="glm-4-7-251222",
+#         name="GLM-4.7",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="deepseek-v3-2-251201",
+#         name="DeepSeek-V3.2",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+#     ModelInfo(
+#         id="doubao-seed-1-8-251228",
+#         name="Doubao-Seed-1.8",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="probed",
+#     ),
+#     ModelInfo(
+#         id="doubao-seed-2-0-mini-260428",
+#         name="Doubao-Seed-2.0-mini",
+#         supports_image=True,
+#         supports_video=True,
+#         probe_source="probed",
+#     ),
+#     ModelInfo(
+#         id="doubao-seed-character-251128",
+#         name="Doubao-Seed-Character",
+#         supports_image=False,
+#         supports_video=False,
+#         probe_source="documentation",
+#     ),
+# ]
 
 VOLCENGINE_CODINGPLAN_MODELS: List[ModelInfo] = [
     ModelInfo(
@@ -677,116 +677,116 @@ GEMINI_MODELS: List[ModelInfo] = [
     ),
 ]
 
-PROVIDER_MODELSCOPE = OpenAIProvider(
-    id="modelscope",
-    name="ModelScope",
-    base_url="https://api-inference.modelscope.cn/v1",
-    api_key_prefix="ms",
-    models=MODELSCOPE_MODELS,
-    freeze_url=True,
-)
+# PROVIDER_MODELSCOPE = OpenAIProvider(
+#     id="modelscope",
+#     name="ModelScope",
+#     base_url="https://api-inference.modelscope.cn/v1",
+#     api_key_prefix="ms",
+#     models=MODELSCOPE_MODELS,
+#     freeze_url=True,
+# )
 
-PROVIDER_DASHSCOPE = OpenAIProvider(
-    id="dashscope",
-    name="DashScope",
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-    api_key_prefix="sk",
-    models=DASHSCOPE_MODELS,
-    meta={
-        "base_url_options": [
-            {
-                "label": "China (Beijing)",
-                "value": "https://dashscope.aliyuncs.com/"
-                "compatible-mode/v1",
-            },
-            {
-                "label": "International (Singapore)",
-                "value": "https://dashscope-intl.aliyuncs.com/"
-                "compatible-mode/v1",
-            },
-            {
-                "label": "US (Virginia)",
-                "value": "https://dashscope-us.aliyuncs.com/"
-                "compatible-mode/v1",
-            },
-        ],
-    },
-)
+# PROVIDER_DASHSCOPE = OpenAIProvider(
+#     id="dashscope",
+#     name="DashScope",
+#     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+#     api_key_prefix="sk",
+#     models=DASHSCOPE_MODELS,
+#     meta={
+#         "base_url_options": [
+#             {
+#                 "label": "China (Beijing)",
+#                 "value": "https://dashscope.aliyuncs.com/"
+#                 "compatible-mode/v1",
+#             },
+#             {
+#                 "label": "International (Singapore)",
+#                 "value": "https://dashscope-intl.aliyuncs.com/"
+#                 "compatible-mode/v1",
+#             },
+#             {
+#                 "label": "US (Virginia)",
+#                 "value": "https://dashscope-us.aliyuncs.com/"
+#                 "compatible-mode/v1",
+#             },
+#         ],
+#     },
+# )
 
-PROVIDER_ALIYUN_CODINGPLAN = OpenAIProvider(
-    id="aliyun-codingplan",
-    name="Aliyun Coding Plan (China)",
-    base_url="https://coding.dashscope.aliyuncs.com/v1",
-    api_key_prefix="sk-sp",
-    models=ALIYUN_CODINGPLAN_MODELS,
-    # This provider doesn't support connection check without model config
-    support_connection_check=False,
-    freeze_url=True,
-)
+# PROVIDER_ALIYUN_CODINGPLAN = OpenAIProvider(
+#     id="aliyun-codingplan",
+#     name="Aliyun Coding Plan (China)",
+#     base_url="https://coding.dashscope.aliyuncs.com/v1",
+#     api_key_prefix="sk-sp",
+#     models=ALIYUN_CODINGPLAN_MODELS,
+#     # This provider doesn't support connection check without model config
+#     support_connection_check=False,
+#     freeze_url=True,
+# )
 
-PROVIDER_ALIYUN_CODINGPLAN_INTL = OpenAIProvider(
-    id="aliyun-codingplan-intl",
-    name="Aliyun Coding Plan (International)",
-    base_url="https://coding-intl.dashscope.aliyuncs.com/v1",
-    api_key_prefix="sk-sp",
-    models=ALIYUN_CODINGPLAN_MODELS,
-    # This provider doesn't support connection check without model config
-    support_connection_check=False,
-    freeze_url=True,
-)
+# PROVIDER_ALIYUN_CODINGPLAN_INTL = OpenAIProvider(
+#     id="aliyun-codingplan-intl",
+#     name="Aliyun Coding Plan (International)",
+#     base_url="https://coding-intl.dashscope.aliyuncs.com/v1",
+#     api_key_prefix="sk-sp",
+#     models=ALIYUN_CODINGPLAN_MODELS,
+#     # This provider doesn't support connection check without model config
+#     support_connection_check=False,
+#     freeze_url=True,
+# )
 
-PROVIDER_ALIYUN_TOKENPLAN = OpenAIProvider(
-    id="aliyun-tokenplan",
-    name="Aliyun Token Plan",
-    base_url=(
-        "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
-    ),
-    api_key_prefix="sk-sp",
-    models=ALIYUN_TOKENPLAN_MODELS,
-    support_connection_check=False,
-    freeze_url=True,
-)
+# PROVIDER_ALIYUN_TOKENPLAN = OpenAIProvider(
+#     id="aliyun-tokenplan",
+#     name="Aliyun Token Plan",
+#     base_url=(
+#         "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
+#     ),
+#     api_key_prefix="sk-sp",
+#     models=ALIYUN_TOKENPLAN_MODELS,
+#     support_connection_check=False,
+#     freeze_url=True,
+# )
 
-PROVIDER_ZHIPU_CN = OpenAIProvider(
-    id="zhipu-cn",
-    name="Zhipu (BigModel)",
-    base_url="https://open.bigmodel.cn/api/paas/v4",
-    api_key_prefix="",
-    models=ZHIPU_MODELS,
-    freeze_url=True,
-)
+# PROVIDER_ZHIPU_CN = OpenAIProvider(
+#     id="zhipu-cn",
+#     name="Zhipu (BigModel)",
+#     base_url="https://open.bigmodel.cn/api/paas/v4",
+#     api_key_prefix="",
+#     models=ZHIPU_MODELS,
+#     freeze_url=True,
+# )
 
-PROVIDER_ZHIPU_CN_CODINGPLAN = OpenAIProvider(
-    id="zhipu-cn-codingplan",
-    name="Zhipu Coding Plan (BigModel)",
-    base_url="https://open.bigmodel.cn/api/coding/paas/v4",
-    api_key_prefix="",
-    models=ZHIPU_MODELS,
-    freeze_url=True,
-    support_connection_check=False,
-)
+# PROVIDER_ZHIPU_CN_CODINGPLAN = OpenAIProvider(
+#     id="zhipu-cn-codingplan",
+#     name="Zhipu Coding Plan (BigModel)",
+#     base_url="https://open.bigmodel.cn/api/coding/paas/v4",
+#     api_key_prefix="",
+#     models=ZHIPU_MODELS,
+#     freeze_url=True,
+#     support_connection_check=False,
+# )
 
-PROVIDER_ZHIPU_INTL = OpenAIProvider(
-    id="zhipu-intl",
-    name="Zhipu (Z.AI)",
-    base_url="https://api.z.ai/api/paas/v4",
-    api_key_prefix="",
-    models=ZHIPU_MODELS,
-    freeze_url=True,
-)
+# PROVIDER_ZHIPU_INTL = OpenAIProvider(
+#     id="zhipu-intl",
+#     name="Zhipu (Z.AI)",
+#     base_url="https://api.z.ai/api/paas/v4",
+#     api_key_prefix="",
+#     models=ZHIPU_MODELS,
+#     freeze_url=True,
+# )
 
-PROVIDER_ZHIPU_INTL_CODINGPLAN = OpenAIProvider(
-    id="zhipu-intl-codingplan",
-    name="Zhipu Coding Plan (Z.AI)",
-    base_url="https://api.z.ai/api/coding/paas/v4",
-    api_key_prefix="",
-    models=ZHIPU_MODELS,
-    freeze_url=True,
-    support_connection_check=False,
-)
+# PROVIDER_ZHIPU_INTL_CODINGPLAN = OpenAIProvider(
+#     id="zhipu-intl-codingplan",
+#     name="Zhipu Coding Plan (Z.AI)",
+#     base_url="https://api.z.ai/api/coding/paas/v4",
+#     api_key_prefix="",
+#     models=ZHIPU_MODELS,
+#     freeze_url=True,
+#     support_connection_check=False,
+# )
 
-PROVIDER_QWENPAW = OpenAIProvider(
-    id="qwenpaw-local",
+PROVIDER_OPENSPIDER = OpenAIProvider(
+    id="openspider-local",
     name="OpenSpider Local",
     is_local=True,
     require_api_key=False,
@@ -801,22 +801,22 @@ PROVIDER_OPENAI = OpenAIProvider(
     freeze_url=True,
 )
 
-PROVIDER_OPENCODE = OpenAIProvider(
-    id="opencode",
-    name="OpenCode",
-    base_url="https://opencode.ai/zen/v1",
-    api_key_prefix="",
-    models=OPENCODE_MODELS,
-    freeze_url=True,
-    require_api_key=False,
-)
+# PROVIDER_OPENCODE = OpenAIProvider(
+#     id="opencode",
+#     name="OpenCode",
+#     base_url="https://opencode.ai/zen/v1",
+#     api_key_prefix="",
+#     models=OPENCODE_MODELS,
+#     freeze_url=True,
+#     require_api_key=False,
+# )
 
-PROVIDER_AZURE_OPENAI = OpenAIProvider(
-    id="azure-openai",
-    name="Azure OpenAI",
-    api_key_prefix="",
-    models=AZURE_OPENAI_MODELS,
-)
+# PROVIDER_AZURE_OPENAI = OpenAIProvider(
+#     id="azure-openai",
+#     name="Azure OpenAI",
+#     api_key_prefix="",
+#     models=AZURE_OPENAI_MODELS,
+# )
 
 PROVIDER_MINIMAX = AnthropicProvider(
     id="minimax",
@@ -936,15 +936,15 @@ PROVIDER_SILICONFLOW_INTL = OpenAIProvider(
     require_api_key=True,
 )
 
-PROVIDER_VOLCENGINE_CN = OpenAIProvider(
-    id="volcengine-cn",
-    name="Volcano Engine",
-    base_url="https://ark.cn-beijing.volces.com/api/v3",
-    api_key_prefix="",
-    models=VOLCENGINE_MODELS,
-    freeze_url=True,
-    support_model_discovery=False,
-)
+# PROVIDER_VOLCENGINE_CN = OpenAIProvider(
+#     id="volcengine-cn",
+#     name="Volcano Engine",
+#     base_url="https://ark.cn-beijing.volces.com/api/v3",
+#     api_key_prefix="",
+#     models=VOLCENGINE_MODELS,
+#     freeze_url=True,
+#     support_model_discovery=False,
+# )
 
 PROVIDER_VOLCENGINE_CN_CODINGPLAN = OpenAIProvider(
     id="volcengine-cn-codingplan",
@@ -999,18 +999,18 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
                 pass
 
     def _init_builtins(self):
-        self._add_builtin(PROVIDER_QWENPAW)
+        self._add_builtin(PROVIDER_OPENSPIDER)
         self._add_builtin(PROVIDER_OLLAMA)
         self._add_builtin(PROVIDER_LMSTUDIO)
         self._add_builtin(PROVIDER_OPENROUTER)
-        self._add_builtin(PROVIDER_MODELSCOPE)
-        self._add_builtin(PROVIDER_DASHSCOPE)
-        self._add_builtin(PROVIDER_ALIYUN_CODINGPLAN)
-        self._add_builtin(PROVIDER_ALIYUN_CODINGPLAN_INTL)
-        self._add_builtin(PROVIDER_ALIYUN_TOKENPLAN)
-        self._add_builtin(PROVIDER_OPENCODE)
-        self._add_builtin(PROVIDER_OPENAI)
-        self._add_builtin(PROVIDER_AZURE_OPENAI)
+        # self._add_builtin(PROVIDER_MODELSCOPE)
+        # self._add_builtin(PROVIDER_DASHSCOPE)
+        # self._add_builtin(PROVIDER_ALIYUN_CODINGPLAN)
+        # self._add_builtin(PROVIDER_ALIYUN_CODINGPLAN_INTL)
+        # self._add_builtin(PROVIDER_ALIYUN_TOKENPLAN)
+        # self._add_builtin(PROVIDER_OPENCODE)
+        # self._add_builtin(PROVIDER_OPENAI)
+        # self._add_builtin(PROVIDER_AZURE_OPENAI)
         self._add_builtin(PROVIDER_ANTHROPIC)
         self._add_builtin(PROVIDER_GEMINI)
         self._add_builtin(PROVIDER_DEEPSEEK)
@@ -1018,14 +1018,14 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
         self._add_builtin(PROVIDER_KIMI_INTL)
         self._add_builtin(PROVIDER_MINIMAX_CN)
         self._add_builtin(PROVIDER_MINIMAX)
-        self._add_builtin(PROVIDER_ZHIPU_CN)
-        self._add_builtin(PROVIDER_ZHIPU_CN_CODINGPLAN)
-        self._add_builtin(PROVIDER_ZHIPU_INTL)
-        self._add_builtin(PROVIDER_ZHIPU_INTL_CODINGPLAN)
+        # self._add_builtin(PROVIDER_ZHIPU_CN)
+        # self._add_builtin(PROVIDER_ZHIPU_CN_CODINGPLAN)
+        # self._add_builtin(PROVIDER_ZHIPU_INTL)
+        # self._add_builtin(PROVIDER_ZHIPU_INTL_CODINGPLAN)
         self._add_builtin(PROVIDER_SILICONFLOW_CN)
         self._add_builtin(PROVIDER_SILICONFLOW_INTL)
-        self._add_builtin(PROVIDER_VOLCENGINE_CN)
-        self._add_builtin(PROVIDER_VOLCENGINE_CN_CODINGPLAN)
+        # self._add_builtin(PROVIDER_VOLCENGINE_CN)
+        # self._add_builtin(PROVIDER_VOLCENGINE_CN_CODINGPLAN)
 
     def _add_builtin(self, provider: Provider):
         self.builtin_providers[provider.id] = provider
@@ -1058,10 +1058,10 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
     def _normalize_provider_id(provider_id: str) -> str:
         """Normalize provider ID for backward compatibility.
 
-        Maps legacy 'copaw-local' to 'qwenpaw-local'.
+        Maps legacy 'copaw-local' to 'openspider-local'.
         """
         if provider_id == "copaw-local":
-            return "qwenpaw-local"
+            return "openspider-local"
         return provider_id
 
     def get_provider(self, provider_id: str) -> Provider | None:
@@ -1122,7 +1122,7 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
         """Schedule background restore of the active local model server."""
         task = asyncio.create_task(
             self._resume_local_model(local_manager),
-            name="qwenpaw-local-model-resume",
+            name="openspider-local-model-resume",
         )
         task.add_done_callback(self._on_local_model_resume_done)
 
@@ -1632,17 +1632,17 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
             return None
 
     def _migrate_copaw_config(self) -> None:
-        """Migrate copaw-local provider config to qwenpaw-local."""
+        """Migrate copaw-local provider config to openspider-local."""
         # 1. Migrate active model configuration (only provider_id)
         if (
             self.active_model
             and self.active_model.provider_id == "copaw-local"
         ):
-            self.active_model.provider_id = "qwenpaw-local"
+            self.active_model.provider_id = "openspider-local"
             self.save_active_model(self.active_model)
             logger.info(
                 "Migrated active model provider from "
-                "'copaw-local' to 'qwenpaw-local'",
+                "'copaw-local' to 'openspider-local'",
             )
 
         # 2. Migrate stored provider config file
@@ -1656,7 +1656,7 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
                 old_config = json.load(f)
 
             # Get the new built-in provider instance
-            provider = self.builtin_providers.get("qwenpaw-local")
+            provider = self.builtin_providers.get("openspider-local")
             if not provider:
                 return
 
@@ -1678,7 +1678,7 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
             copaw_config_path.unlink()
             logger.info(
                 "Migrated provider config from "
-                "'copaw-local.json' to 'qwenpaw-local.json'",
+                "'copaw-local.json' to 'openspider-local.json'",
             )
         except Exception as exc:
             logger.warning("Failed to migrate copaw-local config: %s", exc)
@@ -1736,7 +1736,7 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
                 try:
                     # Convert legacy copaw-local provider_id
                     if active_model.get("provider_id") == "copaw-local":
-                        active_model["provider_id"] = "qwenpaw-local"
+                        active_model["provider_id"] = "openspider-local"
                     self.active_model = ModelSlotConfig.model_validate(
                         active_model,
                     )
@@ -1800,7 +1800,7 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
         if active_model:
             self.active_model = active_model
 
-        # Migrate copaw-local to qwenpaw-local for backwards compatibility
+        # Migrate copaw-local to openspider-local for backwards compatibility
         self._migrate_copaw_config()
 
     def _apply_default_annotations(self):
@@ -1845,14 +1845,14 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
 
         def _clear_local_provider():
             self.update_provider(
-                "qwenpaw-local",
+                "openspider-local",
                 {
                     "base_url": "",
                     "extra_models": [],
                 },
             )
 
-        local_models = self.get_provider("qwenpaw-local").extra_models
+        local_models = self.get_provider("openspider-local").extra_models
         model_id = local_models[0].id if local_models else None
         if model_id is None:
             return
@@ -1887,7 +1887,7 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
             return
 
         self.update_provider(
-            "qwenpaw-local",
+            "openspider-local",
             {
                 "base_url": f"http://127.0.0.1:{setup_result.port}/v1",
                 "extra_models": [setup_result.model_info],

@@ -112,7 +112,20 @@ class ToolGuardMixin:
         return bool(self._request_context.get("session_id"))
 
     def _get_tool_execution_level(self) -> ToolExecutionLevel:
-        """Get current agent's tool execution level from config."""
+        """Get current agent's tool execution level.
+
+        Priority:
+        1. Per-request override from ``_request_context["approval_level"]``
+           (set by console chat mode selector).
+        2. Agent-level config ``_agent_config.approval_level``.
+        3. Default ``AUTO``.
+        """
+        # Per-request override (console chat mode selector)
+        req_ctx = getattr(self, "_request_context", None) or {}
+        req_level = req_ctx.get("approval_level")
+        if req_level and isinstance(req_level, str):
+            return ToolExecutionLevel.from_config(req_level)
+
         agent_config = getattr(self, "_agent_config", None)
         if agent_config is None:
             return ToolExecutionLevel.AUTO

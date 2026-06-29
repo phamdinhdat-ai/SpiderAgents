@@ -139,11 +139,14 @@ def _resolve_search_root(
 
     Returns a ``Path`` on success or a ``ToolResponse`` error.
     """
-    search_root = (
-        Path(_resolve_file_path(path))
-        if path
-        else (get_current_workspace_dir() or WORKING_DIR)
-    )
+    try:
+        search_root = (
+            Path(_resolve_file_path(path))
+            if path
+            else (get_current_workspace_dir() or WORKING_DIR)
+        )
+    except PermissionError as e:
+        return _make_response(str(e))
     try:
         exists = search_root.exists()
     except OSError as e:

@@ -24,19 +24,37 @@ def _resolve_file_path(file_path: str) -> str:
     """Resolve file path: use absolute path as-is,
     resolve relative path from current workspace or WORKING_DIR.
 
+    **Security:** Absolute paths outside the workspace are rejected to
+    prevent sandbox escape.  The agent can only access files within its
+    own workspace directory.
+
     Args:
         file_path: The input file path (absolute or relative).
 
     Returns:
         The resolved absolute file path as string.
+
+    Raises:
+        PermissionError: If the absolute path is outside the workspace.
     """
     path = Path(file_path).expanduser()
+    workspace_dir = get_current_workspace_dir() or WORKING_DIR
+    workspace_root = Path(workspace_dir).resolve()
+
     if path.is_absolute():
-        return str(path)
+        resolved = path.resolve()
+        # Reject paths outside the workspace sandbox
+        try:
+            resolved.relative_to(workspace_root)
+        except ValueError:
+            raise PermissionError(
+                f"Access denied: '{file_path}' is outside the workspace "
+                f"({workspace_root}). You can only access files within "
+                f"your workspace directory.",
+            )
+        return str(resolved)
     else:
-        # Use current workspace_dir from context, fallback to WORKING_DIR
-        workspace_dir = get_current_workspace_dir() or WORKING_DIR
-        return str(workspace_dir / file_path)
+        return str(workspace_root / file_path)
 
 
 def _get_encoding_for_file(file_path: str) -> str:
@@ -281,7 +299,12 @@ async def edit_file(
             ],
         )
 
-    resolved_path = _resolve_file_path(file_path)
+    try:
+        resolved_path = _resolve_file_path(file_path)
+    except PermissionError as e:
+        return ToolResponse(
+            content=[TextBlock(type="text", text=str(e))],
+        )
 
     if not os.path.exists(resolved_path):
         return ToolResponse(

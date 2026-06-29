@@ -2,18 +2,24 @@
 """Authentication API endpoints."""
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
-from ...constant import EnvVarLoader
 from ..auth import (
     authenticate,
+    create_user_admin,
+    delete_user,
+    get_current_admin,
+    get_current_user,
+    get_user_count,
     has_registered_users,
     is_auth_enabled,
+    list_users,
     register_user,
     revoke_all_tokens,
     revoke_token,
     update_credentials,
+    update_user_role,
     verify_token,
 )
 
@@ -44,6 +50,17 @@ class RegisterRequest(BaseModel):
 class AuthStatusResponse(BaseModel):
     enabled: bool
     has_users: bool
+    role: str | None = None
+
+
+class AdminStatusResponse(BaseModel):
+    username: str
+    role: str
+
+
+class AdminSessionsResponse(BaseModel):
+    sessions: list = []
+    total: int = 0
 
 
 @router.post("/login")
@@ -67,15 +84,17 @@ async def login(req: LoginRequest):
 
 @router.post("/register")
 async def register(req: RegisterRequest):
-    """Register the single user account (only allowed once).
+    """Register the first user account (only allowed when no users exist).
+
+    After the first admin is created, additional users must be created
+    by an admin via ``POST /auth/admin/create-user``.
 
     Optional `expires_in` field:
     - Positive integer: token expires in N seconds
     - 0 or -1: permanent token (100 years)
     - None/omitted: default 7 days
     """
-    env_flag = EnvVarLoader.get_str("OPENSPIDER_AUTH_ENABLED", "").strip().lower()
-    if env_flag not in ("true", "1", "yes"):
+    if not is_auth_enabled():
         raise HTTPException(
             status_code=403,
             detail="Authentication is not enabled",
@@ -84,7 +103,7 @@ async def register(req: RegisterRequest):
     if has_registered_users():
         raise HTTPException(
             status_code=403,
-            detail="User already registered",
+            detail="Initial admin already registered. Additional users must be created by an admin.",
         )
 
     if not req.username.strip() or not req.password.strip():
@@ -104,11 +123,17 @@ async def register(req: RegisterRequest):
 
 
 @router.get("/status")
-async def auth_status():
+async def auth_status(request: Request):
     """Check if authentication is enabled and whether a user exists."""
+    role: str | None = None
+    if is_auth_enabled():
+        user_info = get_current_user(request)
+        if user_info is not None:
+            role = user_info[1]
     return AuthStatusResponse(
         enabled=is_auth_enabled(),
         has_users=has_registered_users(),
+        role=role,
     )
 
 
@@ -123,14 +148,15 @@ async def verify(request: Request):
     if not token:
         raise HTTPException(status_code=401, detail="No token provided")
 
-    username = verify_token(token)
-    if username is None:
+    result = verify_token(token)
+    if result is None:
         raise HTTPException(
             status_code=401,
             detail="Invalid or expired token",
         )
 
-    return {"valid": True, "username": username}
+    username, role = result
+    return {"valid": True, "username": username, "role": role}
 
 
 class UpdateProfileRequest(BaseModel):
@@ -157,11 +183,11 @@ async def update_profile(req: UpdateProfileRequest, request: Request):
             detail="No user registered",
         )
 
-    # Verify caller is authenticated
-    auth_header = request.headers.get("Authorization", "")
-    caller_token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
-    if not caller_token or verify_token(caller_token) is None:
+    # Verify caller is authenticated and get current username
+    user_info = get_current_user(request)
+    if user_info is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
+    current_username = user_info[0]
 
     if not req.new_username and not req.new_password:
         raise HTTPException(
@@ -183,6 +209,7 @@ async def update_profile(req: UpdateProfileRequest, request: Request):
 
     token = update_credentials(
         current_password=req.current_password,
+        current_username=current_username,
         new_username=req.new_username,
         new_password=req.new_password,
         expiry_seconds=req.expires_in,
@@ -224,7 +251,8 @@ async def revoke_single_token(req: RevokeTokenRequest, request: Request):
     # Get current token for authentication
     auth_header = request.headers.get("Authorization", "")
     caller_token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
-    if not caller_token or verify_token(caller_token) is None:
+    user_info = get_current_user(request)
+    if user_info is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     # Determine which token to revoke
@@ -269,9 +297,8 @@ async def revoke_all_sessions(request: Request):
         )
 
     # Verify caller is authenticated
-    auth_header = request.headers.get("Authorization", "")
-    caller_token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
-    if not caller_token or verify_token(caller_token) is None:
+    user_info = get_current_user(request)
+    if user_info is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     success = revoke_all_tokens()
@@ -285,3 +312,126 @@ async def revoke_all_sessions(request: Request):
         "message": "All tokens have been revoked. Please login again.",
         "revoked": True,
     }
+
+
+# ---------------------------------------------------------------------------
+# Admin-only endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get("/admin/status")
+async def admin_status(
+    admin: str = Depends(get_current_admin),
+):
+    """Return the current admin user's status.  Requires admin token."""
+    return AdminStatusResponse(username=admin, role="admin")
+
+
+@router.get("/admin/sessions")
+async def admin_sessions(
+    admin: str = Depends(get_current_admin),
+):
+    """List active sessions.  Stub — returns empty data for now."""
+    return AdminSessionsResponse(sessions=[], total=0)
+
+
+class CreateUserRequest(BaseModel):
+    username: str
+    password: str
+    role: str = "user"
+
+
+class UserInfo(BaseModel):
+    username: str
+    role: str
+
+
+class UserListResponse(BaseModel):
+    users: list[UserInfo]
+    total: int
+
+
+@router.get("/admin/users")
+async def admin_list_users(
+    admin: str = Depends(get_current_admin),
+):
+    """List all registered users (admin-only)."""
+    users = list_users()
+    return UserListResponse(
+        users=[UserInfo(**u) for u in users],
+        total=len(users),
+    )
+
+
+@router.post("/admin/create-user")
+async def admin_create_user(
+    req: CreateUserRequest,
+    admin: str = Depends(get_current_admin),
+):
+    """Create a new user account (admin-only)."""
+    if not req.username.strip() or not req.password.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Username and password are required",
+        )
+    if req.role not in ("admin", "user"):
+        raise HTTPException(
+            status_code=400,
+            detail="Role must be 'admin' or 'user'",
+        )
+
+    token = create_user_admin(req.username.strip(), req.password, req.role)
+    if token is None:
+        raise HTTPException(
+            status_code=409,
+            detail="Username already exists",
+        )
+    return {
+        "message": f"User '{req.username.strip()}' created",
+        "username": req.username.strip(),
+        "role": req.role,
+    }
+
+
+class UpdateRoleRequest(BaseModel):
+    role: str
+
+
+@router.put("/admin/users/{username}/role")
+async def admin_update_role(
+    username: str,
+    req: UpdateRoleRequest,
+    admin: str = Depends(get_current_admin),
+):
+    """Change a user's role (admin-only)."""
+    if req.role not in ("admin", "user"):
+        raise HTTPException(
+            status_code=400,
+            detail="Role must be 'admin' or 'user'",
+        )
+
+    if not update_user_role(username, req.role):
+        raise HTTPException(
+            status_code=404,
+            detail="User not found or invalid role",
+        )
+    return {"message": f"Role updated for '{username}'", "username": username, "role": req.role}
+
+
+@router.delete("/admin/users/{username}")
+async def admin_delete_user(
+    username: str,
+    admin: str = Depends(get_current_admin),
+):
+    """Delete a user account (admin-only, cannot delete self)."""
+    if not delete_user(username, admin):
+        if username == admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Cannot delete your own account",
+            )
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+    return {"message": f"User '{username}' deleted"}

@@ -100,7 +100,13 @@ def build_env_context(
             "  3. Use tool calls to perform actions. A response without a "
             "tool call indicates the task is complete. To continue a task, "
             "you must generate a tool call or provide useful feedback if "
-            "you are blocked.\n",
+            "you are blocked.\n"
+            "  4. You can ONLY access files within the Working directory "
+            "above. You do NOT have access to the user's personal files "
+            "(Documents, Desktop, Downloads, etc.). When the user asks "
+            "about 'my files' or 'my documents', they mean the documents "
+            "they have uploaded or created in your workspace. Use "
+            "glob_search or read_file to find and retrieve their content.",
         )
 
     return (

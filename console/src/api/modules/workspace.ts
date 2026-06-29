@@ -96,12 +96,14 @@ export const workspaceApi = {
     return { blob, filename };
   },
 
-  // File upload functionality
-  uploadFile: async (
-    file: File,
-  ): Promise<{ success: boolean; message: string }> => {
+  // File upload functionality — supports single/multiple files and ZIP archives
+  uploadFiles: async (
+    files: File[],
+  ): Promise<{ success: boolean; uploaded?: string[]; errors?: string[] }> => {
     const formData = new FormData();
-    formData.append("file", file);
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
 
     const response = await fetch(getApiUrl("/workspace/upload"), {
       method: "POST",
@@ -117,6 +119,13 @@ export const workspaceApi = {
     }
 
     return await response.json();
+  },
+
+  /** @deprecated Use uploadFiles instead */
+  uploadFile: async (
+    file: File,
+  ): Promise<{ success: boolean; uploaded?: string[]; errors?: string[] }> => {
+    return workspaceApi.uploadFiles([file]);
   },
 
   listDailyMemory: () =>

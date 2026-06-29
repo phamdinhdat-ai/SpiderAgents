@@ -415,3 +415,163 @@ classDiagram
 ```
 
 **Call chain**: `QwenPawAgent._acting()` → `super()._acting()` → `ToolGuardMixin._acting()` → `super()._acting()` → `ReActAgent._acting()`
+
+---
+
+## Harness Engineering Patterns *(NEW)*
+
+> Added in the Harness Engineering integration. See [16 — Harness Engineering](16-harness-engineering.md) for full documentation.
+
+### Pipeline (Intercepting Filter)
+
+```python
+# _acting() executes harness stages in sequence before/after tool execution
+async def _acting(self, tool_call):
+    # Pre-execution pipeline
+    loop_obs = self._loop_detector.check(tool_name, tool_input)   # ① Circuit breaker
+    self._loop_detector.record(tool_name, tool_input)             # ② Record
+    self._snapshot_manager.snapshot(tool_name, tool_input)        # ③ Memento
+    # Execution
+    result = await super()._acting(tool_call)                     # ④ Guard → Execute
+    # Post-execution pipeline
+    verify_obs = await self._self_verifier.verify(...)            # ⑤ Observer feedback
+    return result
+```
+
+### Circuit Breaker (Loop Detection)
+
+```python
+class LoopDetector:
+    """Sliding window: if same (tool, args) appears ≥ threshold times,
+    inject corrective observation — but never blocks execution."""
+    
+    _history: deque[tuple[str, str, str]]  # (tool_name, args_hash, result)
+
+    def check(self, tool_name, tool_input) -> str | None:
+        if count_matches >= self._threshold:
+            return "⚠️ Loop Detected: you are stuck. Try a different approach."
+        return None  # Circuit closed — proceed normally
+```
+
+### Observer + Feedback Loop (Self-Verification)
+
+```python
+class SelfVerifier:
+    """Observes tool output, evaluates against expectations,
+    feeds corrective signal back to agent memory."""
+    
+    async def verify(self, tool_name, tool_input, tool_result) -> str | None:
+        if tool_name in _FILE_WRITE_TOOLS:
+            actual = read_back_file(file_path)
+            if expected not in actual:
+                return "❌ Self-Verification Failed: content mismatch"
+        return None  # No corrective signal needed
+```
+
+### Memento / Snapshot (Rollback)
+
+```python
+class SnapshotManager:
+    """Captures file hashes before mutation; enables rollback on regression."""
+    
+    def snapshot(self, tool_name, tool_input) -> dict[str, str]:
+        # Memento: {file_path: sha256_hash}
+        return {str(p): sha256(p) for p in affected_paths}
+    
+    async def rollback(self, affected_paths) -> dict[str, bool]:
+        # Restore: git checkout (preferred) → temp backup (fallback)
+        for path, expected_hash in affected_paths.items():
+            git_restore(path) or backup_restore(path)
+```
+
+### Retry with Exponential Backoff (Tool Retry)
+
+```python
+class ToolRetryWrapper:
+    """Wraps tool execution with retry on transient errors."""
+    
+    async def execute(self, tool_name, tool_fn, tool_call_id):
+        for attempt in range(self._max_retries + 1):
+            try:
+                result = await tool_fn()
+                if not _is_transient_error(result):
+                    return result
+                await asyncio.sleep(self._backoff_base * (2 ** attempt))
+            except TransientError:
+                await asyncio.sleep(self._backoff_base * (2 ** attempt))
+        return result  # All retries exhausted
+
+# Usage: result = await wrapper.execute("shell", lambda: run_cmd("ls"), call_id)
+```
+
+### Updated MRO with Harness Pipeline
+
+```mermaid
+classDiagram
+    direction LR
+    
+    class ReActAgent {
+        +reasoning()
+        +_acting() **TOOL EXECUTION**
+        +reply()
+    }
+    
+    class ToolGuardMixin {
+        +_acting() **SECURITY GUARD**
+        +_decide_guard_action()
+        +_execute_guard_action()
+        +_acting_with_approval() **FIXED**
+    }
+    
+    class QwenPawAgent {
+        +__init__()
+        +_acting() **HARNESS PIPELINE**
+        +_loop_detector: LoopDetector
+        +_self_verifier: SelfVerifier
+        +_tool_retry: ToolRetryWrapper
+        +_snapshot_manager: SnapshotManager
+    }
+    
+    ReActAgent <|-- ToolGuardMixin : "extends"
+    ToolGuardMixin <|-- QwenPawAgent : "extends"
+    
+    note for QwenPawAgent "Updated call chain:
+    QwenPawAgent._acting()
+      → ① LoopDetect ② Snapshot
+      → super()._acting()
+        → ToolGuardMixin._acting()
+          → Guard → Approve → super()
+            → ReActAgent._acting()
+      → ③ SelfVerify"
+```
+
+### Pattern Interaction Map
+
+```mermaid
+flowchart LR
+    subgraph PreExecution["Pre-Execution"]
+        CB["Circuit Breaker<br/>LoopDetector"]
+        MEM["Memento<br/>SnapshotManager"]
+    end
+    
+    subgraph Execution["Execution"]
+        COR["Chain of Responsibility<br/>ToolGuardMixin MRO"]
+        FBP["Future-Based Suspension<br/>Approval Flow"]
+    end
+    
+    subgraph PostExecution["Post-Execution"]
+        OFL["Observer + Feedback<br/>SelfVerifier"]
+        RB["Retry + Backoff<br/>ToolRetryWrapper"]
+    end
+    
+    CB --> MEM --> COR --> FBP --> OFL
+    OFL -.->|"failed → retry"| RB
+    RB -.->|"retry execution"| COR
+    
+    style CB fill:#2196F3,color:#fff
+    style MEM fill:#4CAF50,color:#fff
+    style COR fill:#9C27B0,color:#fff
+    style FBP fill:#f44336,color:#fff
+    style OFL fill:#FF9800,color:#fff
+    style RB fill:#00BCD4,color:#fff
+```

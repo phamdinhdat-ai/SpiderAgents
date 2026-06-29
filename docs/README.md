@@ -24,6 +24,7 @@
 | 13 | [ACP Protocol](13-acp-protocol.md) | Agent Communication Protocol server + hosted clients |
 | 14 | [Design Patterns](14-design-patterns.md) | All design patterns + async patterns reference |
 | 15 | [Agent Flows & Diagrams](15-agent-flows.md) | **Mermaid diagrams**: multi-agent, ReAct loop, tool registration, routing, mission, plan, channels |
+| 16 | [Harness Engineering](16-harness-engineering.md) | **NEW** — Loop detection, self-verification, tool retry, snapshots, approval flow fix, pipeline architecture |
 
 ---
 

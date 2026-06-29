@@ -41,7 +41,7 @@ import {
   SparkSaveLine,
 } from "@agentscope-ai/icons";
 import { Package } from "lucide-react";
-import { clearAuthToken } from "../api/config";
+import { clearAuthToken, getApiUrl } from "../api/config";
 import { authApi } from "../api/modules/auth";
 import { usePlugins } from "../plugins/PluginContext";
 import styles from "./index.module.less";
@@ -76,6 +76,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
   const { isDark } = useTheme();
   const { pluginRoutes } = usePlugins();
   const [authEnabled, setAuthEnabled] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [accountLoading, setAccountLoading] = useState(false);
   const [accountForm] = Form.useForm();
@@ -87,9 +88,26 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
   useEffect(() => {
     authApi
       .getStatus()
-      .then((res) => setAuthEnabled(res.enabled))
+      .then((res) => {
+        setAuthEnabled(res.enabled);
+        if (res.enabled && res.has_users) {
+          // Fetch the current user's role
+          const token = localStorage.getItem("qwenpaw_auth_token") || "";
+          if (token) {
+            fetch(getApiUrl("/auth/verify"), {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+              .then((r) => r.json().then((data) => {
+                if (data.role) setUserRole(data.role);
+              }))
+              .catch(() => {});
+          }
+        }
+      })
       .catch(() => {});
   }, []);
+
+  const isAdmin = authEnabled && userRole === "admin";
 
   useEffect(() => {
     if (
@@ -287,6 +305,22 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       path: "/plugin-manager",
       label: t("nav.pluginManager", "Plugin Manager"),
     },
+    ...(isAdmin
+      ? [
+          {
+            key: "admin-settings",
+            icon: <SparkDebugLine size={18} />,
+            path: "/admin-settings",
+            label: t("nav.adminSettings"),
+          },
+          {
+            key: "user-management",
+            icon: <SparkSearchUserLine size={18} />,
+            path: "/user-management",
+            label: t("nav.userManagement"),
+          },
+        ]
+      : []),
     // Append plugin nav items dynamically
     ...pluginRoutes.map((route) => ({
       key: route.path.replace(/^\//, ""),
@@ -410,6 +444,20 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
           label: collapsed ? null : t("nav.pluginManager", "Plugin Manager"),
           icon: <Package size={16} />,
         },
+        ...(isAdmin
+          ? [
+              {
+                key: "admin-settings",
+                label: collapsed ? null : t("nav.adminSettings"),
+                icon: <SparkDebugLine size={16} />,
+              },
+              {
+                key: "user-management",
+                label: collapsed ? null : t("nav.userManagement"),
+                icon: <SparkSearchUserLine size={16} />,
+              },
+            ]
+          : []),
       ],
     },
   ];

@@ -1,0 +1,84 @@
+.loginContainer {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+
+  :global(.dark) &,
+  :global([data-theme="dark"]) & {
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  }
+}
+
+.loginCard {
+  width: 400px;
+  max-width: 90vw;
+  padding: 32px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+
+  :global(.dark) &,
+  :global([data-theme="dark"]) & {
+    background: #1f1f1f;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.logoSection {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.logo {
+  height: 48px;
+  margin-bottom: 12px;
+}
+
+.title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 20px;
+  color: #1f1f1f;
+
+  :global(.dark) &,
+  :global([data-theme="dark"]) & {
+    color: #e8e8e8;
+  }
+}
+
+.tagline {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #999;
+
+  :global(.dark) &,
+  :global([data-theme="dark"]) & {
+    color: rgba(255, 255, 255, 0.45);
+  }
+}
+
+.firstUserAlert {
+  margin-top: 12px;
+  text-align: left;
+}
+
+.version {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #bfbfbf;
+
+  :global(.dark) &,
+  :global([data-theme="dark"]) & {
+    color: rgba(255, 255, 255, 0.25);
+  }
+}
+
+.submitBtn {
+  height: 44px;
+  border-radius: 8px;
+  font-weight: 500;
+}

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import logging
 import shutil
 import tempfile
 import os
@@ -16,7 +17,7 @@ import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Body, HTTPException, UploadFile, File, Request
+from fastapi import APIRouter, Body, HTTPException, Query, UploadFile, File, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -35,6 +36,8 @@ from ..agent_context import get_agent_for_request
 
 
 router = APIRouter(prefix="/workspace", tags=["workspace"])
+
+logger = logging.getLogger(__name__)
 
 
 class MdFileInfo(BaseModel):
@@ -92,12 +95,22 @@ def _zip_directory(root: Path) -> io.BytesIO:
     "/files",
     response_model=list[MdFileInfo],
     summary="List working files",
-    description="List all working files (uses active agent)",
+    description="List working files (uses active agent). "
+    "Pass ?include_system=true to include system config files.",
 )
 async def list_working_files(
     request: Request,
+    include_system: bool = Query(
+        False,
+        description="Include system config files (SOUL.md, BOOTSTRAP.md, etc.)",
+    ),
 ) -> list[MdFileInfo]:
-    """List working directory markdown files."""
+    """List working directory markdown files.
+
+    By default, system config files (SOUL.md, AGENTS.md, BOOTSTRAP.md,
+    HEARTBEAT.md, PROFILE.md, MEMORY.md) are excluded so the Files tab
+    only shows user documents.
+    """
     try:
         workspace = await get_agent_for_request(request)
         workspace_manager = AgentMdManager(
@@ -106,9 +119,16 @@ async def list_working_files(
         )
         files = [
             MdFileInfo.model_validate(file)
-            for file in workspace_manager.list_working_mds()
+            for file in workspace_manager.list_working_mds(
+                include_system=include_system,
+            )
         ]
-        return files
+        # Also include uploaded documents from documents/ subdirectory
+        doc_files = [
+            MdFileInfo.model_validate(doc)
+            for doc in workspace_manager.list_documents()
+        ]
+        return files + doc_files
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -123,14 +143,23 @@ async def read_working_file(
     md_name: str,
     request: Request,
 ) -> MdFileContent:
-    """Read a working directory markdown file."""
+    """Read a working directory file (workspace .md or documents/ file)."""
     try:
         workspace = await get_agent_for_request(request)
         workspace_manager = AgentMdManager(
             str(workspace.workspace_dir),
             agent_id=workspace.agent_id,
         )
-        content = workspace_manager.read_working_md(md_name)
+        # Try workspace .md first, then documents/ subdirectory
+        try:
+            content = workspace_manager.read_working_md(md_name)
+        except FileNotFoundError:
+            # Try reading from documents/ as-is (no .md auto-append)
+            doc_path = workspace_manager.working_dir / "documents" / md_name
+            if doc_path.is_file():
+                content = doc_path.read_text(encoding="utf-8", errors="replace")
+            else:
+                raise
         return MdFileContent(content=content)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -149,14 +178,20 @@ async def write_working_file(
     body: MdFileContent,
     request: Request,
 ) -> dict:
-    """Write a working directory markdown file."""
+    """Write a working file (workspace .md or documents/ file)."""
     try:
         workspace = await get_agent_for_request(request)
         workspace_manager = AgentMdManager(
             str(workspace.workspace_dir),
             agent_id=workspace.agent_id,
         )
-        workspace_manager.write_working_md(md_name, body.content)
+        # If it's a document file (non-.md or in documents/), save there
+        if not md_name.endswith(".md"):
+            doc_path = workspace_manager.working_dir / "documents" / md_name
+            doc_path.parent.mkdir(parents=True, exist_ok=True)
+            doc_path.write_text(body.content, encoding="utf-8")
+        else:
+            workspace_manager.write_working_md(md_name, body.content)
         return {"written": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -755,49 +790,107 @@ async def download_workspace(request: Request):
 @router.post(
     "/upload",
     response_model=dict,
-    summary="Upload zip and merge into workspace",
+    summary="Upload files to agent workspace",
     description=(
-        "Upload a zip archive.  Paths present in the zip are merged into "
-        "agent workspace (files overwritten, dirs merged).  Paths not in "
-        "the zip are left unchanged (e.g. qwenpaw.db, runtime dirs). "
-        "Download packs the entire workspace; upload only "
-        "overwrites/merges zip contents."
+        "Upload one or more files to the agent workspace. "
+        "ZIP archives are extracted and merged into the workspace. "
+        "Individual files are saved to the documents/ subdirectory. "
+        "Use the 'files' field for multiple files."
     ),
 )
 async def upload_workspace(
     request: Request,
-    file: UploadFile = File(
-        ...,
-        description="Zip archive to merge into agent workspace",
+    files: list[UploadFile] | None = File(
+        default=None,
+        description="Files to upload (ZIP archives merged, others saved to documents/)",
+    ),
+    file: UploadFile | None = File(
+        default=None,
+        description="Single file upload (legacy, use 'files' for multiple)",
     ),
 ) -> dict:
-    """
-    Merge uploaded zip contents into agent workspace (overwrite, not clear).
-    """
+    """Upload files to agent workspace.
 
-    if file.content_type and file.content_type not in (
-        "application/zip",
-        "application/x-zip-compressed",
-        "application/octet-stream",
-    ):
+    - ZIP archives: extracted and merged (files overwritten, dirs merged).
+    - Individual files: saved to ``documents/`` subdirectory.
+
+    Supports both ``files`` (multiple) and ``file`` (single, legacy).
+    """
+    # Merge legacy single-file parameter into the list
+    all_files: list[UploadFile] = list(files) if files else []
+    if file is not None:
+        all_files.append(file)
+
+    if not all_files:
         raise HTTPException(
             status_code=400,
-            detail=(
-                f"Expected a zip file, got content-type: {file.content_type}"
-            ),
+            detail="No files provided. Use 'files' (multiple) or 'file' (single) field.",
         )
 
     agent = await get_agent_for_request(request)
-    workspace_dir = agent.workspace_dir
-    data = await file.read()
+    workspace_dir = Path(agent.workspace_dir)
+    documents_dir = workspace_dir / "documents"
+    documents_dir.mkdir(parents=True, exist_ok=True)
 
-    try:
-        await asyncio.to_thread(_validate_and_extract_zip, data, workspace_dir)
-        return {"success": True}
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to merge workspace: {exc}",
-        ) from exc
+    uploaded: list[str] = []
+    errors: list[str] = []
+
+    for uploaded_file in all_files:
+        filename = uploaded_file.filename or "unnamed_file"
+        # Sanitize filename — basename only, strip path traversal
+        safe_name = Path(filename).name or "unnamed_file"
+
+        try:
+            data = await uploaded_file.read()
+            content_type = uploaded_file.content_type or ""
+
+            # ZIP archives: extract and merge
+            if (
+                content_type
+                in (
+                    "application/zip",
+                    "application/x-zip-compressed",
+                    "application/octet-stream",
+                )
+                and safe_name.lower().endswith(".zip")
+            ):
+                try:
+                    await asyncio.to_thread(
+                        _validate_and_extract_zip,
+                        data,
+                        workspace_dir,
+                    )
+                    uploaded.append(f"{safe_name} (merged)")
+                except HTTPException:
+                    raise
+                except Exception as exc:
+                    errors.append(f"{safe_name}: {exc}")
+                continue
+
+            # Individual file: save to documents/
+            dest = documents_dir / safe_name
+            # Avoid overwriting — append counter if file exists
+            if dest.exists():
+                stem = dest.stem
+                suffix = dest.suffix
+                counter = 1
+                while dest.exists():
+                    dest = documents_dir / f"{stem}_{counter}{suffix}"
+                    counter += 1
+
+            dest.write_bytes(data)
+            uploaded.append(safe_name)
+
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.exception("Failed to upload file %s", safe_name)
+            errors.append(f"{safe_name}: {exc}")
+
+    result: dict = {"success": len(errors) == 0}
+    if uploaded:
+        result["uploaded"] = uploaded
+    if errors:
+        result["errors"] = errors
+
+    return result

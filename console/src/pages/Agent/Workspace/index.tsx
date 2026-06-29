@@ -56,39 +56,47 @@ export default function WorkspacePage() {
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const selectedFiles = event.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) return;
 
-    // Check if file is zip format
-    if (!file.name.toLowerCase().endsWith(".zip")) {
-      message.error(t("workspace.zipOnly"));
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-      return;
-    }
-
+    const fileList = Array.from(selectedFiles);
     const maxSizeMb = 100;
     const maxSize = maxSizeMb * 1024 * 1024;
-    if (file.size > maxSize) {
+
+    // Validate all files before upload
+    const oversized = fileList.filter((f) => f.size > maxSize);
+    if (oversized.length > 0) {
+      const names = oversized
+        .map((f) => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)}MB)`)
+        .join(", ");
       message.error(
         t("workspace.fileSizeExceeded", {
           limit: maxSizeMb,
-          size: (file.size / (1024 * 1024)).toFixed(2),
+          size: names,
         }),
       );
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
     try {
-      const result = await workspaceApi.uploadFile(file);
+      const result = await workspaceApi.uploadFiles(fileList);
       if (result.success) {
-        message.success(t("workspace.uploadSuccess"));
-      } else {
-        message.error(t("workspace.uploadFailed") + ": " + result.message);
+        const uploadedList = result.uploaded || [];
+        if (uploadedList.length > 1) {
+          message.success(
+            t("workspace.uploadMultipleSuccess", {
+              count: uploadedList.length,
+            }),
+          );
+        } else {
+          message.success(t("workspace.uploadSuccess"));
+        }
+        // Refresh file list after upload
+        fetchFiles();
+      }
+      if (result.errors && result.errors.length > 0) {
+        result.errors.forEach((err) => message.error(err));
       }
     } catch (error) {
       console.error("Upload failed:", error);
@@ -96,7 +104,6 @@ export default function WorkspacePage() {
         t("workspace.uploadFailed") + ": " + (error as Error).message,
       );
     } finally {
-      // Clear input value to allow re-uploading the same file
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -127,8 +134,9 @@ export default function WorkspacePage() {
                 ref={fileInputRef}
                 onChange={handleFileUpload}
                 style={{ display: "none" }}
-                accept=".zip"
-                title="Select a ZIP file (max 100MB)"
+                multiple
+                accept="*/*"
+                title={t("workspace.uploadTooltip")}
               />
               <Tooltip
                 title={t("workspace.uploadTooltip")}
