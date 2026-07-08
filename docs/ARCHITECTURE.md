@@ -67,7 +67,7 @@
                ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AGENT LAYER (agents/)                         │
-│  QwenPawAgent                                                    │
+│  SpiderAgent                                                    │
 │  ├── ToolGuardMixin ──► Security approval gate                  │
 │  ├── ReActAgent ──► Reasoning ⟷ Acting loop (agentscope)       │
 │  ├── Toolkit ──► 20 built-in tools + skills + MCP tools         │
@@ -116,9 +116,9 @@
        │  ├─ /stop ──► cancel task
        │  ├─ /compact, /new, /clear ──► CommandHandler
        │  ├─ /plan ──► activate plan gate
-       │  └─ (default) ──► create QwenPawAgent
+       │  └─ (default) ──► create SpiderAgent
        ▼
-8. QwenPawAgent ──► ReAct Loop
+8. SpiderAgent ──► ReAct Loop
        │  ┌─ _reasoning() ──► LLM call (via ToolGuardMixin)
        │  │   └─ ToolGuardMixin intercepts: guard check → approve/deny
        │  ├─ _acting() ──► tool execution
@@ -149,9 +149,9 @@ agentscope.agent.ReActAgent                    (framework base)
     │
 ToolGuardMixin (agents/tool_guard_mixin.py)    (security interceptor)
     ▲
-    │  MRO: QwenPawAgent → ToolGuardMixin → ReActAgent
+    │  MRO: SpiderAgent → ToolGuardMixin → ReActAgent
     │
-QwenPawAgent (agents/react_agent.py)           (main agent class)
+SpiderAgent (agents/react_agent.py)           (main agent class)
     ├── Toolkit (20 built-in tools)
     ├── Skills (from workspace/skills/)
     ├── MCP tools (from MCPClientManager)
@@ -164,7 +164,7 @@ QwenPawAgent (agents/react_agent.py)           (main agent class)
 ### Agent Construction
 
 ```python
-# agents/react_agent.py — QwenPawAgent.__init__()
+# agents/react_agent.py — SpiderAgent.__init__()
 def __init__(self, agent_config, workspace_dir, ...):
     # 1. Create toolkit with enabled tools from config
     self._create_toolkit(config)
@@ -191,9 +191,9 @@ def __init__(self, agent_config, workspace_dir, ...):
 ```python
 # agents/__init__.py — module-level lazy loading
 def __getattr__(name: str):
-    if name == "QwenPawAgent":
-        from .react_agent import QwenPawAgent
-        return QwenPawAgent
+    if name == "SpiderAgent":
+        from .react_agent import SpiderAgent
+        return SpiderAgent
     # Only imports heavy dependencies when actually accessed
 ```
 
@@ -556,8 +556,8 @@ class AgentRunner(Runner):
         if is_mission_command:   → mission_dispatch
         if is_plan_command:      → activate plan gate
         
-        # 2. Create QwenPawAgent
-        agent = QwenPawAgent(config, workspace_dir, ...)
+        # 2. Create SpiderAgent
+        agent = SpiderAgent(config, workspace_dir, ...)
         
         # 3. ReAct loop → SSE streaming
         async for msg, is_last in agent(messages):
@@ -969,7 +969,7 @@ src/openspider/
 ├── exceptions.py            # Domain exceptions (ProviderError, etc.)
 │
 ├── agents/                  # Agent system (core)
-│   ├── react_agent.py       # QwenPawAgent class (main agent)
+│   ├── react_agent.py       # SpiderAgent class (main agent)
 │   ├── tool_guard_mixin.py  # Security interceptor (Mixin)
 │   ├── model_factory.py     # Model + formatter factory
 │   ├── command_handler.py   # /compact, /new, /clear commands

@@ -12,7 +12,7 @@ Before writing any new code or modifying an existing module:
 1. **Search for existing implementations first.** Use `grep_search` or `semantic_search` to check whether the feature, utility, or pattern already exists somewhere in `src/openspider/`. Duplicate logic is forbidden.
 2. **Read the target file in full** before editing it. Understand its imports, class hierarchy, and existing method signatures.
 3. **Trace the relevant execution flow.** For anything touching the agent loop, identify where it sits in the chain:
-   `HTTP/channel → DynamicMultiAgentRunner → Workspace → Runner → QwenPawAgent → ToolGuardMixin → Provider`
+   `HTTP/channel → DynamicMultiAgentRunner → Workspace → Runner → SpiderAgent → ToolGuardMixin → Provider`
 4. **Check the contract for the module you are extending.** If adding a channel, read `BaseChannel`. If adding a provider, read `Provider` ABC in `providers/provider.py`. If adding a tool, read `ToolGuardMixin` in `agents/tool_guard_mixin.py`.
 
 ## 2. Decide the Correct Placement

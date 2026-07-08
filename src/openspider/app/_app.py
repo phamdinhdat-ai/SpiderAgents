@@ -36,7 +36,7 @@ from ..utils.logging import (
     LOG_FILE_PATH,
 )
 from ..utils.system_info import summarize_python_environment
-from .auth import AuthMiddleware, auto_register_from_env
+from .auth import AuthMiddleware, auto_register_from_env, is_auth_enabled
 from .routers import router as api_router, create_agent_scoped_router
 from .routers.agent_scoped import AgentContextMiddleware
 from .routers.approval import router as approval_router
@@ -266,6 +266,39 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
     ensure_default_agent_exists()
     migrate_legacy_skills_to_skill_pool()
     ensure_qa_agent_exists()
+
+    # Migrate legacy session files to per-user directories when auth is on.
+    if is_auth_enabled():
+        from ..config.utils import load_config as _load_cfg
+
+        _cfg = _load_cfg()
+        for _agent_id in _cfg.agents.profiles:
+            _ws_dir = Path(
+                _cfg.agents.profiles[_agent_id].workspace_dir,
+            ).expanduser()
+            _sessions_dir = _ws_dir / "sessions"
+            _sentinel = _sessions_dir / ".user-migration-done"
+            if not _sentinel.exists() and _sessions_dir.is_dir():
+                try:
+                    from .users.storage import UserStorageManager
+
+                    _mgr = UserStorageManager()
+                    _count = await _mgr.migrate_workspace_sessions_to_user_dirs(
+                        _ws_dir,
+                        _agent_id,
+                    )
+                    if _count > 0:
+                        logger.info(
+                            "User-session migration: %d files moved for agent '%s'.",
+                            _count,
+                            _agent_id,
+                        )
+                except Exception:
+                    logger.debug(
+                        "User-session migration skipped for agent '%s'.",
+                        _agent_id,
+                        exc_info=True,
+                    )
 
     # Create core managers (instant — no I/O)
     logger.debug("Initializing MultiAgentManager...")

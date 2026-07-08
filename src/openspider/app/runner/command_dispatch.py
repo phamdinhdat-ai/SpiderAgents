@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Command dispatch: run command path without creating QwenPawAgent.
+"""Command dispatch: run command path without creating SpiderAgent.
 
 Yields (Msg, last) compatible with query_handler stream.
 """

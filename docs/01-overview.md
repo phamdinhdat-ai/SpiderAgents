@@ -29,7 +29,7 @@ flowchart TD
     end
     
     subgraph Agent["🤖 Agent Layer (agents/)"]
-        AGENT["QwenPawAgent"]
+        AGENT["SpiderAgent"]
         GUARD["🛡️ ToolGuardMixin"]
         REACT["🔄 ReActAgent"]
         TOOLS["🔧 20 Built-in Tools"]
@@ -102,9 +102,9 @@ flowchart TD
        │  ├─ /stop ──► cancel task
        │  ├─ /compact, /new, /clear ──► CommandHandler
        │  ├─ /plan ──► activate plan gate
-       │  └─ (default) ──► create QwenPawAgent
+       │  └─ (default) ──► create SpiderAgent
        ▼
-8. QwenPawAgent ──► ReAct Loop
+8. SpiderAgent ──► ReAct Loop
        │  ┌─ _reasoning() ──► LLM call (via ToolGuardMixin)
        │  │   └─ ToolGuardMixin intercepts: guard check → approve/deny
        │  ├─ _acting() ──► tool execution

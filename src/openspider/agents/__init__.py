@@ -5,28 +5,28 @@ This module provides the main agent implementation and supporting utilities
 for building AI agents with tools, skills, and memory management.
 
 Public API:
-- QwenPawAgent: Main agent class
+- SpiderAgent: Main agent class
 - create_model_and_formatter: Factory for creating models and formatters
 
 Example:
-    >>> from openspider.agents import QwenPawAgent, create_model_and_formatter
-    >>> agent = QwenPawAgent()
+    >>> from openspider.agents import SpiderAgent, create_model_and_formatter
+    >>> agent = SpiderAgent()
     >>> # Or with custom model
     >>> model, formatter = create_model_and_formatter()
 """
 
-# QwenPawAgent is lazy-loaded so that importing agents.skill_system (e.g.
+# SpiderAgent is lazy-loaded so that importing agents.skill_system (e.g.
 # from CLI init_cmd/skills_cmd) does not pull react_agent, agentscope, tools.
 # pylint: disable=undefined-all-variable
-__all__ = ["QwenPawAgent", "create_model_and_formatter"]
+__all__ = ["SpiderAgent", "create_model_and_formatter"]
 
 
 def __getattr__(name: str):
     """Lazy load heavy imports."""
-    if name == "QwenPawAgent":
-        from .react_agent import QwenPawAgent
+    if name == "SpiderAgent":
+        from .react_agent import SpiderAgent
 
-        return QwenPawAgent
+        return SpiderAgent
     if name == "create_model_and_formatter":
         from .model_factory import create_model_and_formatter
 

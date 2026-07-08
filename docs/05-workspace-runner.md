@@ -84,8 +84,8 @@ class AgentRunner(Runner):
         if is_mission_command:   → mission_dispatch.py
         if is_plan_command:      → activate plan gate
         
-        # 2. Create QwenPawAgent
-        agent = QwenPawAgent(config, workspace_dir, ...)
+        # 2. Create SpiderAgent
+        agent = SpiderAgent(config, workspace_dir, ...)
         
         # 3. ReAct loop → SSE streaming
         async for msg, is_last in agent(messages):
@@ -101,7 +101,7 @@ class AgentRunner(Runner):
 | 3 | Conversation commands | `/compact`, `/new`, `/clear`, `/dump_history`, `/load_history` |
 | 4 | Mission commands | Mission mode control |
 | 5 | Plan commands | `/plan <description>` |
-| 6 | Normal messages | Create QwenPawAgent, run ReAct loop |
+| 6 | Normal messages | Create SpiderAgent, run ReAct loop |
 
 ### Streaming
 

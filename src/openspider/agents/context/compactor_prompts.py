@@ -184,3 +184,103 @@ UPDATE_USER_MESSAGE_ZH = """\
 - [保留重要上下文，如需要则添加新的]
 
 请按照上面示例的格式，输出结构化摘要。"""
+
+
+SYSTEM_PROMPT_VI = """\
+Bạn là một trợ lý nén ngữ cảnh. Nhiệm vụ của bạn là tạo các bản tóm tắt có cấu trúc từ cuộc hội thoại,
+để có thể sử dụng nhằm khôi phục ngữ cảnh trong các phiên làm việc sau.
+Hãy tập trung vào việc giữ lại những thông tin quan trọng nhất trong khi giảm số lượng token.
+"""
+
+SUMMARY_PROMPT_VI = """\
+# Tóm tắt cuộc hội thoại trước
+Các nhật ký hội thoại trước đã được lưu vào dialog/YYYY-MM-DD.jsonl (hoặc các tệp ngày gần đó).
+Dưới đây là bản tóm tắt:
+{summary}
+
+Phần trên là bản tóm tắt của cuộc hội thoại trước. Hãy sử dụng nó làm ngữ cảnh để duy trì tính liên tục của cuộc hội thoại.
+"""
+
+INITIAL_USER_MESSAGE_VI = """\
+# Nhiệm vụ
+Tạo một bản tóm tắt có cấu trúc từ cuộc hội thoại ở trên.
+
+# Quy tắc
+- Giữ cho mỗi phần ngắn gọn.
+- Bảo toàn chính xác đường dẫn tệp, tên hàm và thông báo lỗi.
+
+# Định dạng đầu ra
+
+## Mục tiêu
+[Người dùng đang cố gắng hoàn thành điều gì? Có thể có nhiều mục nếu phiên làm việc bao gồm nhiều nhiệm vụ.]
+
+## Ràng buộc & Yêu cầu
+- [Bất kỳ ràng buộc, sở thích hoặc yêu cầu nào do người dùng đề cập]
+- [Hoặc "(không có)" nếu không có]
+
+## Tiến độ
+
+### Đã hoàn thành
+- [x] [Các nhiệm vụ/thay đổi đã hoàn thành]
+
+### Đang thực hiện
+- [ ] [Công việc hiện tại]
+
+### Đang bị chặn
+- [Các vấn đề đang ngăn cản tiến độ, nếu có]
+
+## Các quyết định quan trọng
+- **[Quyết định]**: [Lý do ngắn gọn]
+
+## Các bước tiếp theo
+1. [Danh sách theo thứ tự những việc cần thực hiện tiếp theo]
+
+## Ngữ cảnh quan trọng
+- [Bất kỳ dữ liệu, ví dụ hoặc tài liệu tham khảo nào cần thiết để tiếp tục]
+- [Hoặc "(không có)" nếu không áp dụng]
+
+Hãy xuất bản tóm tắt có cấu trúc theo đúng định dạng trên.
+"""
+
+UPDATE_USER_MESSAGE_VI = """\
+# Nhiệm vụ
+Cập nhật bản tóm tắt có cấu trúc bằng các nội dung hội thoại mới.
+
+# Quy tắc
+- GIỮ NGUYÊN toàn bộ thông tin hiện có từ bản tóm tắt trước.
+- THÊM các tiến độ, quyết định và ngữ cảnh mới từ các tin nhắn mới.
+- CẬP NHẬT phần Tiến độ: chuyển các mục từ "Đang thực hiện" sang "Đã hoàn thành" khi đã xong.
+- CẬP NHẬT mục "Các bước tiếp theo" dựa trên những gì đã hoàn thành.
+- Bảo toàn chính xác đường dẫn tệp, tên hàm và thông báo lỗi.
+- Nếu một thông tin không còn phù hợp, bạn có thể loại bỏ.
+
+# Định dạng đầu ra
+
+## Mục tiêu
+[Giữ nguyên các mục tiêu hiện có và bổ sung mục tiêu mới nếu phạm vi công việc được mở rộng.]
+
+## Ràng buộc & Yêu cầu
+- [Giữ nguyên các yêu cầu hiện có và bổ sung những yêu cầu mới được phát hiện]
+
+## Tiến độ
+
+### Đã hoàn thành
+- [x] [Bao gồm cả các mục đã hoàn thành trước đây và các mục mới hoàn thành]
+
+### Đang thực hiện
+- [ ] [Công việc hiện tại — cập nhật theo tiến độ]
+
+### Đang bị chặn
+- [Các vấn đề hiện đang cản trở tiến độ — xóa nếu đã được giải quyết]
+
+## Các quyết định quan trọng
+- **[Quyết định]**: [Lý do ngắn gọn] (giữ lại tất cả các quyết định trước đó và bổ sung các quyết định mới)
+
+## Các bước tiếp theo
+1. [Cập nhật dựa trên trạng thái hiện tại]
+
+## Ngữ cảnh quan trọng
+- [Giữ lại các thông tin quan trọng và bổ sung nếu cần]
+
+Hãy xuất bản tóm tắt có cấu trúc theo đúng định dạng trên.
+"""

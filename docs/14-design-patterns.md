@@ -78,9 +78,9 @@ channel_registry = ChannelRegistry.get_registry()
 ```python
 # Module-level lazy loading (agents/__init__.py)
 def __getattr__(name):
-    if name == "QwenPawAgent":
-        from .react_agent import QwenPawAgent
-        return QwenPawAgent
+    if name == "SpiderAgent":
+        from .react_agent import SpiderAgent
+        return SpiderAgent
 
 # CLI lazy subcommand loading (cli/main.py)
 @click.group(cls=LazyGroup, lazy_subcommands={...})
@@ -103,8 +103,8 @@ def _init_tool_guard(self):
 
 ```python
 # Security interceptor in class hierarchy
-class QwenPawAgent(ToolGuardMixin, ReActAgent):
-    # MRO: QwenPawAgent → ToolGuardMixin → ReActAgent
+class SpiderAgent(ToolGuardMixin, ReActAgent):
+    # MRO: SpiderAgent → ToolGuardMixin → ReActAgent
     # ToolGuardMixin._acting() intercepts before ReActAgent._acting()
 ```
 
@@ -402,19 +402,19 @@ classDiagram
         +_execute_guard_action()
     }
     
-    class QwenPawAgent {
+    class SpiderAgent {
         +__init__()
         +_create_toolkit()
         +_register_skills()
     }
     
     ReActAgent <|-- ToolGuardMixin : "extends"
-    ToolGuardMixin <|-- QwenPawAgent : "extends"
+    ToolGuardMixin <|-- SpiderAgent : "extends"
     
-    note for ToolGuardMixin "MRO: QwenPawAgent → ToolGuardMixin → ReActAgent"
+    note for ToolGuardMixin "MRO: SpiderAgent → ToolGuardMixin → ReActAgent"
 ```
 
-**Call chain**: `QwenPawAgent._acting()` → `super()._acting()` → `ToolGuardMixin._acting()` → `super()._acting()` → `ReActAgent._acting()`
+**Call chain**: `SpiderAgent._acting()` → `super()._acting()` → `ToolGuardMixin._acting()` → `super()._acting()` → `ReActAgent._acting()`
 
 ---
 
@@ -523,7 +523,7 @@ classDiagram
         +_acting_with_approval() **FIXED**
     }
     
-    class QwenPawAgent {
+    class SpiderAgent {
         +__init__()
         +_acting() **HARNESS PIPELINE**
         +_loop_detector: LoopDetector
@@ -533,10 +533,10 @@ classDiagram
     }
     
     ReActAgent <|-- ToolGuardMixin : "extends"
-    ToolGuardMixin <|-- QwenPawAgent : "extends"
+    ToolGuardMixin <|-- SpiderAgent : "extends"
     
-    note for QwenPawAgent "Updated call chain:
-    QwenPawAgent._acting()
+    note for SpiderAgent "Updated call chain:
+    SpiderAgent._acting()
       → ① LoopDetect ② Snapshot
       → super()._acting()
         → ToolGuardMixin._acting()

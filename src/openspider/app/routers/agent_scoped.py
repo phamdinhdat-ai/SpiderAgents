@@ -20,12 +20,20 @@ class AgentContextMiddleware(BaseHTTPMiddleware):
         request: Request,
         call_next: RequestResponseEndpoint,
     ) -> Response:
-        """Extract agentId and root_session_id from path/headers."""
+        """Extract agentId, auth user, and root_session_id from path/headers."""
         import logging
-        from ..agent_context import set_current_agent_id
+        from ..agent_context import (
+            set_current_agent_id,
+            set_current_auth_user_id,
+        )
 
         logger = logging.getLogger(__name__)
         agent_id = None
+
+        # Propagate authenticated user from AuthMiddleware → ContextVar
+        auth_user = request.scope.get("auth_user")
+        if auth_user:
+            set_current_auth_user_id(auth_user)
 
         # Priority 1: Extract agentId from path: /api/agents/{agentId}/...
         path_parts = request.url.path.split("/")

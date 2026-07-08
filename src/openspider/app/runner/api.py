@@ -64,6 +64,7 @@ async def get_session(
 
 @router.get("", response_model=list[ChatSpec])
 async def list_chats(
+    request: Request,
     user_id: Optional[str] = Query(None, description="Filter by user ID"),
     channel: Optional[str] = Query(None, description="Filter by channel"),
     mgr: ChatManager = Depends(get_chat_manager),
@@ -71,12 +72,28 @@ async def list_chats(
 ):
     """List all chats with optional filters.
 
+    When authentication is enabled, non-admin users are automatically
+    scoped to their own chats.  Admin users see all chats.
+
     Args:
-        user_id: Optional user ID to filter chats
-        channel: Optional channel name to filter chats
-        mgr: Chat manager dependency
+        request: FastAPI request for auth context.
+        user_id: Optional user ID to filter chats.
+        channel: Optional channel name to filter chats.
+        mgr: Chat manager dependency.
     """
-    chats = await mgr.list_chats(user_id=user_id, channel=channel)
+    from ..auth import is_auth_enabled, get_current_user
+
+    # Auth-aware scoping: non-admin see only their own chats.
+    effective_user_id = user_id
+    if is_auth_enabled():
+        caller = get_current_user(request)
+        if caller is not None:
+            caller_username, caller_role = caller
+            if caller_role != "admin":
+                # Non-admin users can only see their own chats.
+                effective_user_id = caller_username
+
+    chats = await mgr.list_chats(user_id=effective_user_id, channel=channel)
     tracker = workspace.task_tracker
     result = []
     for spec in chats:

@@ -33,13 +33,14 @@ from .mission_dispatch import (
 from .session import SafeJSONSession
 from .utils import build_env_context
 from ..channels.schema import DEFAULT_CHANNEL
-from ...agents.react_agent import QwenPawAgent
+from ...agents.react_agent import SpiderAgent
 from ...exceptions import convert_model_exception
 from ...agents.utils.file_handling import (
     read_text_file_with_encoding_fallback,
 )
 from ...config.config import load_agent_config
-from ...constant import WORKING_DIR
+from ...constant import WORKING_DIR, USERS_DIR, get_user_sessions_dir
+from ..auth import is_auth_enabled
 
 if TYPE_CHECKING:
     from ...agents.memory import BaseMemoryManager
@@ -133,9 +134,9 @@ class AgentRunner(Runner):
         if self._agent_name is None:
             try:
                 cfg = load_agent_config(self.agent_id)
-                self._agent_name = cfg.name if cfg and cfg.name else "QwenPaw"
+                self._agent_name = cfg.name if cfg and cfg.name else "Spider"
             except Exception:
-                self._agent_name = "QwenPaw"
+                self._agent_name = "Spider"
         return self._agent_name
 
     def invalidate_agent_name_cache(self) -> None:
@@ -594,7 +595,7 @@ class AgentRunner(Runner):
                     )
                     plan_notebook = None
 
-            agent = QwenPawAgent(
+            agent = SpiderAgent(
                 agent_config=agent_config,
                 env_context=env_context,
                 mcp_clients=mcp_clients,
@@ -842,7 +843,16 @@ class AgentRunner(Runner):
             (self.workspace_dir if self.workspace_dir else WORKING_DIR)
             / "sessions",
         )
-        self.session = SafeJSONSession(save_dir=session_dir)
+        # When auth is enabled, use per-user subdirectories under USERS_DIR
+        # so each authenticated user's sessions are isolated.
+        auth_on = is_auth_enabled()
+        user_scoped_base: str | None = None
+        if auth_on:
+            user_scoped_base = str(USERS_DIR)
+        self.session = SafeJSONSession(
+            save_dir=session_dir,
+            user_scoped_base_dir=user_scoped_base,
+        )
 
     async def shutdown_handler(self, *args, **kwargs):
         """

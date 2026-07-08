@@ -6,6 +6,7 @@ Windows filenames cannot contain: \\ / : * ? " < > |
 This module wraps agentscope's SessionBase so that session_id and user_id
 are sanitized before being used as filenames.
 """
+import hashlib
 import os
 import re
 import json
@@ -74,6 +75,16 @@ def sanitize_filename(name: str) -> str:
     'normal-name'
     """
     return _UNSAFE_FILENAME_RE.sub("--", name)
+
+
+def _hash_username(username: str) -> str:
+    """Return a deterministic SHA-256 hash of *username*.
+
+    Used as the per-user directory name under ``USERS_DIR`` for privacy.
+    Matches the convention established by
+    :func:`openspider.constant.get_user_storage_dir`.
+    """
+    return hashlib.sha256(username.encode("utf-8")).hexdigest()
 
 
 # Marker used by ``sanitize_filename`` for the historical ``weixin:`` and
@@ -198,19 +209,33 @@ class SafeJSONSession(SessionBase):
 
     Overrides all file-reading/writing methods to use :mod:`aiofiles` so
     that disk I/O does not block the event loop.
+
+    When *user_scoped_base_dir* is provided and *user_id* is non-empty,
+    session files are stored under a per-user directory (e.g.
+    ``USERS_DIR/<sha256>/workspaces/<agent>/sessions/``) instead of the
+    legacy workspace-level ``sessions/`` directory.  This enables
+    multi-user data isolation when authentication is active.
     """
 
     def __init__(
         self,
         save_dir: str = "./",
+        user_scoped_base_dir: str | None = None,
     ) -> None:
         """Initialize the JSON session class.
 
         Args:
-            save_dir (`str`, defaults to `"./"):
-                The directory to save the session state.
+            save_dir:
+                Legacy fallback directory for sessions (e.g.
+                ``workspace/<agent>/sessions/``).  Used when
+                *user_scoped_base_dir* is ``None`` or *user_id* is
+                empty.
+            user_scoped_base_dir:
+                When set and *user_id* is non-empty, session files are
+                stored under ``<user_scoped_base_dir>/<sanitized_user>/``.
         """
         self.save_dir = save_dir
+        self._user_scoped_base_dir = user_scoped_base_dir
 
     def _get_save_path(
         self,
@@ -222,6 +247,10 @@ class SafeJSONSession(SessionBase):
 
         Overrides the parent implementation to ensure the generated
         filename is valid on Windows, macOS and Linux.
+
+        When ``self._user_scoped_base_dir`` is set and *user_id* is
+        non-empty, session files are stored under a per-user
+        subdirectory for multi-tenant isolation.
 
         Args:
             session_id: Session identifier
@@ -235,6 +264,16 @@ class SafeJSONSession(SessionBase):
         safe_sid = sanitize_filename(session_id)
         safe_uid = sanitize_filename(user_id) if user_id else ""
 
+        # Determine base save directory: user-scoped or legacy
+        if self._user_scoped_base_dir and safe_uid:
+            # Hash the raw username (pre-sanitization) for privacy so
+            # directory names match those produced by UserStorageManager.
+            raw_uid = user_id if user_id else ""
+            user_dir = _hash_username(raw_uid)
+            base_dir = os.path.join(self._user_scoped_base_dir, user_dir)
+        else:
+            base_dir = self.save_dir
+
         if safe_uid:
             filename = f"{safe_uid}_{safe_sid}.json"
         else:
@@ -242,11 +281,15 @@ class SafeJSONSession(SessionBase):
 
         if channel:
             safe_channel = sanitize_filename(channel)
-            target_dir = os.path.join(self.save_dir, safe_channel)
+            target_dir = os.path.join(base_dir, safe_channel)
             os.makedirs(target_dir, exist_ok=True)
             target_path = os.path.join(target_dir, filename)
 
-            legacy_path = os.path.join(self.save_dir, filename)
+            # One-time migration: copy from legacy flat dir if it exists
+            if base_dir != self.save_dir:
+                legacy_path = os.path.join(self.save_dir, safe_channel, filename)
+            else:
+                legacy_path = os.path.join(self.save_dir, filename)
             if not os.path.exists(target_path) and os.path.exists(legacy_path):
                 try:
                     shutil.copy2(legacy_path, target_path)
@@ -265,8 +308,8 @@ class SafeJSONSession(SessionBase):
 
             return target_path
 
-        os.makedirs(self.save_dir, exist_ok=True)
-        return os.path.join(self.save_dir, filename)
+        os.makedirs(base_dir, exist_ok=True)
+        return os.path.join(base_dir, filename)
 
     async def save_session_state(
         self,

@@ -473,3 +473,93 @@ SNAPSHOT_MAX_BACKUP_SIZE_MB = EnvVarLoader.get_int(
     min_value=1,
     max_value=500,
 )
+
+# ------------------------------------------------------------------
+# Multi-user data directories
+# ------------------------------------------------------------------
+
+USERS_DIR = (
+    Path(
+        EnvVarLoader.get_str(
+            "OPENSPIDER_USERS_DIR",
+            f"{WORKING_DIR}/users",
+        ),
+    )
+    .expanduser()
+    .resolve()
+)
+"""Root directory for per-user data isolation.
+
+When authentication is enabled, each user's sessions, memory, files,
+and config overrides are stored under ``USERS_DIR/<sha256(username)>/``.
+When auth is disabled, the legacy ``workspace/<agent_id>/sessions/`` path
+is used instead.
+"""
+
+
+def get_user_storage_dir(username: str) -> Path:
+    """Return the per-user storage directory (hashed for privacy).
+
+    Uses SHA-256 of the *username* so the directory name is deterministic,
+    URL-safe, and does not leak the raw username in filesystem listings.
+
+    Args:
+        username: The authenticated username.
+
+    Returns:
+        Absolute path to ``USERS_DIR / sha256(username)``.
+    """
+    import hashlib
+
+    user_hash = hashlib.sha256(username.encode("utf-8")).hexdigest()
+    return USERS_DIR / user_hash
+
+
+def get_user_sessions_dir(username: str, agent_id: str) -> Path:
+    """Return the per-user, per-agent session storage directory.
+
+    Args:
+        username: The authenticated username.
+        agent_id: The agent/workspace identifier.
+
+    Returns:
+        Path like ``USERS_DIR/<hash>/workspaces/<agent_id>/sessions/``.
+    """
+    return get_user_storage_dir(username) / "workspaces" / agent_id / "sessions"
+
+
+def get_user_memory_dir(username: str, agent_id: str) -> Path:
+    """Return the per-user, per-agent daily-memory directory.
+
+    Args:
+        username: The authenticated username.
+        agent_id: The agent/workspace identifier.
+
+    Returns:
+        Path like ``USERS_DIR/<hash>/workspaces/<agent_id>/memory/``.
+    """
+    return get_user_storage_dir(username) / "workspaces" / agent_id / "memory"
+
+
+def get_user_files_dir(username: str) -> Path:
+    """Return the per-user file uploads directory.
+
+    Args:
+        username: The authenticated username.
+
+    Returns:
+        Path like ``USERS_DIR/<hash>/files/``.
+    """
+    return get_user_storage_dir(username) / "files"
+
+
+def get_user_config_path(username: str) -> Path:
+    """Return the per-user config override file path.
+
+    Args:
+        username: The authenticated username.
+
+    Returns:
+        Path like ``USERS_DIR/<hash>/config.json``.
+    """
+    return get_user_storage_dir(username) / "config.json"

@@ -1,6 +1,6 @@
 # 02 — Agent System
 
-> Core agent orchestration: QwenPawAgent class, ReAct loop, tool system, security guard, model factory.
+> Core agent orchestration: SpiderAgent class, ReAct loop, tool system, security guard, model factory.
 
 ---
 
@@ -27,7 +27,7 @@ flowchart TD
     M -->|conversation| P["/compact, /new, /clear"]
     M -->|plan| Q["/plan → Plan Gate"]
     M -->|mission| R["Mission Phase Dispatch"]
-    M -->|default| S["Create QwenPawAgent"]
+    M -->|default| S["Create SpiderAgent"]
     S --> T["🧠 ReAct Loop"]
     T --> U["🎯 Reply → SSE Stream"]
     N --> V["ApprovalService"]
@@ -66,7 +66,7 @@ classDiagram
         +_execute_guard_action()
         +_init_tool_guard()
     }
-    class QwenPawAgent {
+    class SpiderAgent {
         -agent_config
         -workspace_dir
         -command_handler
@@ -106,17 +106,17 @@ classDiagram
     }
 
     ReActAgent <|-- ToolGuardMixin : extends
-    ToolGuardMixin <|-- QwenPawAgent : extends (MRO)
-    QwenPawAgent *-- Toolkit : owns
-    QwenPawAgent *-- ContextManager : owns
-    QwenPawAgent *-- Memory : owns
-    QwenPawAgent *-- CommandHandler : owns
-    QwenPawAgent *-- Hooks : registers
+    ToolGuardMixin <|-- SpiderAgent : extends (MRO)
+    SpiderAgent *-- Toolkit : owns
+    SpiderAgent *-- ContextManager : owns
+    SpiderAgent *-- Memory : owns
+    SpiderAgent *-- CommandHandler : owns
+    SpiderAgent *-- Hooks : registers
 ```
 
 ### MRO Design
 
-`ToolGuardMixin` overrides `_acting()` and `_reasoning()` via Python's MRO. Any override in `QwenPawAgent` itself **must** call `super()._acting()` / `super()._reasoning()` to keep the guard interception active.
+`ToolGuardMixin` overrides `_acting()` and `_reasoning()` via Python's MRO. Any override in `SpiderAgent` itself **must** call `super()._acting()` / `super()._reasoning()` to keep the guard interception active.
 
 ---
 
@@ -223,7 +223,7 @@ sequenceDiagram
 ## Agent Construction
 
 ```python
-# agents/react_agent.py — QwenPawAgent.__init__()
+# agents/react_agent.py — SpiderAgent.__init__()
 def __init__(self, agent_config, workspace_dir, ...):
     # 1. Create toolkit with enabled tools from config
     self._create_toolkit(config)
@@ -252,9 +252,9 @@ def __init__(self, agent_config, workspace_dir, ...):
 ```python
 # agents/__init__.py — module-level lazy loading via __getattr__
 def __getattr__(name: str):
-    if name == "QwenPawAgent":
-        from .react_agent import QwenPawAgent
-        return QwenPawAgent
+    if name == "SpiderAgent":
+        from .react_agent import SpiderAgent
+        return SpiderAgent
     if name == "create_model_and_formatter":
         from .model_factory import create_model_and_formatter
         return create_model_and_formatter

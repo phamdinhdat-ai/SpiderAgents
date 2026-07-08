@@ -2,7 +2,7 @@
 """Authentication API endpoints."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from ..auth import (
@@ -22,6 +22,12 @@ from ..auth import (
     update_user_role,
     verify_token,
 )
+from ..users.models import (
+    AdminSessionsResponse,
+    AdminUserSessionsResponse,
+    UserSessionInfo,
+)
+from ..users.tracker import UserSessionTracker
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -58,9 +64,8 @@ class AdminStatusResponse(BaseModel):
     role: str
 
 
-class AdminSessionsResponse(BaseModel):
-    sessions: list = []
-    total: int = 0
+# AdminSessionsResponse is imported from ..users.models for the
+# richer multi-user session tracking response.
 
 
 @router.post("/login")
@@ -330,9 +335,102 @@ async def admin_status(
 @router.get("/admin/sessions")
 async def admin_sessions(
     admin: str = Depends(get_current_admin),
+    agent_id: str = Query("default", description="Agent ID to scope sessions to"),
 ):
-    """List active sessions.  Stub — returns empty data for now."""
-    return AdminSessionsResponse(sessions=[], total=0)
+    """List session activity across all users (admin-only).
+
+    Returns per-user aggregate summaries with session counts, message
+    counts, last-active timestamps, and active/running session counts.
+    """
+    tracker = UserSessionTracker()
+    return await tracker.get_all_users_summary(agent_id=agent_id)
+
+
+@router.get(
+    "/admin/users/{username}/sessions",
+    response_model=AdminUserSessionsResponse,
+)
+async def admin_user_sessions(
+    username: str,
+    admin: str = Depends(get_current_admin),
+    agent_id: str = Query("default", description="Agent ID to scope sessions to"),
+):
+    """List all sessions for a specific user (admin-only)."""
+    tracker = UserSessionTracker()
+    sessions = await tracker.get_user_sessions(
+        username=username,
+        agent_id=agent_id,
+    )
+    return AdminUserSessionsResponse(
+        username=username,
+        sessions=sessions,
+        total=len(sessions),
+    )
+
+
+class RevokeUserTokensResponse(BaseModel):
+    message: str
+    revoked: bool = True
+
+
+@router.post(
+    "/admin/users/{username}/revoke-tokens",
+    response_model=RevokeUserTokensResponse,
+)
+async def admin_revoke_user_tokens(
+    username: str,
+    admin: str = Depends(get_current_admin),
+):
+    """Force-logout a user by revoking all their tokens.
+
+    Rotates the JWT signing secret, which invalidates all existing
+    tokens for **all** users, not just the target user.  This is the
+    simplest approach given the current stateless token design.
+    """
+    if not is_auth_enabled():
+        raise HTTPException(
+            status_code=403,
+            detail="Authentication is not enabled",
+        )
+
+    # Verify the target user exists
+    users = list_users()
+    if not any(u["username"] == username for u in users):
+        raise HTTPException(
+            status_code=404,
+            detail=f"User '{username}' not found",
+        )
+
+    success = revoke_all_tokens()
+    return RevokeUserTokensResponse(
+        message=(
+            f"All tokens revoked (including '{username}'). "
+            "All users must login again."
+        ),
+        revoked=success,
+    )
+
+
+@router.delete("/admin/users/{username}/sessions/{session_id}")
+async def admin_delete_user_session(
+    username: str,
+    session_id: str,
+    admin: str = Depends(get_current_admin),
+    agent_id: str = Query("default", description="Agent ID"),
+):
+    """Delete a specific session file for a user (admin-only)."""
+    tracker = UserSessionTracker()
+    deleted = await tracker.delete_user_session_file(
+        username=username,
+        session_id=session_id,
+        agent_id=agent_id,
+    )
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Session '{session_id}' not found for user '{username}'",
+        )
+    return {"message": f"Session '{session_id}' deleted for '{username}'"}
 
 
 class CreateUserRequest(BaseModel):

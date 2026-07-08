@@ -48,7 +48,7 @@ Each skill is bilingual (`-en/` and `-zh/` variants).
 toolkit.register_agent_skill(str(skill_dir))
 ```
 
-Skills are loaded during `QwenPawAgent.__init__()` via `_register_skills()`.
+Skills are loaded during `SpiderAgent.__init__()` via `_register_skills()`.
 
 ---
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 from pathlib import Path
 from typing import Optional, Union, Dict, List, Literal, Any, Set
 
@@ -68,37 +69,51 @@ class ACPAgentConfig(BaseModel):
 
 
 def _get_default_acp_agents() -> Dict[str, ACPAgentConfig]:
-    """Get default ACP agents configuration."""
-    return {
-        "opencode": ACPAgentConfig(
-            enabled=True,
-            command="opencode",
-            args=["acp"],
-            trusted=True,
-            tool_parse_mode="update_detail",
-        ),
-        "qwen_code": ACPAgentConfig(
-            enabled=True,
-            command="qwen",
-            args=["--acp"],
-            trusted=True,
-            tool_parse_mode="call_detail",
-        ),
-        "claude_code": ACPAgentConfig(
-            enabled=True,
-            command="npx",
-            args=["-y", "@zed-industries/claude-agent-acp"],
-            trusted=True,
-            tool_parse_mode="update_detail",
-        ),
-        "codex": ACPAgentConfig(
-            enabled=True,
-            command="npx",
-            args=["-y", "@zed-industries/codex-acp"],
-            trusted=True,
-            tool_parse_mode="call_detail",
-        ),
-    }
+    """Get default ACP agents configuration.
+
+    Only enables agents whose commands are actually available on the
+    current platform to avoid ``OSError`` / ``WinError 193`` on Windows.
+    """
+    alive: dict[str, ACPAgentConfig] = {}
+
+    # opencode — Unix-only CLI tool; never available on Windows.
+    has_opencode = shutil.which("opencode") is not None
+    alive["opencode"] = ACPAgentConfig(
+        enabled=has_opencode,
+        command="opencode",
+        args=["acp"],
+        trusted=True,
+        tool_parse_mode="update_detail",
+    )
+
+    # qwen — Aliyun Qwen CLI; unlikely on Windows.
+    has_qwen = shutil.which("qwen") is not None
+    alive["qwen_code"] = ACPAgentConfig(
+        enabled=has_qwen,
+        command="qwen",
+        args=["--acp"],
+        trusted=True,
+        tool_parse_mode="call_detail",
+    )
+
+    # npx-based agents — require Node.js / npx on PATH.
+    has_npx = shutil.which("npx") is not None or shutil.which("npx.cmd") is not None
+    alive["claude_code"] = ACPAgentConfig(
+        enabled=has_npx,
+        command="npx",
+        args=["-y", "@zed-industries/claude-agent-acp"],
+        trusted=True,
+        tool_parse_mode="update_detail",
+    )
+    alive["codex"] = ACPAgentConfig(
+        enabled=has_npx,
+        command="npx",
+        args=["-y", "@zed-industries/codex-acp"],
+        trusted=True,
+        tool_parse_mode="call_detail",
+    )
+
+    return alive
 
 
 class ACPConfig(BaseModel):

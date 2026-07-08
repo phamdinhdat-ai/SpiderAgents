@@ -19,6 +19,8 @@ from .prompts import (
     MEMORY_GUIDANCE_EN,
     DREAM_OPTIMIZATION_ZH,
     DREAM_OPTIMIZATION_EN,
+    MEMORY_GUIDANCE_VI,
+    DREAM_OPTIMIZATION_VI
 )
 from ..model_factory import create_model_and_formatter
 from ..utils import get_token_counter
@@ -267,9 +269,9 @@ class ReMeLightMemoryManager(BaseMemoryManager):
         )
         return result
 
-    def get_memory_prompt(self, language: str = "zh") -> str:
+    def get_memory_prompt(self, language: str = "vi") -> str:
         """Return the memory guidance prompt for the system prompt."""
-        prompts = {"zh": MEMORY_GUIDANCE_ZH, "en": MEMORY_GUIDANCE_EN}
+        prompts = {"zh": MEMORY_GUIDANCE_ZH, "en": MEMORY_GUIDANCE_EN, "vi": MEMORY_GUIDANCE_VI}
         return prompts.get(language, MEMORY_GUIDANCE_EN)
 
     def list_memory_tools(self):
@@ -604,10 +606,10 @@ class ReMeLightMemoryManager(BaseMemoryManager):
         recent_max_bytes = pruning_cfg.pruning_recent_msg_max_bytes
         set_current_recent_max_bytes(recent_max_bytes)
 
-        language = getattr(agent_config, "language", "zh")
+        language = getattr(agent_config, "language", "en")
         current_date = datetime.now().strftime("%Y-%m-%d")
 
-        prompts = {"zh": DREAM_OPTIMIZATION_ZH, "en": DREAM_OPTIMIZATION_EN}
+        prompts = {"zh": DREAM_OPTIMIZATION_ZH, "en": DREAM_OPTIMIZATION_EN, "vi": DREAM_OPTIMIZATION_VI}
         template = prompts.get(language, DREAM_OPTIMIZATION_EN)
         query_text = template.format(current_date=current_date)
 

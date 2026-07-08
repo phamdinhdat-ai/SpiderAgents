@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart TD
-    USER(["👤 User"]) -->|"Send message"| MAIN["🏠 Main Agent<br/>(QwenPawAgent)"]
+    USER(["👤 User"]) -->|"Send message"| MAIN["🏠 Main Agent<br/>(SpiderAgent)"]
     
     MAIN --> ANALYZE{"Analyze<br/>intent"}
     ANALYZE -->|"Simple task"| DIRECT["Execute directly<br/>with tools"]
@@ -157,7 +157,7 @@ flowchart TD
     USE_DEF --> RUN
     USE_BOT --> RUN
     
-    RUN --> AGENT["QwenPawAgent created<br/>with agent-specific config"]
+    RUN --> AGENT["SpiderAgent created<br/>with agent-specific config"]
     AGENT --> TOOLS["Tools loaded:<br/>agent-specific enabled set"]
     TOOLS --> SKILLS["Skills loaded:<br/>channel-aware resolution"]
     SKILLS --> REPLY["💬 Reply via SSE stream"]
@@ -234,7 +234,7 @@ flowchart TD
     SET_MM --> RETURN
     STRIP --> RETURN["Return (model, formatter)"]
     
-    RETURN --> USE["Used by QwenPawAgent<br/>in ReAct loop"]
+    RETURN --> USE["Used by SpiderAgent<br/>in ReAct loop"]
 
     style START fill:#4CAF50,color:#fff
     style CREATE fill:#FF9800,color:#fff
@@ -255,7 +255,7 @@ sequenceDiagram
     participant RUNNER as 🏃 DynamicMultiAgentRunner
     participant MAM as 📦 MultiAgentManager
     participant WS as 🏠 Workspace
-    participant AGENT as 🤖 QwenPawAgent
+    participant AGENT as 🤖 SpiderAgent
     participant LLM as 🧠 LLM Provider
 
     UI->>API: POST /api/console/chat<br/>{ input, session_id, stream: true }
@@ -279,7 +279,7 @@ sequenceDiagram
     end
     
     RUNNER->>WS: runner.stream_query(request)
-    WS->>AGENT: Create QwenPawAgent(config)
+    WS->>AGENT: Create SpiderAgent(config)
     
     loop ReAct Loop
         AGENT->>LLM: reasoning() → LLM call

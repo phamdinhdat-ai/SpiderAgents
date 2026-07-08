@@ -151,7 +151,7 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant A as QwenPawAgent
+    participant A as SpiderAgent
     participant LD as LoopDetector
     participant SM as SnapshotManager
     participant TG as ToolGuardMixin
@@ -403,7 +403,7 @@ The approval flow uses `asyncio.Future` to **suspend** the agent's execution unt
 The harness leverages Python's **MRO (Method Resolution Order)** to interpose security and harness logic between the agent and the base ReAct loop:
 
 ```
-QwenPawAgent._acting()          ← Harness: LoopDetect, Snapshot, SelfVerify
+SpiderAgent._acting()          ← Harness: LoopDetect, Snapshot, SelfVerify
   → super()._acting()
     → ToolGuardMixin._acting()  ← Security: Guard chain, Approval
       → super()._acting()

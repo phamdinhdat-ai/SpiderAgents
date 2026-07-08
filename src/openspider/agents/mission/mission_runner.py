@@ -65,6 +65,16 @@ _MESSAGES = {
         "mission_max_iterations": "⚠️ **Mission reached max iterations** ({max_iter}). {passed}/{total} stories passed.\n\nYou can check with `/mission status` to see what remains, then start a new mission or manually complete the work.",
         "prd_no_stories": "⚠️ prd.json has no user stories. Loop aborted.",
     },
+    "vi": {
+        "phase2_no_prd": "⚠️ **Không thể chuyển sang Giai đoạn 2**: Không tìm thấy `prd.json` hoặc tệp trống.\nVui lòng tạo một PRD hợp lệ trước.",
+        "phase2_invalid_prd": "⚠️ **Không thể chuyển sang Giai đoạn 2**: `prd.json` có lỗi định dạng:\n{detail}\n\nVui lòng sửa định dạng PRD trước khi xác nhận.",
+        "phase2_startup_no_prd": "⚠️ **Khởi động Giai đoạn 2 thất bại**: Không tìm thấy `prd.json` hoặc tệp trống.\nKhông thể tiếp tục.",
+        "phase2_startup_invalid": "⚠️ **Khởi động Giai đoạn 2 thất bại**: `prd.json` có lỗi định dạng:\n{detail}\n\nVui lòng quay lại Giai đoạn 1 để sửa PRD.",
+        "prd_still_invalid": "⚠️ **`prd.json` vẫn chưa hợp lệ** (đã thử {attempts} lần):\n{detail}\n\nVui lòng kiểm tra và sửa `prd.json` thủ công trước khi xác nhận.",
+        "mission_complete": "**Hoàn thành Mission** — {passed}/{total} user story đã hoàn thành thành công ✅\n",
+        "mission_max_iterations": "⚠️ **Mission đã đạt số vòng lặp tối đa** ({max_iter}). Đã hoàn thành {passed}/{total} user story.\n\nBạn có thể dùng `/mission status` để xem những phần còn lại, sau đó bắt đầu một mission mới hoặc tự hoàn thành phần công việc còn lại.",
+        "prd_no_stories": "⚠️ `prd.json` không chứa user story nào. Đã dừng vòng lặp.",
+    },
 }
 
 
@@ -77,13 +87,11 @@ def _get_message(key: str, agent_id: str, **kwargs) -> str:
         **kwargs: Format arguments for the message
 
     Returns:
-        Formatted message string in the agent's language (zh or en)
+        Formatted message string in the agent's language (zh, en, or vi)
     """
     try:
         config = load_agent_config(agent_id)
         lang = getattr(config, "language", "en")
-        # Normalize: if not 'zh', use 'en'
-        lang = "zh" if lang == "zh" else "en"
     except Exception:
         lang = "en"
 

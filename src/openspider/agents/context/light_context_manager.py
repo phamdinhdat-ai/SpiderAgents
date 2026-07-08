@@ -20,11 +20,14 @@ from .as_msg_handler import AsMsgHandler
 from .base_context_manager import BaseContextManager, context_registry
 from .compactor_prompts import (
     INITIAL_USER_MESSAGE_EN,
-    INITIAL_USER_MESSAGE_ZH,
+    # INITIAL_USER_MESSAGE_ZH,
     SYSTEM_PROMPT_EN,
-    SYSTEM_PROMPT_ZH,
+    # SYSTEM_PROMPT_ZH,
     UPDATE_USER_MESSAGE_EN,
-    UPDATE_USER_MESSAGE_ZH,
+    # UPDATE_USER_MESSAGE_ZH,
+    SYSTEM_PROMPT_VI,
+    INITIAL_USER_MESSAGE_VI,
+    UPDATE_USER_MESSAGE_VI
 )
 from ..model_factory import create_model_and_formatter
 from ..tools.utils import truncate_text_output, DEFAULT_MAX_BYTES
@@ -34,7 +37,7 @@ from ...config.config import load_agent_config
 from ...constant import TRUNCATION_NOTICE_MARKER
 
 if TYPE_CHECKING:
-    from ..react_agent import QwenPawAgent
+    from ..react_agent import SpiderAgent
 
 logger = logging.getLogger(__name__)
 
@@ -469,14 +472,23 @@ class LightContextManager(BaseContextManager):
             }
 
         # Select prompts based on language
-        is_zh = language.lower() == "zh"
-        system_prompt = SYSTEM_PROMPT_ZH if is_zh else SYSTEM_PROMPT_EN
-        initial_user_msg = (
-            INITIAL_USER_MESSAGE_ZH if is_zh else INITIAL_USER_MESSAGE_EN
-        )
-        update_user_msg = (
-            UPDATE_USER_MESSAGE_ZH if is_zh else UPDATE_USER_MESSAGE_EN
-        )
+        # is_zh = language.lower() == "zh"
+        if language.lower() == "vi":
+            system_prompt = SYSTEM_PROMPT_VI
+            initial_user_msg = INITIAL_USER_MESSAGE_VI
+            update_user_msg = UPDATE_USER_MESSAGE_VI
+        else:
+            system_prompt = SYSTEM_PROMPT_EN
+            initial_user_msg = INITIAL_USER_MESSAGE_EN
+            update_user_msg = UPDATE_USER_MESSAGE_EN
+
+        # system_prompt = SYSTEM_PROMPT_ZH if is_zh else SYSTEM_PROMPT_EN
+        # initial_user_msg = (
+        #     INITIAL_USER_MESSAGE_ZH if is_zh else INITIAL_USER_MESSAGE_EN
+        # )
+        # update_user_msg = (
+        #     UPDATE_USER_MESSAGE_ZH if is_zh else UPDATE_USER_MESSAGE_EN
+        # )
 
         # Create ReActAgent for compaction
         agent = ReActAgent(
@@ -648,7 +660,7 @@ class LightContextManager(BaseContextManager):
     # ------------------------------------------------------------------
 
     @staticmethod
-    async def _print_status_message(agent: "QwenPawAgent", text: str) -> None:
+    async def _print_status_message(agent: "SpiderAgent", text: str) -> None:
         msg = Msg(
             name=agent.name,
             role="assistant",
@@ -658,7 +670,7 @@ class LightContextManager(BaseContextManager):
 
     async def pre_reply(
         self,
-        agent: "QwenPawAgent",
+        agent: "SpiderAgent",
         kwargs: dict[str, Any],
     ) -> dict[str, Any] | None:
         """Augment ``msg`` with retrieved memory results before reply.
@@ -705,7 +717,7 @@ class LightContextManager(BaseContextManager):
 
     async def pre_reasoning(
         self,
-        agent: "QwenPawAgent",
+        agent: "SpiderAgent",
         kwargs: dict[str, Any],
     ) -> dict[str, Any] | None:
         """Check context size and compact memory when threshold is exceeded.
@@ -938,7 +950,7 @@ class LightContextManager(BaseContextManager):
 
     async def post_acting(
         self,
-        agent: "QwenPawAgent",
+        agent: "SpiderAgent",
         kwargs: dict[str, Any],
         output: Any,
     ) -> Msg | None:
@@ -970,7 +982,7 @@ class LightContextManager(BaseContextManager):
 
     async def post_reply(
         self,
-        agent: "QwenPawAgent",
+        agent: "SpiderAgent",
         kwargs: dict[str, Any],
         output: Any,
     ) -> Msg | None:

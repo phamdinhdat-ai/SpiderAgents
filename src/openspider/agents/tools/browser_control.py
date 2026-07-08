@@ -47,12 +47,12 @@ _TRUSTED_BROWSER_KEYWORDS = frozenset(
         "chromium",  # Chromium (open-source)
         "edge",  # Microsoft Edge
         "firefox",  # Mozilla Firefox
-        "brave",  # Brave Browser
-        "vivaldi",  # Vivaldi Browser
-        "opera",  # Opera
-        "360se",  # 360 Secure Browser
-        "yandex",  # Yandex Browser
-        "tor",  # Tor Browser
+        # "brave",  # Brave Browser
+        # "vivaldi",  # Vivaldi Browser
+        # "opera",  # Opera
+        # "360se",  # 360 Secure Browser
+        # "yandex",  # Yandex Browser
+        # "tor",  # Tor Browser
     },
 )
 

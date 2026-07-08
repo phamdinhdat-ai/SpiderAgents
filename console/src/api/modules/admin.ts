@@ -13,8 +13,38 @@ export interface AdminStatusResponse {
   role: string;
 }
 
+/** Per-user activity summary as returned by GET /auth/admin/sessions */
+export interface UserActivitySummary {
+  username: string;
+  role: string;
+  total_sessions: number;
+  active_sessions: number;
+  total_messages: number;
+  last_active: string;
+  created_at: string;
+}
+
+/** Response for GET /auth/admin/sessions */
 export interface AdminSessionsResponse {
-  sessions: unknown[];
+  users: UserActivitySummary[];
+  total_users: number;
+  total_sessions: number;
+  active_sessions: number;
+}
+
+/** Single session for a user */
+export interface UserSessionInfo {
+  session_id: string;
+  channel: string;
+  last_active: string;
+  message_count: number;
+  status: string;
+}
+
+/** Response for GET /auth/admin/users/{username}/sessions */
+export interface AdminUserSessionsResponse {
+  username: string;
+  sessions: UserSessionInfo[];
   total: number;
 }
 
@@ -40,11 +70,64 @@ export const adminApi = {
     return res.json();
   },
 
-  getSessions: async (): Promise<AdminSessionsResponse> => {
-    const res = await fetch(getApiUrl("/auth/admin/sessions"), {
-      headers: authHeaders(),
-    });
+  /** Get all-user session summary (admin dashboard) */
+  getSessions: async (agentId = "default"): Promise<AdminSessionsResponse> => {
+    const res = await fetch(
+      getApiUrl(`/auth/admin/sessions?agent_id=${encodeURIComponent(agentId)}`),
+      { headers: authHeaders() },
+    );
     if (!res.ok) throw new Error("Failed to fetch sessions");
+    return res.json();
+  },
+
+  /** Get a specific user's sessions */
+  getUserSessions: async (
+    username: string,
+    agentId = "default",
+  ): Promise<AdminUserSessionsResponse> => {
+    const res = await fetch(
+      getApiUrl(
+        `/auth/admin/users/${encodeURIComponent(username)}/sessions?agent_id=${encodeURIComponent(agentId)}`,
+      ),
+      { headers: authHeaders() },
+    );
+    if (!res.ok) throw new Error("Failed to fetch user sessions");
+    return res.json();
+  },
+
+  /** Admin-delete a specific user session */
+  deleteUserSession: async (
+    username: string,
+    sessionId: string,
+    agentId = "default",
+  ): Promise<{ message: string }> => {
+    const res = await fetch(
+      getApiUrl(
+        `/auth/admin/users/${encodeURIComponent(username)}/sessions/${encodeURIComponent(sessionId)}?agent_id=${encodeURIComponent(agentId)}`,
+      ),
+      { method: "DELETE", headers: authHeaders() },
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to delete user session");
+    }
+    return res.json();
+  },
+
+  /** Force-logout a user (revoke all tokens) */
+  revokeUserTokens: async (
+    username: string,
+  ): Promise<{ message: string; revoked: boolean }> => {
+    const res = await fetch(
+      getApiUrl(
+        `/auth/admin/users/${encodeURIComponent(username)}/revoke-tokens`,
+      ),
+      { method: "POST", headers: authHeaders() },
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to revoke tokens");
+    }
     return res.json();
   },
 

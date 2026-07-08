@@ -14,12 +14,12 @@ ALL_SKILL_ROUTING_CHANNELS = [
     "console",
     "discord",
     "telegram",
-    "dingtalk",
-    "feishu",
-    "imessage",
-    "qq",
+    # "dingtalk",
+    # "feishu",
+    # "imessage",
+    # "qq",
     "mattermost",
-    "wecom",
+    # "wecom",
     "mqtt",
 ]
 

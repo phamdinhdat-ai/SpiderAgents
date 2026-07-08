@@ -10,7 +10,7 @@
 | # | Document | What It Covers |
 |---|----------|---------------|
 | 01 | [Architecture Overview](01-overview.md) | High-level architecture diagram, package map, entry points |
-| 02 | [Agent System](02-agent-system.md) | QwenPawAgent class, ReAct loop, tool system, security guard, model factory |
+| 02 | [Agent System](02-agent-system.md) | SpiderAgent class, ReAct loop, tool system, security guard, model factory |
 | 03 | [Provider Pattern](03-providers.md) | LLM provider abstraction, rate limiting, retry, model capability cache |
 | 04 | [Channel System](04-channels.md) | BaseChannel ABC, 17 channels, ChannelManager, registry |
 | 05 | [Workspace & Runner](05-workspace-runner.md) | Workspace lifecycle, ServiceManager, MultiAgentManager, AgentRunner |
