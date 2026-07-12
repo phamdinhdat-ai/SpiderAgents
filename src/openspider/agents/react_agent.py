@@ -694,9 +694,11 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
 
         try:
             if transport == "stdio":
+                from ..app.mcp.manager import _resolve_command
+
                 rebuilt_client = StdIOStatefulClient(
                     name=name,
-                    command=rebuild_info.get("command"),
+                    command=_resolve_command(rebuild_info.get("command")),
                     args=rebuild_info.get("args", []),
                     env=rebuild_info.get("env", {}),
                     cwd=rebuild_info.get("cwd"),

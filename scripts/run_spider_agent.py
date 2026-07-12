@@ -225,7 +225,9 @@ async def run_interactive(
             "agent_id": agent_id,
         },
     )
-    agent.set_console_output_enabled(enabled=True)
+    # Disable streaming to avoid double-printing from auto-continue
+    # re-reasoning.  We capture and print the final reply ourselves.
+    agent.set_console_output_enabled(enabled=False)
 
     print(f"\n{'=' * 60}")
     print(f"  🕷️  SpiderAgent Interactive Chat")
@@ -259,7 +261,11 @@ async def run_interactive(
 
         try:
             messages = [Msg(name="user", role="user", content=query)]
-            await agent(messages)
+            reply = await agent(messages)
+            # Print the final reply (avoiding duplicates from streaming)
+            text = reply.get_text_content() if reply else ""
+            if text:
+                print(f"Agent: {text}")
         except Exception as e:
             print(f"Error: {e}")
             logger.debug("Agent error", exc_info=True)

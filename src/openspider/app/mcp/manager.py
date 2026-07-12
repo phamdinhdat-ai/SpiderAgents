@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import shutil
 from typing import Any, Dict, List, TYPE_CHECKING
 
 from .stateful_client import HttpStatefulClient, StdIOStatefulClient
@@ -18,6 +19,26 @@ if TYPE_CHECKING:
     from ...config.config import MCPClientConfig, MCPConfig
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_command(command: str) -> str:
+    """Resolve *command* to its full path via ``shutil.which()``.
+
+    On Windows, ``anyio.open_process`` (used by the ``mcp`` package's
+    ``create_windows_process``) may fail with ``[WinError 193] %1 is not a
+    valid Win32 application`` when given a bare command like ``npx`` that
+    resolves to a ``.cmd`` batch file.  Resolving to the full path (e.g.
+    ``C:\\Program Files\\nodejs\\npx.CMD``) avoids this ambiguity.
+
+    Returns the resolved path if found, otherwise the original *command*
+    unchanged (let the downstream error surface naturally).
+    """
+    resolved = shutil.which(command)
+    if resolved:
+        logger.debug("Resolved command '%s' -> '%s'", command, resolved)
+        return resolved
+    logger.debug("Command '%s' not found in PATH, using as-is", command)
+    return command
 
 
 class MCPClientManager:
@@ -232,7 +253,7 @@ class MCPClientManager:
         if client_config.transport == "stdio":
             client = StdIOStatefulClient(
                 name=client_config.name,
-                command=client_config.command,
+                command=_resolve_command(client_config.command),
                 args=client_config.args,
                 env=client_config.env,
                 cwd=client_config.cwd or None,
