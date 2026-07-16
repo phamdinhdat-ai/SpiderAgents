@@ -711,9 +711,31 @@ class LightContextManager(BaseContextManager):
             return None
 
         if result is None:
-            return None
+            # Memory found nothing; try knowledge base
+            pass
+        else:
+            kwargs = {**kwargs, **result}
 
-        return {**kwargs, **result}
+        # Auto-search knowledge base
+        kb_manager = getattr(agent, "knowledge_base_manager", None)
+        if kb_manager is not None:
+            try:
+                kb_result = await kb_manager.auto_knowledge_search(
+                    msg,
+                    agent_name=agent.name,
+                )
+                if kb_result is not None:
+                    return {**kwargs, **kb_result}
+            except BaseException as e:
+                logger.warning(
+                    "knowledge_base_manager.auto_knowledge_search failed: %s",
+                    e,
+                )
+
+        if result is not None:
+            return kwargs
+
+        return None
 
     async def pre_reasoning(
         self,

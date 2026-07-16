@@ -11,6 +11,19 @@ from .http import client, print_json
 from ..app.channels.schema import DEFAULT_CHANNEL
 
 
+def _server_required(op_name: str, ctx: click.Context, base_url: Optional[str]) -> None:
+    """Raise a friendly error when a server-only command is called offline."""
+    host = (ctx.obj or {}).get("host", "127.0.0.1")
+    port = (ctx.obj or {}).get("port", 8088)
+    from .http import is_server_running
+    if not is_server_running(host, port):
+        raise click.ClickException(
+            f"✗ '{op_name}' requires the OpenSpider server to be running.\n"
+            f"  Server not reachable at http://{host}:{port}\n"
+            f"  Start it with:  openspider app\n"
+        )
+
+
 def _base_url(ctx: click.Context, base_url: Optional[str]) -> str:
     """Resolve base_url with priority:
     1) command --base-url
@@ -47,19 +60,68 @@ def cron_group() -> None:
     default="default",
     help="Agent ID (defaults to 'default')",
 )
+@click.option(
+    "--server/--local",
+    "use_server",
+    default=None,
+    help=(
+        "Force server mode (via API) or local mode (from jobs.json on disk). "
+        "Default: server if running, else local."
+    ),
+)
 @click.pass_context
 def list_jobs(
     ctx: click.Context,
     base_url: Optional[str],
     agent_id: str,
+    use_server: Optional[bool],
 ) -> None:
-    """List all cron jobs. Output is JSON from GET /cron/jobs."""
+    """List all cron jobs.
+
+    By default queries the running server.  Falls back to reading
+    ``jobs.json`` from the working directory when the server is
+    unreachable.
+
+    \b
+    Examples:
+      openspider cron list
+      openspider cron list --local
+    """
+    from .http import is_server_running
+
+    # Determine mode
+    if use_server is True:
+        _list_jobs_via_api(ctx, base_url, agent_id)
+        return
+    if use_server is False:
+        _list_jobs_local()
+        return
+    if base_url is not None:
+        _list_jobs_via_api(ctx, base_url, agent_id)
+        return
+
+    host = (ctx.obj or {}).get("host", "127.0.0.1")
+    port = int((ctx.obj or {}).get("port", 8088))
+    if is_server_running(host, port):
+        _list_jobs_via_api(ctx, base_url, agent_id)
+    else:
+        _list_jobs_local()
+
+
+def _list_jobs_via_api(ctx, base_url, agent_id):
+    """List jobs via the running server API."""
     base_url = _base_url(ctx, base_url)
     with client(base_url) as c:
         headers = {"X-Agent-Id": agent_id}
         r = c.get("/cron/jobs", headers=headers)
         r.raise_for_status()
         print_json(r.json())
+
+
+def _list_jobs_local():
+    """List jobs from the local jobs.json file."""
+    from ..agents.tools.agent_management import list_local_cron_jobs
+    print_json(list_local_cron_jobs())
 
 
 @cron_group.command("get")
@@ -82,6 +144,7 @@ def get_job(
     agent_id: str,
 ) -> None:
     """Fetch a cron job by ID. Returns JSON from GET /cron/jobs/<id>."""
+    _server_required("cron get", ctx, base_url)
     base_url = _base_url(ctx, base_url)
     with client(base_url) as c:
         headers = {"X-Agent-Id": agent_id}
@@ -112,6 +175,7 @@ def job_state(
     agent_id: str,
 ) -> None:
     """Get the runtime state of a cron job (e.g. next run time, paused)."""
+    _server_required("cron state", ctx, base_url)
     base_url = _base_url(ctx, base_url)
     with client(base_url) as c:
         headers = {"X-Agent-Id": agent_id}
@@ -331,6 +395,7 @@ def create_job(
         from ..config import load_config
 
         timezone = load_config().user_timezone or "UTC"
+    _server_required("cron create", ctx, base_url)
     base_url = _base_url(ctx, base_url)
     if file_ is not None:
         payload = json.loads(file_.read_text(encoding="utf-8"))
@@ -387,6 +452,7 @@ def delete_job(
     agent_id: str,
 ) -> None:
     """Permanently delete a cron job. The job is removed from the server."""
+    _server_required("cron delete", ctx, base_url)
     base_url = _base_url(ctx, base_url)
     with client(base_url) as c:
         headers = {"X-Agent-Id": agent_id}
@@ -419,6 +485,7 @@ def pause_job(
     """Pause a cron job so it no longer runs on schedule.
     Use 'resume' to re-enable.
     """
+    _server_required("cron pause", ctx, base_url)
     base_url = _base_url(ctx, base_url)
     with client(base_url) as c:
         headers = {"X-Agent-Id": agent_id}
@@ -449,6 +516,7 @@ def resume_job(
     agent_id: str,
 ) -> None:
     """Resume a paused cron job so it runs again on its schedule."""
+    _server_required("cron resume", ctx, base_url)
     base_url = _base_url(ctx, base_url)
     with client(base_url) as c:
         headers = {"X-Agent-Id": agent_id}
@@ -479,6 +547,7 @@ def run_job(
     agent_id: str,
 ) -> None:
     """Trigger a one-off run of a cron job immediately (ignores schedule)."""
+    _server_required("cron run", ctx, base_url)
     base_url = _base_url(ctx, base_url)
     with client(base_url) as c:
         headers = {"X-Agent-Id": agent_id}

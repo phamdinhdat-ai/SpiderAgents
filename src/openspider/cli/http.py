@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import socket
 from typing import Any, Optional
 
 import click
@@ -11,6 +12,25 @@ from ..utils.http import trust_env_for_url
 
 
 DEFAULT_BASE_URL = "http://127.0.0.1:8088"
+
+
+def is_server_running(host: str = "127.0.0.1", port: int = 8088,
+                      timeout: float = 1.0) -> bool:
+    """Check if the OpenSpider server is running via TCP connect.
+
+    Args:
+        host: Server hostname or IP address.
+        port: Server port.
+        timeout: Connection timeout in seconds.
+
+    Returns:
+        ``True`` if a TCP connection succeeds, ``False`` otherwise.
+    """
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except (OSError, socket.timeout):
+        return False
 
 
 def client(base_url: str) -> httpx.Client:

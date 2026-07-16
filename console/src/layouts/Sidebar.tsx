@@ -228,6 +228,12 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       label: t("nav.workspace"),
     },
     {
+      key: "knowledge-base",
+      icon: <SparkOtherLine size={18} />,
+      path: "/knowledge-base",
+      label: t("nav.knowledgeBase", "Knowledge Base"),
+    },
+    {
       key: "skills",
       icon: <SparkMagicWandLine size={18} />,
       path: "/skills",
@@ -367,6 +373,11 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
           key: "workspace",
           label: collapsed ? null : t("nav.workspace"),
           icon: <SparkLocalFileLine size={16} />,
+        },
+        {
+          key: "knowledge-base",
+          label: collapsed ? null : (t("nav.knowledgeBase", "Knowledge Base") as string),
+          icon: <SparkOtherLine size={16} />,
         },
         {
           key: "skills",

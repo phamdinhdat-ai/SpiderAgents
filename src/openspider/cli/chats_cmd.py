@@ -8,8 +8,20 @@ from typing import Optional
 
 import click
 
-from .http import client, print_json, resolve_base_url
+from .http import client, is_server_running, print_json, resolve_base_url
 from ..app.channels.schema import DEFAULT_CHANNEL
+
+
+def _server_required(op_name: str, ctx: click.Context, base_url: Optional[str]) -> None:
+    """Raise a friendly error when a server-only command is called offline."""
+    host = (ctx.obj or {}).get("host", "127.0.0.1")
+    port = (ctx.obj or {}).get("port", 8088)
+    if not is_server_running(host, port):
+        raise click.ClickException(
+            f"✗ '{op_name}' requires the OpenSpider server to be running.\n"
+            f"  Server not reachable at http://{host}:{port}\n"
+            f"  Start it with:  openspider app\n"
+        )
 
 
 @click.group("chats")
@@ -63,7 +75,11 @@ def list_chats(
       openspider chats list --user-id alice
       openspider chats list --channel discord
       openspider chats list --user-id alice --channel discord
+
+    \b
+    Note: Requires the OpenSpider server to be running.
     """
+    _server_required("chats list", ctx, base_url)
     base_url = resolve_base_url(ctx, base_url)
     params: dict[str, str] = {}
     if user_id:
@@ -98,9 +114,13 @@ def get_chat(
     CHAT_ID  Chat UUID, obtainable via `openspider chats list`.
 
     \b
+    Note: Requires the OpenSpider server to be running.
+
+    \b
     Examples:
       openspider chats get 823845fe-dd13-43c2-ab8b-d05870602fd8
     """
+    _server_required("chats get", ctx, base_url)
     base_url = resolve_base_url(ctx, base_url)
     with client(base_url) as c:
         headers = {"X-Agent-Id": agent_id}
@@ -174,7 +194,11 @@ def create_chat(
     \b
     JSON file creation example:
       openspider chats create -f chat.json
+
+    \b
+    Note: Requires the OpenSpider server to be running.
     """
+    _server_required("chats create", ctx, base_url)
     base_url = resolve_base_url(ctx, base_url)
     if file_ is not None:
         payload = json.loads(file_.read_text(encoding="utf-8"))
@@ -227,7 +251,11 @@ def update_chat(
     \b
     Examples:
       openspider chats update <chat_id> --name "Renamed Chat"
+
+    \b
+    Note: Requires the OpenSpider server to be running.
     """
+    _server_required("chats update", ctx, base_url)
     base_url = resolve_base_url(ctx, base_url)
     headers = {"X-Agent-Id": agent_id}
     payload = {"name": name}
@@ -264,7 +292,11 @@ def delete_chat(
     \b
     Examples:
       openspider chats delete 823845fe-dd13-43c2-ab8b-d05870602fd8
+
+    \b
+    Note: Requires the OpenSpider server to be running.
     """
+    _server_required("chats delete", ctx, base_url)
     base_url = resolve_base_url(ctx, base_url)
     with client(base_url) as c:
         headers = {"X-Agent-Id": agent_id}

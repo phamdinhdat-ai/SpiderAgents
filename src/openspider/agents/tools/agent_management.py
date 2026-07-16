@@ -115,7 +115,6 @@ def ensure_agent_identity_prefix(
     caller_agent_id = resolve_calling_agent_id(from_agent)
     patterns = [
         r"^\[Agent\s+\w+",
-        r"^\[来自智能体\s+\w+",
     ]
     stripped = text.strip()
     for pattern in patterns:
@@ -163,6 +162,155 @@ def list_agents_data(
         response = client.get("/agents")
         response.raise_for_status()
         return response.json()
+
+
+def list_local_agents() -> dict[str, Any]:
+    """List all configured agents from local config files.
+
+    Reads ``config.json`` and per-agent ``workspace/<id>/agent.json``
+    files to build the agent list without requiring a running server.
+    Returns the same dict shape as ``GET /api/agents``.
+
+    Returns:
+        ``{"agents": [{"id", "name", "description", "workspace_dir",
+        "enabled", "language", "model", ...}, ...]}``
+    """
+    from ...config import load_config
+    from ...config.config import load_agent_config
+
+    config = load_config()
+    agents_list: list[dict[str, Any]] = []
+
+    for agent_id, ref in config.agents.profiles.items():
+        try:
+            profile = load_agent_config(agent_id)
+            agent_data: dict[str, Any] = {
+                "id": profile.id,
+                "name": profile.name,
+                "description": profile.description or "",
+                "workspace_dir": profile.workspace_dir or ref.workspace_dir,
+                "enabled": ref.enabled,
+                "language": profile.language,
+            }
+            if profile.active_model:
+                try:
+                    agent_data["model"] = profile.active_model.model_dump()
+                except Exception:
+                    pass
+            agents_list.append(agent_data)
+        except Exception:
+            agents_list.append({
+                "id": ref.id,
+                "name": ref.id,
+                "description": "",
+                "workspace_dir": ref.workspace_dir,
+                "enabled": ref.enabled,
+            })
+
+    return {"agents": agents_list}
+
+
+def delete_local_agent(
+    agent_id: str,
+    *,
+    remove_workspace: bool = False,
+) -> dict[str, Any]:
+    """Delete an agent from local configuration.
+
+    Removes the agent from ``config.agents.profiles`` and
+    ``config.agents.agent_order``.  Deletes ``agent.json`` from the
+    workspace directory.  Optionally removes the entire workspace
+    directory.
+
+    Args:
+        agent_id: The agent to delete.
+        remove_workspace: If ``True``, also remove the workspace
+            directory tree.
+
+    Returns:
+        ``{"status": "deleted", "agent_id": "...",
+        "workspace_removed": true|false}``
+
+    Raises:
+        ValueError: If *agent_id* is not found or is "default".
+    """
+    from pathlib import Path
+    import shutil
+
+    from ...config import load_config, save_config
+
+    config = load_config()
+
+    if agent_id not in config.agents.profiles:
+        raise ValueError(f"Agent '{agent_id}' not found")
+    if agent_id == "default":
+        raise ValueError("Cannot delete the default agent")
+
+    workspace_dir = Path(
+        config.agents.profiles[agent_id].workspace_dir,
+    ).expanduser()
+
+    # Remove from profiles
+    del config.agents.profiles[agent_id]
+    if agent_id in config.agents.agent_order:
+        config.agents.agent_order.remove(agent_id)
+    save_config(config)
+
+    # Remove agent.json
+    agent_json = workspace_dir / "agent.json"
+    try:
+        if agent_json.exists():
+            agent_json.unlink()
+    except OSError:
+        pass
+
+    # Optionally remove workspace
+    workspace_removed = False
+    if remove_workspace:
+        try:
+            resolved = workspace_dir.resolve()
+            from ...constant import WORKING_DIR
+            # Safety: only delete if under WORKING_DIR
+            try:
+                resolved.relative_to(WORKING_DIR.resolve())
+            except ValueError:
+                pass  # outside WORKING_DIR — skip
+            else:
+                if resolved.exists():
+                    shutil.rmtree(resolved)
+                    workspace_removed = True
+        except OSError:
+            pass
+
+    return {
+        "status": "deleted",
+        "agent_id": agent_id,
+        "workspace_removed": workspace_removed,
+    }
+
+
+def list_local_cron_jobs() -> dict[str, Any]:
+    """Read cron jobs from the local ``jobs.json`` file.
+
+    Returns the same structure as ``GET /api/cron/jobs`` but reads
+    directly from disk without requiring a running server.
+
+    Returns:
+        ``{"jobs": [...]}`` or ``{"jobs": []}`` if the file is missing.
+    """
+    from pathlib import Path
+
+    from ...config import get_jobs_path
+
+    jobs_path = get_jobs_path()
+    if not jobs_path.is_file():
+        return {"jobs": []}
+
+    try:
+        data = json.loads(jobs_path.read_text(encoding="utf-8"))
+        return {"jobs": data.get("jobs", [])}
+    except (json.JSONDecodeError, OSError):
+        return {"jobs": []}
 
 
 def extract_agent_ids(agent_list_data: Dict[str, Any]) -> set[str]:

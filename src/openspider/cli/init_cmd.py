@@ -9,6 +9,7 @@ from rich.panel import Panel
 
 from .channels_cmd import configure_channels_interactive
 from .env_cmd import configure_env_interactive
+from .mcp_cmd import configure_mcp_interactive
 from .providers_cmd import configure_providers_interactive
 from .skills_cmd import configure_skills_interactive
 from .utils import prompt_confirm, prompt_choice
@@ -328,6 +329,14 @@ def init_cmd(
             default=False,
         ):
             configure_channels_interactive(existing)
+
+        # --- MCP servers (interactive when not --defaults) ---
+        if not use_defaults and prompt_confirm(
+            "Configure MCP servers?"
+            "  (additional tools for agents: web search, filesystem, DB, etc.)",
+            default=False,
+        ):
+            configure_mcp_interactive(existing)
 
         save_config(existing, config_path)
         click.echo(f"\n✓ Configuration saved to {config_path}")

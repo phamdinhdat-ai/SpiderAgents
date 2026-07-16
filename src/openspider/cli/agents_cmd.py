@@ -471,16 +471,31 @@ def agents_group() -> None:
         "If omitted, uses global --host and --port from config."
     ),
 )
+@click.option(
+    "--server/--local",
+    "use_server",
+    default=None,
+    help=(
+        "Force server mode (via API) or local mode (from config files). "
+        "Default: local if no --server flag and no explicit --base-url."
+    ),
+)
 @click.pass_context
-def list_agents(ctx: click.Context, base_url: Optional[str]) -> None:
+def list_agents(
+    ctx: click.Context,
+    base_url: Optional[str],
+    use_server: Optional[bool],
+) -> None:
     """List all configured agents.
 
-    Shows agent ID, name, description, and workspace directory.
-    Useful for discovering available agents for inter-agent communication.
+    By default reads from local config.json and workspace agent.json
+    files — no server required.  Use ``--server`` to query the running
+    OpenSpider API instead.
 
     \b
     Examples:
       openspider agents list
+      openspider agents list --server
       openspider agents list --base-url http://192.168.1.100:8088
 
     \b
@@ -491,13 +506,49 @@ def list_agents(ctx: click.Context, base_url: Optional[str]) -> None:
             "id": "default",
             "name": "Default Assistant",
             "description": "...",
-            "workspace_dir": "..."
+            "workspace_dir": "...",
+            "enabled": true
           }
         ]
       }
     """
-    base_url = resolve_base_url(ctx, base_url)
-    print_json(agent_tools.list_agents_data(base_url))
+    from .http import is_server_running
+
+    resolved_base_url = resolve_base_url(ctx, base_url) if base_url else None
+
+    # Determine mode:
+    #   - Explicit --server  →  always use API
+    #   - Explicit --local   →  always use local files
+    #   - Explicit --base-url→  server mode (user specified a URL)
+    #   - Default            →  try local; fall back to API if server is running
+    if use_server is True:
+        _list_via_api(resolved_base_url, ctx)
+        return
+    if use_server is False:
+        _list_via_local()
+        return
+    if base_url is not None:
+        _list_via_api(resolved_base_url, ctx)
+        return
+
+    # Default: check if server is reachable; if so, use API; else local
+    host = (ctx.obj or {}).get("host", "127.0.0.1")
+    port = int((ctx.obj or {}).get("port", 8088))
+    if is_server_running(host, port):
+        _list_via_api(resolved_base_url, ctx)
+    else:
+        _list_via_local()
+
+
+def _list_via_api(base_url: Optional[str], ctx: click.Context) -> None:
+    """List agents via the running server API."""
+    resolved = resolve_base_url(ctx, base_url)
+    print_json(agent_tools.list_agents_data(resolved))
+
+
+def _list_via_local() -> None:
+    """List agents from local config files."""
+    print_json(agent_tools.list_local_agents())
 
 
 @agents_group.command("create")
@@ -653,6 +704,15 @@ def create_cmd(
         "If omitted, uses global --host and --port from config."
     ),
 )
+@click.option(
+    "--server/--local",
+    "use_server",
+    default=None,
+    help=(
+        "Force server mode (via API) or local mode (from config files). "
+        "Default: try API first, fall back to local deletion."
+    ),
+)
 @click.pass_context
 def delete_cmd(
     ctx: click.Context,
@@ -660,11 +720,13 @@ def delete_cmd(
     remove_workspace: bool,
     yes: bool,
     base_url: Optional[str],
+    use_server: Optional[bool],
 ) -> None:
-    """Delete a configured agent via the local API.
+    """Delete a configured agent.
 
-    Stops the target agent if it is running and removes it from the
-    configured agent list. The default agent cannot be deleted.
+    Tries to stop the agent via the API if the server is running,
+    then removes it from the local config.  The default agent cannot
+    be deleted.
 
     \b
     AGENT_ID  Configured agent ID, obtainable via `openspider agents list`.
@@ -674,9 +736,8 @@ def delete_cmd(
       openspider agents delete research
       openspider agents delete research --remove-workspace
       openspider agents delete research --yes
+      openspider agents delete research --local
     """
-    resolved_base_url = resolve_base_url(ctx, base_url)
-
     if not yes:
         click.echo(f"WARNING: You are about to delete agent '{agent_id}'.")
         click.echo(
@@ -689,36 +750,108 @@ def delete_cmd(
             )
         click.confirm("Continue with deletion?", abort=True)
 
+    from .http import is_server_running
+
+    resolved_base_url = resolve_base_url(ctx, base_url) if base_url else None
+    host = (ctx.obj or {}).get("host", "127.0.0.1")
+    port = int((ctx.obj or {}).get("port", 8088))
+
+    # Determine mode
+    should_use_api = False
+    if use_server is True:
+        should_use_api = True
+    elif use_server is False:
+        should_use_api = False
+    elif base_url is not None:
+        should_use_api = True  # explicit URL → server mode
+    else:
+        should_use_api = is_server_running(host, port)
+
+    if should_use_api:
+        _delete_via_api(ctx, agent_id, remove_workspace, resolved_base_url)
+    else:
+        _delete_via_local(agent_id, remove_workspace)
+
+
+def _delete_via_api(
+    ctx: click.Context,
+    agent_id: str,
+    remove_workspace: bool,
+    base_url: Optional[str],
+) -> None:
+    """Delete agent via the running server API."""
+    resolved_base_url = resolve_base_url(ctx, base_url)
     workspace_dir: Optional[Path] = None
 
-    with agent_tools.create_agent_api_client(resolved_base_url) as client:
-        if remove_workspace:
-            workspace_dir = _fetch_agent_workspace_dir(client, agent_id)
-            if workspace_dir is not None:
-                workspace_dir = _ensure_workspace_within_working_dir(
-                    workspace_dir,
-                )
-        response = client.delete(f"/agents/{agent_id}")
+    try:
+        with agent_tools.create_agent_api_client(resolved_base_url) as client:
+            if remove_workspace:
+                workspace_dir = _fetch_agent_workspace_dir(client, agent_id)
+                if workspace_dir is not None:
+                    workspace_dir = _ensure_workspace_within_working_dir(
+                        workspace_dir,
+                    )
+            response = client.delete(f"/agents/{agent_id}")
 
-    if response.status_code == 404:
-        raise click.ClickException(f"Agent '{agent_id}' not found.")
-
-    if response.status_code == 400:
-        detail = response.json().get("detail")
-        raise click.ClickException(detail or "Failed to delete agent.")
-
-    response.raise_for_status()
-    result = response.json()
-
-    if remove_workspace:
-        if workspace_dir is None:
+        if response.status_code == 404:
             raise click.ClickException(
-                "Agent deleted, but workspace path could not be determined.",
+                f"Agent '{agent_id}' not found on server."
+                "  It may have already been deleted."
             )
-        result["workspace_dir"] = str(workspace_dir)
-        result["workspace_removed"] = _remove_agent_workspace(workspace_dir)
+        if response.status_code == 400:
+            detail = response.json().get("detail")
+            raise click.ClickException(
+                detail or "Failed to delete agent."
+            )
+        response.raise_for_status()
+        result = response.json()
+
+        if remove_workspace:
+            if workspace_dir is None:
+                raise click.ClickException(
+                    "Agent deleted, but workspace path could not be"
+                    " determined.",
+                )
+            result["workspace_dir"] = str(workspace_dir)
+            result["workspace_removed"] = (
+                _remove_agent_workspace(workspace_dir)
+            )
+        print_json(result)
+    except click.ClickException:
+        raise
+    except httpx.ConnectError:
+        # Server is down → fall back to local deletion
+        click.echo(
+            click.style(
+                "⚠  Server unreachable — falling back to local deletion.",
+                fg="yellow",
+            ),
+            err=True,
+        )
+        _delete_via_local(agent_id, remove_workspace)
+    except Exception as exc:
+        raise click.ClickException(
+            f"Failed to delete agent via API: {exc}"
+        ) from exc
+
+
+def _delete_via_local(agent_id: str, remove_workspace: bool) -> None:
+    """Delete agent from local config files."""
+    try:
+        result = agent_tools.delete_local_agent(
+            agent_id,
+            remove_workspace=remove_workspace,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
     print_json(result)
+    click.echo(
+        click.style(
+            "✓ Agent deleted from local configuration.",
+            fg="green",
+        ),
+    )
 
 
 @agents_group.command("chat")

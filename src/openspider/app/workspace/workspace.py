@@ -24,6 +24,7 @@ from .service_factories import (
     create_channel_service,
     create_agent_config_watcher,
     create_mcp_config_watcher,
+    create_knowledge_base_service,
 )
 from ..runner import AgentRunner
 from ..runner.task_tracker import TaskTracker
@@ -100,6 +101,11 @@ class Workspace:
     def chat_manager(self):
         """Get chat manager instance from ServiceManager."""
         return self._service_manager.services.get("chat_manager")
+
+    @property
+    def knowledge_base_manager(self):
+        """Get knowledge base manager instance from ServiceManager."""
+        return self._service_manager.services.get("knowledge_base_manager")
 
     @property
     def channel_manager(self):
@@ -231,6 +237,19 @@ class Workspace:
                 name="chat_manager",
                 service_class=None,
                 post_init=create_chat_service,
+                reusable=True,
+                priority=20,
+                concurrent_init=True,
+            ),
+        )
+
+        sm.register(
+            ServiceDescriptor(
+                name="knowledge_base_manager",
+                service_class=None,
+                post_init=create_knowledge_base_service,
+                start_method="start",
+                stop_method="close",
                 reusable=True,
                 priority=20,
                 concurrent_init=True,

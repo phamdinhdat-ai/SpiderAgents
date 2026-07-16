@@ -113,6 +113,7 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
         workspace_dir: Path | None = None,
         task_tracker: Any | None = None,
         plan_notebook: Any | None = None,
+        knowledge_base_manager: Any | None = None,
     ):
         """Initialize SpiderAgent.
 
@@ -157,6 +158,7 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
         # in _build_sys_prompt
         self.memory_manager = memory_manager
         self.context_manager = context_manager
+        self.knowledge_base_manager = knowledge_base_manager
 
         # Build system prompt
         sys_prompt = self._build_sys_prompt()
@@ -198,6 +200,19 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
             logger.debug(
                 "Registered memory tools: %s",
                 [fn.__name__ for fn in memory_tools],
+            )
+
+        # Register knowledge base tools
+        if self.knowledge_base_manager is not None:
+            kb_tools = self.knowledge_base_manager.list_kb_tools()
+            for tool_fn in kb_tools:
+                self.toolkit.register_tool_function(
+                    tool_fn,
+                    namesake_strategy=self._namesake_strategy,
+                )
+            logger.debug(
+                "Registered KB tools: %s",
+                [fn.__name__ for fn in kb_tools],
             )
 
         # Configure context manager memory if available
@@ -465,6 +480,14 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
         multimodal_hint = build_multimodal_hint()
         if multimodal_hint:
             sys_prompt = sys_prompt + "\n\n" + multimodal_hint
+
+        # Inject knowledge base guidance
+        if self.knowledge_base_manager is not None:
+            kb_prompt = self.knowledge_base_manager.get_kb_prompt(
+                self._language,
+            )
+            if kb_prompt:
+                sys_prompt = sys_prompt + "\n\n" + kb_prompt
 
         if self._env_context is not None:
             sys_prompt = sys_prompt + "\n\n" + self._env_context

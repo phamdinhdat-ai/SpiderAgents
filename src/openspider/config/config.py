@@ -628,6 +628,56 @@ class ReMeLightMemoryConfig(BaseModel):
     )
 
 
+class KnowledgeBaseConfig(BaseModel):
+    """Knowledge base configuration for document RAG."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    enabled: bool = Field(
+        default=True,
+        description="Whether the knowledge base service is enabled",
+    )
+    chunk_size: int = Field(
+        default=500,
+        ge=100,
+        le=4096,
+        description="Target characters per text chunk",
+    )
+    chunk_overlap: int = Field(
+        default=50,
+        ge=0,
+        le=500,
+        description="Overlap characters between consecutive chunks",
+    )
+    max_results: int = Field(
+        default=5,
+        ge=1,
+        le=50,
+        description="Default max search results",
+    )
+    min_score: float = Field(
+        default=0.1,
+        ge=0.0,
+        le=1.0,
+        description="Minimum relevance score for search results",
+    )
+    auto_search_enabled: bool = Field(
+        default=True,
+        description="Auto-search KB before replies via context hook",
+    )
+    supported_extensions: list[str] = Field(
+        default_factory=lambda: [
+            ".pdf", ".docx", ".xlsx", ".xlsm",
+            ".md", ".markdown", ".txt", ".log", ".csv", ".tsv",
+        ],
+        description="File extensions accepted for upload",
+    )
+    file_watcher_enabled: bool = Field(
+        default=True,
+        description="Auto-index new files added to KB directory",
+    )
+
+
 class ContextCompactConfig(BaseModel):
     """Context compaction configuration."""
 
@@ -953,6 +1003,10 @@ class AgentsRunningConfig(BaseModel):
 
     reme_light_memory_config: ReMeLightMemoryConfig = Field(
         default_factory=ReMeLightMemoryConfig,
+    )
+
+    knowledge_base_config: "KnowledgeBaseConfig" = Field(
+        default_factory=lambda: KnowledgeBaseConfig(),
     )
 
     daily_memory_dir: str = Field(

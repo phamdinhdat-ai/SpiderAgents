@@ -605,6 +605,9 @@ class AgentRunner(Runner):
                 workspace_dir=self.workspace_dir,
                 task_tracker=self._task_tracker,
                 plan_notebook=plan_notebook,
+                knowledge_base_manager=getattr(
+                    self, "knowledge_base_manager", None,
+                ),
             )
             await agent.register_mcp_clients()
             agent.set_console_output_enabled(enabled=False)
