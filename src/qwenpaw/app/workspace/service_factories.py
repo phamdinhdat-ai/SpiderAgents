@@ -173,3 +173,35 @@ async def create_mcp_config_watcher(ws: "Workspace", _):
     ws._service_manager.services["mcp_config_watcher"] = watcher
     return watcher
     # pylint: enable=protected-access
+
+
+async def create_knowledge_base_service(ws: "Workspace", service):
+    """Create and attach knowledge base manager.
+
+    Args:
+        ws: Workspace instance
+        service: Existing KnowledgeBaseManager if reused, None if creating new
+    """
+    # pylint: disable=protected-access
+    from ...knowledge.knowledge_base_manager import KnowledgeBaseManager
+
+    if service is not None:
+        kbm = service
+        logger.info(f"Reusing KnowledgeBaseManager for {ws.agent_id}")
+    else:
+        kbm = KnowledgeBaseManager(
+            working_dir=str(ws.workspace_dir),
+            agent_id=ws.agent_id,
+        )
+        ws._service_manager.services["knowledge_base_manager"] = kbm
+        logger.info(
+            f"KnowledgeBaseManager created for agent: {ws.agent_id}",
+        )
+
+    # Wire to runner
+    runner = ws._service_manager.services.get("runner")
+    if runner is not None:
+        runner.knowledge_base_manager = kbm
+
+    return kbm
+    # pylint: enable=protected-access

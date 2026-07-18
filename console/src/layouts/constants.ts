@@ -37,6 +37,9 @@ export const KEY_TO_PATH: Record<string, string> = {
   "agent-stats": "/agent-stats",
   backups: "/backups",
   "plugin-manager": "/plugin-manager",
+  "knowledge-base": "/knowledge-base",
+  "admin-settings": "/admin-settings",
+  "user-management": "/user-management",
 };
 
 export const KEY_TO_LABEL: Record<string, string> = {

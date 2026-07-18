@@ -200,6 +200,17 @@ def set_current_auth_user_id(user_id: str | None) -> None:
     _current_auth_user_id.set(user_id)
 
 
+def set_current_auth_user_role(role: str | None) -> None:
+    """Set authenticated user role in context.
+
+    Args:
+        role: The authenticated user role from the auth token
+              (``"admin"`` or ``"user"``),
+              or ``None`` when auth is disabled / no user.
+    """
+    _current_auth_user_role.set(role)
+
+
 def get_current_auth_user_id() -> str | None:
     """Get authenticated user ID from context.
 

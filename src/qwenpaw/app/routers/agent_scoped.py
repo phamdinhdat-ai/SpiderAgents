@@ -22,10 +22,24 @@ class AgentContextMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         """Extract agentId and root_session_id from path/headers."""
         import logging
-        from ..agent_context import set_current_agent_id
+        from ..agent_context import (
+            set_current_agent_id,
+            set_current_auth_user_id,
+            set_current_auth_user_role,
+        )
 
         logger = logging.getLogger(__name__)
         agent_id = None
+
+        # Propagate authenticated user from AuthMiddleware → ContextVar
+        auth_user = request.scope.get("auth_user")
+        if auth_user:
+            set_current_auth_user_id(auth_user)
+
+        # Propagate authenticated user role from AuthMiddleware → ContextVar
+        auth_role = request.scope.get("auth_role")
+        if auth_role:
+            set_current_auth_user_role(auth_role)
 
         # Priority 1: Extract agentId from path: /api/agents/{agentId}/...
         path_parts = request.url.path.split("/")
@@ -80,6 +94,7 @@ def create_agent_scoped_router() -> APIRouter:
     from .console import router as console_router
     from .plugins import router as plugins_router
     from .plan import router as plan_router
+    from .knowledge import router as knowledge_router
 
     router = APIRouter(prefix="/agents/{agentId}", tags=["agent-scoped"])
 
@@ -103,5 +118,6 @@ def create_agent_scoped_router() -> APIRouter:
     router.include_router(console_router)
     router.include_router(plugins_router)
     router.include_router(plan_router)
+    router.include_router(knowledge_router)
 
     return router

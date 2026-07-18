@@ -25,6 +25,7 @@ class AgentContextMiddleware(BaseHTTPMiddleware):
         from ..agent_context import (
             set_current_agent_id,
             set_current_auth_user_id,
+            set_current_auth_user_role,
         )
 
         logger = logging.getLogger(__name__)
@@ -34,6 +35,11 @@ class AgentContextMiddleware(BaseHTTPMiddleware):
         auth_user = request.scope.get("auth_user")
         if auth_user:
             set_current_auth_user_id(auth_user)
+
+        # Propagate authenticated user role from AuthMiddleware → ContextVar
+        auth_role = request.scope.get("auth_role")
+        if auth_role:
+            set_current_auth_user_role(auth_role)
 
         # Priority 1: Extract agentId from path: /api/agents/{agentId}/...
         path_parts = request.url.path.split("/")

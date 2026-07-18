@@ -20,6 +20,21 @@ export interface KnowledgeDocument {
   error_message?: string | null;
   created_at: string;
   metadata: Record<string, unknown>;
+  owner?: string | null;
+  scope?: "private" | "shared" | "public";
+  shared_with?: string[];
+}
+
+export interface ShareDocumentRequest {
+  shared_with: string[];
+  scope: "shared" | "public";
+}
+
+export interface ShareDocumentResponse {
+  status: string;
+  document_id: string;
+  scope: string;
+  shared_with: string[];
 }
 
 export interface SearchResult {
@@ -120,12 +135,15 @@ export const knowledgeApi = {
     return response.json();
   },
 
-  /** List all documents, optionally filtered by knowledge base. */
-  listDocuments: (kbName?: string) => {
-    const params = kbName
-      ? `?kb_name=${encodeURIComponent(kbName)}`
-      : "";
-    return request<ListDocumentsResponse>(`/knowledge/documents${params}`);
+  /** List documents accessible to the current user, optionally filtered. */
+  listDocuments: (kbName?: string, scope?: string) => {
+    const params = new URLSearchParams();
+    if (kbName) params.set("kb_name", kbName);
+    if (scope) params.set("scope", scope);
+    const qs = params.toString();
+    return request<ListDocumentsResponse>(
+      `/knowledge/documents${qs ? `?${qs}` : ""}`,
+    );
   },
 
   /** Get a single document's metadata. */
@@ -139,6 +157,13 @@ export const knowledgeApi = {
     request<{ status: string; document_id: string }>(
       `/knowledge/documents/${encodeURIComponent(documentId)}`,
       { method: "DELETE" },
+    ),
+
+  /** Share a document with other users. */
+  shareDocument: (documentId: string, data: ShareDocumentRequest) =>
+    request<ShareDocumentResponse>(
+      `/knowledge/documents/${encodeURIComponent(documentId)}/share`,
+      { method: "POST", body: JSON.stringify(data) },
     ),
 
   /** Semantic search across the knowledge base. */

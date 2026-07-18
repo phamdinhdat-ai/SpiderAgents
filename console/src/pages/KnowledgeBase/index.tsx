@@ -15,6 +15,9 @@ import {
   Typography,
   Card,
   Progress,
+  Modal,
+  Select,
+  Radio,
 } from "antd";
 import {
   UploadOutlined,
@@ -27,6 +30,7 @@ import {
   FileMarkdownOutlined,
   FileTextOutlined,
   InboxOutlined,
+  ShareAltOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type { UploadProps } from "antd";
@@ -37,6 +41,7 @@ import type {
   DocumentStatus,
   KnowledgeBaseInfo,
 } from "../../api/modules/knowledge";
+import { getCurrentUsername } from "../../api/config";
 import styles from "./index.module.less";
 
 const { Dragger } = Upload;
@@ -89,23 +94,47 @@ export default function KnowledgeBasePage() {
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseInfo[]>([]);
+  const [username, setUsername] = useState<string>("");
   const [activeKB, setActiveKB] = useState<string>("default");
+  const [scopeFilter, setScopeFilter] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Upload progress
+  const [uploadProgress, setUploadProgress] = useState<{
+    stage: "idle" | "uploading" | "processing" | "done";
+    filename: string;
+  }>({ stage: "idle", filename: "" });
+
+  // Resolve username on mount → set KB name
+  useEffect(() => {
+    getCurrentUsername().then((name) => {
+      if (name) {
+        setUsername(name);
+        setActiveKB(name);
+      }
+    });
+  }, []);
+
+  // Share modal
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareDocId, setShareDocId] = useState<string>("");
+  const [shareScope, setShareScope] = useState<"shared" | "public">("shared");
+  const [shareUsers, setShareUsers] = useState<string>("");
 
   // Fetch documents
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await knowledgeApi.listDocuments(activeKB);
+      const data = await knowledgeApi.listDocuments(activeKB, scopeFilter);
       setDocuments(data.documents);
     } catch (err: any) {
       message.error(`Failed to load documents: ${err.message}`);
     } finally {
       setLoading(false);
     }
-  }, [activeKB]);
+  }, [activeKB, scopeFilter]);
 
   // Fetch KB list
   const fetchKnowledgeBases = useCallback(async () => {
@@ -132,6 +161,46 @@ export default function KnowledgeBasePage() {
       message.error(`Delete failed: ${err.message}`);
     }
   };
+
+  // Share document
+  const openShareModal = (docId: string) => {
+    const doc = documents.find((d) => d.id === docId);
+    setShareDocId(docId);
+    setShareScope(doc?.scope === "public" ? "public" : "shared");
+    setShareUsers((doc?.shared_with || []).join(", "));
+    setShareModalOpen(true);
+  };
+
+  const handleShare = async () => {
+    const users = shareUsers
+      .split(",")
+      .map((u) => u.trim())
+      .filter(Boolean);
+    try {
+      await knowledgeApi.shareDocument(shareDocId, {
+        shared_with: users,
+        scope: shareScope,
+      });
+      message.success("Document sharing updated");
+      setShareModalOpen(false);
+      fetchDocuments();
+    } catch (err: any) {
+      message.error(`Share failed: ${err.message}`);
+    }
+  };
+
+  function scopeTag(scope?: string) {
+    if (!scope || scope === "private") {
+      return <Tag>Private</Tag>;
+    }
+    if (scope === "shared") {
+      return <Tag color="blue">Shared</Tag>;
+    }
+    if (scope === "public") {
+      return <Tag color="green">Public</Tag>;
+    }
+    return <Tag>{scope}</Tag>;
+  }
 
   // Re-index all
   const handleReindex = async () => {
@@ -165,28 +234,38 @@ export default function KnowledgeBasePage() {
     },
     customRequest: async (options) => {
       const { file, onSuccess, onError } = options as any;
+      const f = file as File;
       try {
         setUploading(true);
+        setUploadProgress({ stage: "uploading", filename: f.name });
         const result = await knowledgeApi.uploadDocuments(
-          [file as File],
+          [f],
           activeKB,
         );
+        setUploadProgress({ stage: "processing", filename: f.name });
         if (result.results.length > 0) {
+          setUploadProgress({ stage: "done", filename: f.name });
           message.success(
             `Uploaded: ${result.results[0].filename} (${result.results[0].status})`,
           );
         }
         if (result.errors.length > 0) {
+          setUploadProgress({ stage: "idle", filename: "" });
           message.error(`Failed: ${result.errors[0].error}`);
         }
         onSuccess?.(result, file);
         fetchDocuments();
         fetchKnowledgeBases();
       } catch (err: any) {
+        setUploadProgress({ stage: "idle", filename: "" });
         onError?.(err);
         message.error(`Upload error: ${err.message}`);
       } finally {
         setUploading(false);
+        // Clear progress after a short delay so the user can read "done"
+        setTimeout(() => {
+          setUploadProgress({ stage: "idle", filename: "" });
+        }, 2000);
       }
     },
   };
@@ -242,6 +321,21 @@ export default function KnowledgeBasePage() {
       width: 80,
     },
     {
+      title: "Owner",
+      dataIndex: "owner",
+      key: "owner",
+      width: 120,
+      render: (owner: string | null) =>
+        owner ? <Text>{owner}</Text> : <Tag color="default">Legacy</Tag>,
+    },
+    {
+      title: "Scope",
+      dataIndex: "scope",
+      key: "scope",
+      width: 100,
+      render: (scope: string) => scopeTag(scope),
+    },
+    {
       title: "Uploaded",
       dataIndex: "created_at",
       key: "created_at",
@@ -251,17 +345,26 @@ export default function KnowledgeBasePage() {
     {
       title: "Actions",
       key: "actions",
-      width: 100,
+      width: 140,
       render: (_: unknown, record: KnowledgeDocument) => (
-        <Popconfirm
-          title="Delete this document?"
-          description="This will remove the document and all its indexed chunks."
-          onConfirm={() => handleDelete(record.id)}
-          okText="Delete"
-          cancelText="Cancel"
-        >
-          <Button type="link" danger icon={<DeleteOutlined />} size="small" />
-        </Popconfirm>
+        <Space size="small">
+          <Button
+            type="link"
+            icon={<ShareAltOutlined />}
+            size="small"
+            onClick={() => openShareModal(record.id)}
+            title="Share"
+          />
+          <Popconfirm
+            title="Delete this document?"
+            description="This will remove the document and all its indexed chunks."
+            onConfirm={() => handleDelete(record.id)}
+            okText="Delete"
+            cancelText="Cancel"
+          >
+            <Button type="link" danger icon={<DeleteOutlined />} size="small" />
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -308,7 +411,7 @@ export default function KnowledgeBasePage() {
     },
   ];
 
-  const kbs = knowledgeBases.length > 0 ? knowledgeBases : [{ name: "default", document_count: 0, total_chunks: 0, created_at: "" }];
+  const kbs = knowledgeBases.length > 0 ? knowledgeBases : [{ name: username || "default", document_count: 0, total_chunks: 0, created_at: "" }];
   const kbTabItems = kbs.map((kb) => ({
     key: kb.name,
     label: `${kb.name} (${kb.document_count})`,
@@ -321,6 +424,17 @@ export default function KnowledgeBasePage() {
           📚 Knowledge Base
         </Typography.Title>
         <Space>
+          <Radio.Group
+            value={scopeFilter}
+            onChange={(e) => setScopeFilter(e.target.value)}
+            size="small"
+            optionType="button"
+            buttonStyle="solid"
+          >
+            <Radio.Button value={undefined}>All</Radio.Button>
+            <Radio.Button value="my">My Docs</Radio.Button>
+            <Radio.Button value="shared">Shared</Radio.Button>
+          </Radio.Group>
           <Button
             icon={<ReloadOutlined />}
             onClick={fetchDocuments}
@@ -370,6 +484,31 @@ export default function KnowledgeBasePage() {
                       PDF, DOCX, XLSX, Markdown, TXT, CSV — up to 50MB each
                     </p>
                   </Dragger>
+                  {uploadProgress.stage !== "idle" && (
+                    <div style={{ marginTop: 12 }}>
+                      <Progress
+                        percent={
+                          uploadProgress.stage === "uploading"
+                            ? 30
+                            : uploadProgress.stage === "processing"
+                            ? 70
+                            : 100
+                        }
+                        status={
+                          uploadProgress.stage === "done"
+                            ? "success"
+                            : "active"
+                        }
+                        format={() =>
+                          uploadProgress.stage === "uploading"
+                            ? `Uploading ${uploadProgress.filename}...`
+                            : uploadProgress.stage === "processing"
+                            ? `Processing ${uploadProgress.filename}...`
+                            : `Indexed ${uploadProgress.filename}`
+                        }
+                      />
+                    </div>
+                  )}
                 </Card>
 
                 <Table
@@ -415,6 +554,43 @@ export default function KnowledgeBasePage() {
           },
         ]}
       />
+
+      <Modal
+        title="Share Document"
+        open={shareModalOpen}
+        onOk={handleShare}
+        onCancel={() => setShareModalOpen(false)}
+        okText="Save"
+        cancelText="Cancel"
+        destroyOnClose
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Text strong>Scope</Text>
+          <Radio.Group
+            value={shareScope}
+            onChange={(e) => setShareScope(e.target.value)}
+            style={{ marginLeft: 12 }}
+          >
+            <Radio.Button value="shared">Shared</Radio.Button>
+            <Radio.Button value="public">Public</Radio.Button>
+          </Radio.Group>
+        </div>
+        {shareScope === "shared" && (
+          <div>
+            <Text strong>Share with users</Text>
+            <Input.TextArea
+              value={shareUsers}
+              onChange={(e) => setShareUsers(e.target.value)}
+              placeholder="Enter usernames, separated by commas"
+              rows={3}
+              style={{ marginTop: 8 }}
+            />
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Separate multiple usernames with commas (e.g. alice, bob, charlie)
+            </Text>
+          </div>
+        )}
+      </Modal>
     </Content>
   );
 }

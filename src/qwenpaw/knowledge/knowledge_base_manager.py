@@ -69,6 +69,25 @@ search query. The tool returns the most relevant text chunks with their
 source filenames and relevance scores.
 """
 
+KB_GUIDANCE_PROMPT_ZH = """\
+## 知识库
+
+你可以访问包含已上传文档的知识库（PDF、电子表格、Word 文档、Markdown 文件等）。
+
+### 何时使用 `knowledge_base_search`
+
+- 用户询问关于已上传文档或文件的内容。
+- 用户提到某个文档的名称。
+- 用户提出一个事实性问题，答案可能在知识库中 — **先搜索知识库**，如果没找到再使用训练数据。
+- 用户要求跨文档比较或多文档分析。
+- 用户说"搜索我的文档"、"在我的文件中查找"等。
+
+### 如何使用
+
+调用 `knowledge_base_search(query="...")` 并使用具体、关键词丰富的搜索查询。
+该工具返回最相关的文本片段及其源文件名和相关性分数。
+"""
+
 KB_GUIDANCE_PROMPT_VI = """\
 ## Kho Kiến Thức
 
@@ -595,6 +614,7 @@ class KnowledgeBaseManager:
         Pattern matches :meth:`BaseMemoryManager.get_memory_prompt`.
         """
         prompts = {
+            "zh": KB_GUIDANCE_PROMPT_ZH,
             "en": KB_GUIDANCE_PROMPT_EN,
             "vi": KB_GUIDANCE_PROMPT_VI,
         }

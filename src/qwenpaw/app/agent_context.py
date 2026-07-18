@@ -30,6 +30,18 @@ _current_root_session_id: ContextVar[Optional[str]] = ContextVar(
     default=None,
 )
 
+# Context variable to store the authenticated user ID across async calls
+_current_auth_user_id: ContextVar[Optional[str]] = ContextVar(
+    "current_auth_user_id",
+    default=None,
+)
+
+# Context variable to store the authenticated user role across async calls
+_current_auth_user_role: ContextVar[Optional[str]] = ContextVar(
+    "current_auth_user_role",
+    default=None,
+)
+
 
 async def get_agent_for_request(
     request: Request,
@@ -176,3 +188,43 @@ def get_current_root_session_id() -> Optional[str]:
         Root session ID or None
     """
     return _current_root_session_id.get()
+
+
+def set_current_auth_user_id(user_id: str | None) -> None:
+    """Set authenticated user ID in context.
+
+    Args:
+        user_id: The authenticated username from the auth token,
+                 or ``None`` when auth is disabled / no user.
+    """
+    _current_auth_user_id.set(user_id)
+
+
+def set_current_auth_user_role(role: str | None) -> None:
+    """Set authenticated user role in context.
+
+    Args:
+        role: The authenticated user role from the auth token
+              (``"admin"`` or ``"user"``),
+              or ``None`` when auth is disabled / no user.
+    """
+    _current_auth_user_role.set(role)
+
+
+def get_current_auth_user_id() -> str | None:
+    """Get authenticated user ID from context.
+
+    Returns:
+        The authenticated username, or ``None`` if auth is disabled
+        or the user has not been authenticated.
+    """
+    return _current_auth_user_id.get()
+
+
+def get_current_auth_user_role() -> str | None:
+    """Get authenticated user role from request scope.
+
+    Returns:
+        ``"admin"``, ``"user"``, or ``None`` when auth is disabled.
+    """
+    return _current_auth_user_role.get()

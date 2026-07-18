@@ -585,6 +585,9 @@ class AgentRunner(Runner):
                 mcp_clients=mcp_clients,
                 memory_manager=self.memory_manager,
                 context_manager=self.context_manager,
+                knowledge_base_manager=getattr(
+                    self, "knowledge_base_manager", None
+                ),
                 request_context=base_request_context,
                 workspace_dir=self.workspace_dir,
                 task_tracker=self._task_tracker,
