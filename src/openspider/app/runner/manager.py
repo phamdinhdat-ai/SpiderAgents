@@ -45,12 +45,14 @@ class ChatManager:
         self,
         user_id: Optional[str] = None,
         channel: Optional[str] = None,
+        agent_id: Optional[str] = None,
     ) -> list[ChatSpec]:
         """List chat specs with optional filters.
 
         Args:
             user_id: Optional user ID filter
             channel: Optional channel filter
+            agent_id: Optional agent ID filter
 
         Returns:
             List of chat specifications
@@ -58,12 +60,16 @@ class ChatManager:
         async with self._lock:
             logger.debug(
                 f"list_chats: repo path={self._repo.path}, "
-                f"filters: user_id={user_id}, channel={channel}",
+                f"filters: user_id={user_id}, channel={channel}, "
+                f"agent_id={agent_id}",
             )
-            return await self._repo.filter_chats(
+            chats = await self._repo.filter_chats(
                 user_id=user_id,
                 channel=channel,
             )
+            if agent_id is not None:
+                chats = [c for c in chats if c.agent_id == agent_id]
+            return chats
 
     async def get_chat(self, chat_id: str) -> Optional[ChatSpec]:
         """Get chat spec by chat_id (UUID).
@@ -83,6 +89,7 @@ class ChatManager:
         user_id: str,
         channel: str = DEFAULT_CHANNEL,
         name: str = "New Chat",
+        agent_id: str = "",
     ) -> ChatSpec:
         """Get existing chat or create new one.
 
@@ -93,6 +100,7 @@ class ChatManager:
             user_id: User identifier
             channel: Channel name
             name: Chat name
+            agent_id: Owning agent ID (empty = implicit from workspace)
 
         Returns:
             Chat specification (existing or newly created)
@@ -125,6 +133,7 @@ class ChatManager:
                 user_id=user_id,
                 channel=channel,
                 name=name,
+                agent_id=agent_id,
             )
             logger.debug(f"get_or_create_chat: created spec={spec.id}")
             # Call internal create without lock (already locked)

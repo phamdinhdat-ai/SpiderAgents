@@ -40,13 +40,13 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_tool_guard_ui_lang(raw: Any) -> str:
-    """Map language code to tool-guard UI bundle (en/zh/ru/ja)."""
+    """Map language code to tool-guard UI bundle (en/zh/ru/ja/vi)."""
     if not isinstance(raw, str) or not raw.strip():
         return "en"
     s = raw.strip().lower()
-    if s in ("zh", "en", "ru", "ja"):
+    if s in ("zh", "en", "ru", "ja", "vi"):
         return s
-    for prefix in ("zh", "ru", "ja", "en"):
+    for prefix in ("zh", "ru", "ja", "en", "vi"):
         if s.startswith(prefix):
             return prefix
     return "en"

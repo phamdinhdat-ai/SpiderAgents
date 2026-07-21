@@ -4,12 +4,39 @@
 This provides agent isolation by injecting agentId into request.state,
 allowing downstream APIs to access the correct agent context.
 """
+from __future__ import annotations
+
+from typing import Optional
+
 from fastapi import APIRouter, Request
 from starlette.middleware.base import (
     BaseHTTPMiddleware,
     RequestResponseEndpoint,
 )
 from starlette.responses import Response
+
+
+def _extract_bearer_token_from_request(request: Request) -> str | None:
+    """Extract Bearer token from the Authorization header."""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        if token:
+            return token
+    return None
+
+
+def _verify_token_for_context(token: str) -> tuple[str, str] | None:
+    """Verify a token and return (username, role) or None.
+
+    Used as a fallback when auth middleware skips auth (e.g. localhost
+    in allow_no_auth_hosts) but the client still sends a valid token.
+    """
+    try:
+        from ..auth import verify_token
+        return verify_token(token)
+    except Exception:
+        return None
 
 
 class AgentContextMiddleware(BaseHTTPMiddleware):
@@ -33,11 +60,20 @@ class AgentContextMiddleware(BaseHTTPMiddleware):
 
         # Propagate authenticated user from AuthMiddleware → ContextVar
         auth_user = request.scope.get("auth_user")
+        auth_role = request.scope.get("auth_role")
+
+        # When auth is skipped (e.g. localhost in allow_no_auth_hosts)
+        # but the client sends a Bearer token, extract user identity
+        # directly so multi-user isolation still works in dev.
+        if not auth_user:
+            token = _extract_bearer_token_from_request(request)
+            if token:
+                extracted = _verify_token_for_context(token)
+                if extracted:
+                    auth_user, auth_role = extracted
+
         if auth_user:
             set_current_auth_user_id(auth_user)
-
-        # Propagate authenticated user role from AuthMiddleware → ContextVar
-        auth_role = request.scope.get("auth_role")
         if auth_role:
             set_current_auth_user_role(auth_role)
 

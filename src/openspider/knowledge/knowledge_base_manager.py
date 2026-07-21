@@ -39,7 +39,18 @@ from .models import (
     KnowledgeDocument,
     SearchResult,
 )
-from .vector_store import ChromaVectorStore, LocalVectorStore, VectorStore
+from .storage_backend import (
+    LocalStorageBackend,
+    StorageBackend,
+    create_storage_backend,
+)
+from .vector_store import (
+    ChromaVectorStore,
+    LocalVectorStore,
+    MilvusVectorStore,
+    QdrantVectorStore,
+    VectorStore,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +61,15 @@ KB_GUIDANCE_PROMPT_EN = """\
 
 You have access to a knowledge base containing uploaded documents
 (PDFs, spreadsheets, Word documents, markdown files, and more).
+
+### When to Use `knowledge_list_documents`
+
+- The user asks what documents they have uploaded ("list my files",
+  "show my documents", "what's in my knowledge base?", etc.).
+- The user wants a summary or inventory of their knowledge base.
+- **Always call this FIRST** when the user asks about their
+  documents in general — it gives you the full picture before
+  you search specific content.
 
 ### When to Use `knowledge_base_search`
 
@@ -64,9 +84,12 @@ You have access to a knowledge base containing uploaded documents
 
 ### How to Use
 
-Call `knowledge_base_search(query="...")` with a specific, keyword-rich
-search query. The tool returns the most relevant text chunks with their
-source filenames and relevance scores.
+- `knowledge_list_documents()` — lists all accessible documents
+  with status, size, chunk count, and upload date.  Use this to
+  answer inventory questions.
+- `knowledge_base_search(query="...")` — semantic search with a
+  specific, keyword-rich query. Returns relevant text chunks with
+  source filenames and relevance scores.
 """
 
 KB_GUIDANCE_PROMPT_VI = """\
@@ -74,6 +97,15 @@ KB_GUIDANCE_PROMPT_VI = """\
 
 Bạn có quyền truy cập vào kho kiến thức chứa các tài liệu đã tải lên
 (PDF, bảng tính, tài liệu Word, tệp markdown, v.v.).
+
+### Khi nào sử dụng `knowledge_list_documents`
+
+- Người dùng hỏi họ có những tài liệu nào ("liệt kê tài liệu của tôi",
+  "cho tôi xem các files", "có gì trong kho kiến thức?", v.v.).
+- Người dùng muốn tổng quan về kho kiến thức của họ.
+- **Luôn gọi công cụ này TRƯỚC** khi người dùng hỏi chung chung về
+  tài liệu — nó cung cấp bức tranh toàn cảnh trước khi bạn tìm
+  kiếm nội dung cụ thể.
 
 ### Khi nào sử dụng `knowledge_base_search`
 
@@ -87,9 +119,12 @@ Bạn có quyền truy cập vào kho kiến thức chứa các tài liệu đã
 
 ### Cách sử dụng
 
-Gọi `knowledge_base_search(query="...")` với truy vấn cụ thể, giàu từ
-khóa. Công cụ trả về các đoạn văn bản liên quan nhất kèm tên tệp
-nguồn và điểm liên quan.
+- `knowledge_list_documents()` — liệt kê tất cả tài liệu có thể truy
+  cập kèm trạng thái, kích thước, số lượng đoạn và ngày tải lên.
+  Dùng để trả lời câu hỏi về tổng quan tài liệu.
+- `knowledge_base_search(query="...")` — tìm kiếm ngữ nghĩa với truy
+  vấn cụ thể, giàu từ khóa. Trả về các đoạn văn bản liên quan nhất
+  kèm tên tệp nguồn và điểm liên quan.
 """
 
 SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({
@@ -99,6 +134,15 @@ SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 MAX_PAGES = 500
 KB_STORE_VERSION = "v1"
+
+
+def _format_file_size(bytes_val: int) -> str:
+    """Format a byte count as a human-readable string."""
+    if bytes_val < 1024:
+        return f"{bytes_val} B"
+    if bytes_val < 1024 * 1024:
+        return f"{bytes_val / 1024:.1f} KB"
+    return f"{bytes_val / (1024 * 1024):.1f} MB"
 
 
 class KnowledgeBaseManager:
@@ -125,6 +169,7 @@ class KnowledgeBaseManager:
 
         # Lazy-initialised
         self._vector_store: VectorStore | None = None
+        self._storage_backend: StorageBackend | None = None
         self._chunker: TextChunker | None = None
         self._embedding_fn: Any = None  # callable: text → embedding
         self._document_registry: dict[str, KnowledgeDocument] = {}
@@ -142,6 +187,13 @@ class KnowledgeBaseManager:
         self._ensure_dirs()
         self._load_registry()
 
+        # Migrate legacy documents (owner=None) — assign ownership to
+        # "admin" so they are no longer visible to all authenticated users.
+        self._migrate_legacy_ownership()
+
+        # Migrate flat files → user-scoped subdirectories (Phase 1).
+        self._migrate_file_storage_v2()
+
         # Resolve embedding config (reuse pattern from ReMeLightMemoryManager)
         self._embedding_config = self._get_embedding_config()
 
@@ -152,13 +204,40 @@ class KnowledgeBaseManager:
             chunk_overlap=chunk_cfg.get("chunk_overlap", 50),
         )
 
-        # Choose vector store backend
+        # Choose storage backend (local / MinIO) from config
+        storage_cfg = self._get_storage_config()
+        self._storage_backend = create_storage_backend(
+            config=storage_cfg.get("file_storage", {}),
+            root_dir=str(self._files_dir),
+        )
+        await self._storage_backend.start()
+
+        # Choose vector store backend (local / Chroma / Qdrant / Milvus)
         backend = self._detect_store_backend()
-        collection = f"kb_{self.agent_id}"
+        # Use user-scoped collection so documents persist across agent switches.
+        # When no user context is available, fall back to agent-scoped.
+        username = self._resolve_kb_username()
+        collection = f"kb_{username}"
         store_path = str(self._store_dir)
 
         if backend == "chroma":
             self._vector_store = ChromaVectorStore(collection, store_path)
+        elif backend == "qdrant":
+            vs_cfg = storage_cfg.get("vector_store", {})
+            self._vector_store = QdrantVectorStore(
+                collection_name=collection,
+                url=vs_cfg.get("qdrant_url", ""),
+                api_key=vs_cfg.get("qdrant_api_key", ""),
+            )
+        elif backend == "milvus":
+            vs_cfg = storage_cfg.get("vector_store", {})
+            self._vector_store = MilvusVectorStore(
+                collection_name=collection,
+                uri=vs_cfg.get("milvus_uri", ""),
+                token=vs_cfg.get("milvus_token", ""),
+                host=vs_cfg.get("milvus_host", "localhost"),
+                port=vs_cfg.get("milvus_port", 19530),
+            )
         else:
             self._vector_store = LocalVectorStore(collection, store_path)
 
@@ -187,6 +266,9 @@ class KnowledgeBaseManager:
         if self._vector_store is not None:
             await self._vector_store.close()
             self._vector_store = None
+        if self._storage_backend is not None:
+            await self._storage_backend.close()
+            self._storage_backend = None
         self._started = False
         logger.info("KnowledgeBaseManager closed: agent=%s", self.agent_id)
 
@@ -199,6 +281,7 @@ class KnowledgeBaseManager:
         file_path: Path,
         kb_name: str = "default",
         owner: str | None = None,
+        original_name: str | None = None,
     ) -> KnowledgeDocument:
         """Parse, chunk, embed, and store a document.
 
@@ -207,12 +290,18 @@ class KnowledgeBaseManager:
                 storage).
             kb_name: Named knowledge base (default ``"default"``).
             owner: Username of the uploading user (``None`` = legacy).
+            original_name: Original filename from the upload (used for
+                storage naming).  When *None*, ``file_path.name`` is used.
 
         Returns:
             :class:`KnowledgeDocument` with the indexing result.
         """
         if not file_path.is_file():
             raise FileNotFoundError(f"Document not found: {file_path}")
+
+        # Use the original upload name when available; otherwise fall
+        # back to the temp-file name.
+        display_name = original_name or file_path.name
 
         suffix = file_path.suffix.lower()
         if suffix not in SUPPORTED_EXTENSIONS:
@@ -228,14 +317,27 @@ class KnowledgeBaseManager:
                 f"(max {MAX_FILE_SIZE_BYTES})",
             )
 
-        # Create document record
+        # --- Deduplication: same content hash + same filename → skip ---
+        content_hash = self._hash_file(file_path)
+        duplicate = self._find_duplicate(owner, display_name, content_hash)
+        if duplicate is not None:
+            logger.info(
+                "Dedup: skipping %s (already indexed as %s, hash=%s)",
+                display_name, duplicate.id, content_hash[:16],
+            )
+            return duplicate
+
+        # Create document record — store under user-scoped subdirectory
+        # so the original filename is preserved and easy to cite.
         doc_id = uuid.uuid4().hex
-        stored_name = f"{doc_id}_{file_path.name}"
-        stored_path = self._files_dir / stored_name
+        stored_path = self._resolve_stored_path(
+            display_name,
+            owner=owner,
+        )
 
         doc = KnowledgeDocument(
             id=doc_id,
-            filename=file_path.name,
+            filename=display_name,
             file_path=str(stored_path),
             kb_name=kb_name,
             mime_type=self._guess_mime(file_path),
@@ -246,15 +348,23 @@ class KnowledgeBaseManager:
         self._document_registry[doc_id] = doc
         self._save_registry()
 
-        # Copy file into KB storage
-        shutil.copy2(str(file_path), str(stored_path))
+        # Persist file via storage backend (local or MinIO)
+        if self._storage_backend is not None:
+            stored_path_str = await self._storage_backend.store(
+                file_path,
+                owner or "_unowned",
+                stored_path.name,
+            )
+            doc.file_path = stored_path_str
 
         try:
             # Parse → chunk → embed → store
             if self._chunker is None:
                 raise RuntimeError("Chunker not initialized")
 
-            chunks = self._chunker.chunk_document(stored_path, doc_id)
+            # Chunk from the original file (always local; stored copy is
+            # for retrieval)
+            chunks = self._chunker.chunk_document(file_path, doc_id)
             if not chunks:
                 raise ValueError("Document produced no text content")
 
@@ -283,6 +393,7 @@ class KnowledgeBaseManager:
             )
 
         doc.metadata["last_indexed"] = datetime.now(timezone.utc).isoformat()
+        doc.metadata["content_hash"] = content_hash
         self._save_registry()
         return doc
 
@@ -312,13 +423,19 @@ class KnowledgeBaseManager:
         if self._vector_store is not None:
             await self._vector_store.delete(document_id)
 
-        # Remove stored file
-        stored = Path(doc.file_path)
-        try:
-            if stored.exists():
-                stored.unlink()
-        except OSError:
-            pass
+        # Remove stored file (via storage backend when available)
+        if self._storage_backend is not None:
+            try:
+                await self._storage_backend.delete(doc.file_path)
+            except Exception:
+                pass
+        else:
+            stored = Path(doc.file_path)
+            try:
+                if stored.exists():
+                    stored.unlink()
+            except OSError:
+                pass
 
         self._save_registry()
         return True
@@ -358,7 +475,6 @@ class KnowledgeBaseManager:
                 if d.owner != user_id and (
                     d.scope == DocumentScope.PUBLIC
                     or (d.scope == DocumentScope.SHARED and user_id in d.shared_with)
-                    or (d.owner is None)  # legacy docs
                 )
             ]
 
@@ -587,7 +703,7 @@ class KnowledgeBaseManager:
 
         Pattern matches :meth:`BaseMemoryManager.list_memory_tools`.
         """
-        return [self.knowledge_base_search]
+        return [self.knowledge_base_search, self.knowledge_list_documents]
 
     def get_kb_prompt(self, language: str = "en") -> str:
         """Return KB guidance for injection into the system prompt.
@@ -692,6 +808,132 @@ class KnowledgeBaseManager:
                     TextBlock(
                         type="text",
                         text=f"Knowledge base search error: {exc}",
+                    ),
+                ],
+            )
+
+    async def knowledge_list_documents(
+        self,
+        kb_name: str = "",
+        status_filter: str = "",
+    ) -> ToolResponse:
+        """List all documents in the user's knowledge base.
+
+        Use this tool when the user asks what documents they have
+        uploaded, wants to see their file inventory, or needs a
+        summary of their knowledge base contents.  Returns filename,
+        status, size, chunk count, and upload date for each document.
+
+        Args:
+            kb_name: Optional knowledge base name to filter by.
+                     Leave empty to list documents from all KBs the
+                     user can access.
+            status_filter: Optional status filter — ``"ready"``,
+                           ``"indexing"``, ``"error"``, or empty for all.
+
+        Returns:
+            `ToolResponse` with formatted document listing.
+        """
+        try:
+            from ..app.agent_context import (
+                get_current_auth_user_id,
+                get_current_auth_user_role,
+            )
+
+            user_id = get_current_auth_user_id()
+            user_role = get_current_auth_user_role()
+
+            docs = await self.list_documents(
+                kb_name=kb_name if kb_name else None,
+                user_id=user_id,
+                user_role=user_role,
+            )
+
+            # Apply status filter
+            if status_filter:
+                docs = [
+                    d for d in docs
+                    if d.status.value == status_filter
+                ]
+
+            if not docs:
+                return ToolResponse(
+                    content=[
+                        TextBlock(
+                            type="text",
+                            text=(
+                                "📭 You have no documents in your knowledge base yet. "
+                                "Upload files (PDF, DOCX, XLSX, Markdown, TXT, CSV) "
+                                "through the Knowledge Base page in the web console."
+                            ),
+                        ),
+                    ],
+                )
+
+            # Build a formatted listing
+            lines: list[str] = [
+                f"📚 **Your Knowledge Base** — {len(docs)} document(s)\n",
+            ]
+            lines.append(
+                "| # | Filename | Status | Size | Chunks | Uploaded | KB |",
+            )
+            lines.append(
+                "|---|----------|--------|------|--------|----------|----|",
+            )
+
+            for i, doc in enumerate(docs, 1):
+                status_emoji = {
+                    "ready": "✅",
+                    "indexing": "🔄",
+                    "pending": "⏳",
+                    "error": "❌",
+                }.get(doc.status.value, "❓")
+
+                size_str = _format_file_size(doc.size)
+                date_str = doc.created_at[:10] if doc.created_at else "N/A"
+                lines.append(
+                    f"| {i} | {doc.filename} | {status_emoji} {doc.status.value}"
+                    f" | {size_str} | {doc.chunk_count} | {date_str}"
+                    f" | {doc.kb_name} |",
+                )
+
+            # Add summary counts by status
+            ready = sum(1 for d in docs if d.status.value == "ready")
+            indexing = sum(1 for d in docs if d.status.value == "indexing")
+            error = sum(1 for d in docs if d.status.value == "error")
+            lines.append(
+                f"\n📊 **Summary**: {ready} ready, {indexing} indexing, "
+                f"{error} error(s)",
+            )
+
+            # Add per-KB breakdown when listing across KBs
+            if not kb_name:
+                kb_groups: dict[str, int] = {}
+                for d in docs:
+                    kb_groups[d.kb_name] = kb_groups.get(d.kb_name, 0) + 1
+                if len(kb_groups) > 1:
+                    lines.append("📂 **By knowledge base**:")
+                    for name, count in sorted(kb_groups.items()):
+                        lines.append(f"  • {name}: {count} document(s)")
+
+            return ToolResponse(
+                content=[TextBlock(type="text", text="\n".join(lines))],
+                metadata={
+                    "tool": "knowledge_list_documents",
+                    "total_documents": len(docs),
+                    "ready_count": ready,
+                    "indexing_count": indexing,
+                    "error_count": error,
+                },
+            )
+
+        except Exception as exc:
+            logger.exception("knowledge_list_documents failed: %s", exc)
+            return ToolResponse(
+                content=[
+                    TextBlock(
+                        type="text",
+                        text=f"Knowledge base listing error: {exc}",
                     ),
                 ],
             )
@@ -814,22 +1056,22 @@ class KnowledgeBaseManager:
 
         Rules (first match wins):
         1. Admin — always allowed.
-        2. Legacy doc (owner is None) — visible to all authenticated users.
-        3. Owner match — allowed.
-        4. scope == PUBLIC — allowed for all authenticated users.
-        5. scope == SHARED and user_id in shared_with — allowed.
-        6. Otherwise — denied.
+        2. No user context (auth disabled) — allow all (single-user mode).
+        3. Legacy doc (owner is None) — admin only (falls through to rule 6
+           for non-admin users; admins are caught by rule 1).
+        4. Owner match — allowed.
+        5. scope == PUBLIC — allowed for all authenticated users.
+        6. scope == SHARED and user_id in shared_with — allowed.
+        7. Otherwise — denied.
         """
         # Admin override
         if user_role == "admin":
             return True
 
-        # No user context (auth disabled / unauthenticated) — allow all
+        # No user context (auth disabled / skipped) — single-user mode,
+        # allow all.  Multi-user isolation requires auth to be enforced
+        # (remove 127.0.0.1 from allow_no_auth_hosts in settings).
         if user_id is None:
-            return True
-
-        # Legacy document — visible to all authenticated users
-        if doc.owner is None:
             return True
 
         # Owner
@@ -852,13 +1094,151 @@ class KnowledgeBaseManager:
         user_id: str | None,
         user_role: str | None,
     ) -> list[KnowledgeDocument]:
-        """Filter a list of documents to those accessible by *user_id*."""
+        """Filter a list of documents to those accessible by *user_id*.
+
+        Admin users and unauthenticated callers (single-user mode) see
+        all documents.  Authenticated non-admin users only see documents
+        they are authorised for.
+        """
         if user_role == "admin" or user_id is None:
             return list(docs)
         return [
             d for d in docs
             if self._check_document_access(d, user_id, user_role)
         ]
+
+    def _migrate_legacy_ownership(self) -> None:
+        """Assign ownership of legacy documents (``owner=None``) to the
+        ``"admin"`` user so they are no longer visible to all authenticated
+        users.  Writes the registry only when changes are made.
+
+        Idempotent — a sentinel file (``.kb_ownership_v2``) prevents
+        re-execution.
+        """
+        sentinel = self.kb_root / ".kb_ownership_v2"
+        if sentinel.exists():
+            return
+
+        migrated = 0
+        for doc in self._document_registry.values():
+            if doc.owner is None:
+                # Try to infer owner from kb_name (users get kb_name ==
+                # username via _resolve_kb_name).  If kb_name looks like
+                # a username, assign to that user; otherwise fall back to
+                # "admin".
+                inferred = doc.kb_name if doc.kb_name not in ("default", "") else None
+                doc.owner = inferred or "admin"
+                migrated += 1
+
+        if migrated:
+            self._save_registry()
+            logger.info(
+                "Migrated %d legacy documents to explicit ownership",
+                migrated,
+            )
+
+        sentinel.touch()
+
+    # ------------------------------------------------------------------
+    # File path helpers
+    # ------------------------------------------------------------------
+
+    def _resolve_stored_path(
+        self,
+        filename: str,
+        *,
+        owner: str | None = None,
+    ) -> Path:
+        """Resolve a storage path for *filename* under a user-scoped
+        subdirectory, handling name collisions with a counter suffix.
+
+        Directory layout::
+
+            {kb_root}/files/{owner}/{filename}
+            {kb_root}/files/_unowned/{filename}
+        """
+        safe_name = Path(filename).name  # strip path separators
+        user_dir = self._files_dir / (owner or "_unowned")
+        user_dir.mkdir(parents=True, exist_ok=True)
+
+        target = user_dir / safe_name
+        if not target.exists():
+            return target
+
+        # Collision — append counter
+        stem = target.stem
+        suffix = target.suffix
+        counter = 1
+        while target.exists():
+            target = user_dir / f"{stem}_{counter}{suffix}"
+            counter += 1
+        return target
+
+    def _migrate_file_storage_v2(self) -> None:
+        """One-time migration: move files from the old flat ``files/``
+        directory into user-scoped subdirectories.
+
+        Idempotent — a sentinel file ``.kb_files_v2`` prevents
+        re-execution.
+        """
+        sentinel = self.kb_root / ".kb_files_v2"
+        if sentinel.exists():
+            return
+
+        moved = 0
+        for doc in self._document_registry.values():
+            old_path = Path(doc.file_path)
+            if not old_path.exists():
+                # Source already missing — just update the registry path
+                new_path = self._resolve_stored_path(
+                    doc.filename,
+                    owner=doc.owner,
+                )
+                doc.file_path = str(new_path)
+                continue
+
+            # Only move files that are directly under the old flat dir
+            if old_path.parent != self._files_dir:
+                continue
+
+            new_path = self._resolve_stored_path(
+                doc.filename,
+                owner=doc.owner,
+            )
+            try:
+                old_path.rename(new_path)
+                doc.file_path = str(new_path)
+                moved += 1
+            except OSError:
+                logger.warning(
+                    "Failed to migrate KB file %s → %s",
+                    old_path, new_path,
+                )
+
+        if moved:
+            self._save_registry()
+            logger.info(
+                "Migrated %d KB files to user-scoped directories",
+                moved,
+            )
+
+        sentinel.touch()
+
+    def _resolve_kb_username(self) -> str:
+        """Resolve the username for knowledge base namespace.
+
+        Returns the authenticated user ID when available, otherwise
+        falls back to the agent ID for backward compatibility.
+        """
+        try:
+            from ..app.agent_context import get_current_auth_user_id
+
+            user_id = get_current_auth_user_id()
+            if user_id:
+                return user_id
+        except Exception:
+            pass
+        return self.agent_id
 
     def _ensure_dirs(self) -> None:
         """Create required subdirectories."""
@@ -902,12 +1282,12 @@ class KnowledgeBaseManager:
     def _get_embedding_config(self) -> dict[str, Any]:
         """Resolve embedding config (pattern from ReMeLightMemoryManager)."""
         try:
-            from ...config.config import load_agent_config
+            from ..config.config import load_agent_config
 
             agent_config = load_agent_config(self.agent_id)
             reme_cfg = agent_config.running.reme_light_memory_config
             emb = reme_cfg.embedding_model_config
-            from ...constant import EnvVarLoader
+            from ..constant import EnvVarLoader
 
             return {
                 "backend": emb.backend,
@@ -934,7 +1314,7 @@ class KnowledgeBaseManager:
     def _get_kb_config(self) -> dict[str, Any]:
         """Resolve knowledge base config from agent config."""
         try:
-            from ...config.config import load_agent_config
+            from ..config.config import load_agent_config
 
             agent_config = load_agent_config(self.agent_id)
             kb_cfg = agent_config.running.knowledge_base_config
@@ -960,15 +1340,58 @@ class KnowledgeBaseManager:
                 "file_watcher_enabled": True,
             }
 
+    def _get_storage_config(self) -> dict[str, Any]:
+        """Load storage backends configuration from settings.json.
+
+        Resolution order:
+        1. ``settings.json`` → ``storage_backends`` key
+        2. Environment variables (per-backend)
+        3. Defaults (local file store + auto vector store)
+        """
+        try:
+            from ..constant import WORKING_DIR as _WD
+            settings_path = _WD / "settings.json"
+            if settings_path.is_file():
+                data = json.loads(settings_path.read_text("utf-8"))
+                sb = data.get("storage_backends") or data.get("storage")
+                if sb:
+                    return sb
+        except Exception:
+            pass
+        return {}
+
     @staticmethod
     def _detect_store_backend() -> str:
-        """Detect vector store backend (Windows → local, else auto)."""
-        from ...constant import EnvVarLoader
+        """Detect vector store backend.
+
+        Resolution order:
+        1. ``settings.json`` → ``storage_backends.vector_store.backend``
+        2. ``KB_STORE_BACKEND`` environment variable
+        3. Auto-detect: Windows → ``"local"``, otherwise → ``"chroma"``
+        """
+        # Check settings.json first
+        try:
+            from ..constant import WORKING_DIR as _WD
+            settings_path = _WD / "settings.json"
+            if settings_path.is_file():
+                data = json.loads(settings_path.read_text("utf-8"))
+                sb = data.get("storage_backends") or data.get("storage")
+                if sb:
+                    vs = sb.get("vector_store", {})
+                    configured = vs.get("backend", "auto")
+                    if configured and configured != "auto":
+                        return configured
+        except Exception:
+            pass
+
+        # Fall back to env var
+        from ..constant import EnvVarLoader
 
         backend_env = EnvVarLoader.get_str("KB_STORE_BACKEND", "auto")
         if backend_env != "auto":
             return backend_env
 
+        # Auto-detect
         if platform.system() == "Windows":
             return "local"
 
@@ -1062,6 +1485,36 @@ class KnowledgeBaseManager:
             if len(tokens) >= max_tokens:
                 break
         return tokens[:max_tokens]
+
+    @staticmethod
+    def _hash_file(file_path: Path) -> str:
+        """Compute SHA-256 hex digest of a file for deduplication."""
+        import hashlib
+
+        sha = hashlib.sha256()
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                sha.update(chunk)
+        return sha.hexdigest()
+
+    def _find_duplicate(
+        self,
+        owner: str | None,
+        filename: str,
+        content_hash: str,
+    ) -> KnowledgeDocument | None:
+        """Return an existing READY document with matching owner, filename,
+        and content hash, or ``None``.
+        """
+        for doc in self._document_registry.values():
+            if (
+                doc.owner == owner
+                and doc.filename == filename
+                and doc.metadata.get("content_hash") == content_hash
+                and doc.status == DocumentStatus.READY
+            ):
+                return doc
+        return None
 
     @staticmethod
     def _guess_mime(file_path: Path) -> str:

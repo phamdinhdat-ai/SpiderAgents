@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any, Dict, List, Optional, Literal
 
@@ -206,6 +207,27 @@ def _build_client_info(key: str, client: MCPClientConfig) -> MCPClientInfo:
     )
 
 
+def _safe_json_field(row: dict, field: str) -> Any:
+    """Safely extract a JSON field from a DB row, returning the parsed
+    value or an empty dict/list as appropriate."""
+    raw = row.get(field)
+    if isinstance(raw, (dict, list)):
+        return raw
+    if isinstance(raw, str) and raw.strip():
+        try:
+            return json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return {} if field in ("headers", "env") else []
+
+
+def _mask_env_dict(env: dict) -> dict:
+    """Mask all values in an environment dict for API responses."""
+    if not env:
+        return {}
+    return {k: _mask_env_value(v) for k, v in env.items()}
+
+
 class MCPToolInfo(BaseModel):
     """MCP tool information returned from a connected server."""
 
@@ -233,15 +255,24 @@ async def list_mcp_tools(
     """
     from ..agent_context import get_agent_for_request
 
+    # Check user-scoped store first, then fall back to agent config
+    store = _get_user_data_store(request)
+    username = _resolve_username(request)
+    user_mcp = await store.get_mcp_server(username, client_key)
+
     agent = await get_agent_for_request(request)
 
-    mcp_config = agent.config.mcp
-    if mcp_config is None or client_key not in (mcp_config.clients or {}):
-        raise HTTPException(404, detail=f"MCP client '{client_key}' not found")
-
-    client_config = mcp_config.clients[client_key]
-    if not client_config.enabled:
-        return []
+    # Determine if client is enabled: check UserDataStore first
+    if user_mcp is not None:
+        if not user_mcp.get("enabled", True):
+            return []
+    else:
+        # Fallback: check agent config
+        mcp_config = agent.config.mcp
+        if mcp_config is None or client_key not in (mcp_config.clients or {}):
+            raise HTTPException(404, detail=f"MCP client '{client_key}' not found")
+        if not mcp_config.clients[client_key].enabled:
+            return []
 
     mcp_manager = agent.mcp_manager
     if mcp_manager is None:
@@ -278,23 +309,51 @@ async def list_mcp_tools(
     ]
 
 
+def _get_user_data_store(request: Request):
+    """Get UserDataStore from app state."""
+    store = getattr(request.app.state, "user_data_store", None)
+    if store is None:
+        raise HTTPException(
+            503,
+            detail="User data store is not available yet, please try again later",
+        )
+    return store
+
+
+def _resolve_username(request: Request) -> str:
+    """Resolve the authenticated username, falling back to 'default'."""
+    from ..agent_context import get_current_auth_user_id
+
+    user_id = get_current_auth_user_id()
+    return user_id or "default"
+
+
 @router.get(
     "",
     response_model=List[MCPClientInfo],
     summary="List all MCP clients",
 )
 async def list_mcp_clients(request: Request) -> List[MCPClientInfo]:
-    """Get list of all configured MCP clients."""
-    from ..agent_context import get_agent_for_request
-
-    agent = await get_agent_for_request(request)
-    mcp_config = agent.config.mcp
-    if mcp_config is None or not mcp_config.clients:
-        return []
+    """Get list of all configured MCP clients for the current user."""
+    store = _get_user_data_store(request)
+    username = _resolve_username(request)
+    rows = await store.list_mcp_servers(username)
 
     return [
-        _build_client_info(key, client)
-        for key, client in mcp_config.clients.items()
+        MCPClientInfo(
+            key=row["id"],
+            name=row["name"],
+            description=row.get("description", ""),
+            enabled=bool(row.get("enabled", True)),
+            transport=row.get("transport", "stdio"),
+            url=row.get("url", ""),
+            headers=_safe_json_field(row, "headers"),
+            command=row.get("command", ""),
+            args=_safe_json_field(row, "args"),
+            env=_mask_env_dict(_safe_json_field(row, "env")),
+            cwd=row.get("cwd", ""),
+        )
+        for row in rows
     ]
 
 
@@ -308,17 +367,24 @@ async def get_mcp_client(
     client_key: str = Path(...),
 ) -> MCPClientInfo:
     """Get details of a specific MCP client."""
-    from ..agent_context import get_agent_for_request
-
-    agent = await get_agent_for_request(request)
-    mcp_config = agent.config.mcp
-    if mcp_config is None:
+    store = _get_user_data_store(request)
+    username = _resolve_username(request)
+    row = await store.get_mcp_server(username, client_key)
+    if row is None:
         raise HTTPException(404, detail=f"MCP client '{client_key}' not found")
-
-    client = mcp_config.clients.get(client_key)
-    if client is None:
-        raise HTTPException(404, detail=f"MCP client '{client_key}' not found")
-    return _build_client_info(client_key, client)
+    return MCPClientInfo(
+        key=row["id"],
+        name=row["name"],
+        description=row.get("description", ""),
+        enabled=bool(row.get("enabled", True)),
+        transport=row.get("transport", "stdio"),
+        url=row.get("url", ""),
+        headers=_mask_env_dict(_safe_json_field(row, "headers")),
+        command=row.get("command", ""),
+        args=_safe_json_field(row, "args"),
+        env=_mask_env_dict(_safe_json_field(row, "env")),
+        cwd=row.get("cwd", ""),
+    )
 
 
 @router.post(
@@ -332,46 +398,80 @@ async def create_mcp_client(
     client_key: str = Body(..., embed=True),
     client: MCPClientCreateRequest = Body(..., embed=True),
 ) -> MCPClientInfo:
-    """Create a new MCP client configuration."""
-    from ..agent_context import get_agent_for_request
-    from ...config.config import save_agent_config, MCPConfig
+    """Create a new MCP client configuration for the current user."""
+    store = _get_user_data_store(request)
+    username = _resolve_username(request)
 
-    agent = await get_agent_for_request(request)
-
-    # Initialize mcp config if not exists
-    if agent.config.mcp is None:
-        agent.config.mcp = MCPConfig(clients={})
-
-    # Check if client already exists
-    if client_key in agent.config.mcp.clients:
+    # Check if client already exists for this user
+    existing = await store.get_mcp_server(username, client_key)
+    if existing is not None:
         raise HTTPException(
             400,
             detail=f"MCP client '{client_key}' already exists. Use PUT to "
             f"update.",
         )
 
-    # Create new client config
-    new_client = MCPClientConfig(
+    now = json.dumps(None)  # placeholder, save_mcp_server handles timestamps
+    row = await store.save_mcp_server(
+        username,
+        {
+            "id": client_key,
+            "name": client.name,
+            "description": client.description,
+            "enabled": client.enabled,
+            "transport": client.transport,
+            "url": client.url,
+            "headers": client.headers,
+            "command": client.command,
+            "args": client.args,
+            "env": client.env,
+            "cwd": client.cwd,
+        },
+    )
+
+    # Also update the active agent's MCP config so the MCP manager picks
+    # up the new client (backward compatibility + runtime integration)
+    try:
+        from ..agent_context import get_agent_for_request
+        from ...config.config import save_agent_config, MCPConfig
+
+        agent = await get_agent_for_request(request)
+        if agent.config.mcp is None:
+            agent.config.mcp = MCPConfig(clients={})
+        agent.config.mcp.clients[client_key] = MCPClientConfig(
+            name=client.name,
+            description=client.description,
+            enabled=client.enabled,
+            transport=client.transport,
+            url=client.url,
+            headers=client.headers,
+            command=client.command,
+            args=client.args,
+            env=client.env,
+            cwd=client.cwd,
+        )
+        save_agent_config(agent.agent_id, agent.config)
+        schedule_agent_reload(request, agent.agent_id)
+    except Exception:
+        logger.warning(
+            "Failed to sync MCP client '%s' to agent config (will be "
+            "available after agent restart)",
+            client_key,
+        )
+
+    return MCPClientInfo(
+        key=client_key,
         name=client.name,
         description=client.description,
         enabled=client.enabled,
         transport=client.transport,
         url=client.url,
-        headers=client.headers,
+        headers=_mask_env_dict(client.headers or {}),
         command=client.command,
         args=client.args,
-        env=client.env,
+        env=_mask_env_dict(client.env or {}),
         cwd=client.cwd,
     )
-
-    # Add to agent's config and save
-    agent.config.mcp.clients[client_key] = new_client
-    save_agent_config(agent.agent_id, agent.config)
-
-    # Hot reload config (async, non-blocking)
-    schedule_agent_reload(request, agent.agent_id)
-
-    return _build_client_info(client_key, new_client)
 
 
 @router.put(
@@ -385,44 +485,80 @@ async def update_mcp_client(
     updates: MCPClientUpdateRequest = Body(...),
 ) -> MCPClientInfo:
     """Update an existing MCP client configuration."""
-    from ..agent_context import get_agent_for_request
-    from ...config.config import save_agent_config
+    store = _get_user_data_store(request)
+    username = _resolve_username(request)
 
-    agent = await get_agent_for_request(request)
-
-    if agent.config.mcp is None or client_key not in agent.config.mcp.clients:
+    existing = await store.get_mcp_server(username, client_key)
+    if existing is None:
         raise HTTPException(404, detail=f"MCP client '{client_key}' not found")
 
-    existing = agent.config.mcp.clients[client_key]
-
-    # Update fields if provided
+    # Merge updates into existing data
+    merged = dict(existing)
     update_data = updates.model_dump(exclude_unset=True)
 
     # Restore masked env/header values to originals before replacing
     if "env" in update_data and update_data["env"] is not None:
         update_data["env"] = _restore_original_values(
             update_data["env"],
-            existing.env or {},
+            _safe_json_field(existing, "env"),
         )
 
     if "headers" in update_data and update_data["headers"] is not None:
         update_data["headers"] = _restore_original_values(
             update_data["headers"],
-            existing.headers or {},
+            _safe_json_field(existing, "headers"),
         )
 
-    merged_data = existing.model_dump(mode="json")
-    merged_data.update(update_data)
-    updated_client = MCPClientConfig.model_validate(merged_data)
-    agent.config.mcp.clients[client_key] = updated_client
+    for key, value in update_data.items():
+        if value is not None:
+            if key in ("env", "headers", "args"):
+                merged[key] = json.dumps(value) if isinstance(value, (dict, list)) else value
+            else:
+                merged[key] = value
 
-    # Save updated config
-    save_agent_config(agent.agent_id, agent.config)
+    row = await store.save_mcp_server(username, merged)
 
-    # Hot reload config (async, non-blocking)
-    schedule_agent_reload(request, agent.agent_id)
+    # Also sync to agent config for runtime
+    try:
+        from ..agent_context import get_agent_for_request
+        from ...config.config import save_agent_config, MCPConfig
 
-    return _build_client_info(client_key, updated_client)
+        agent = await get_agent_for_request(request)
+        if agent.config.mcp is None:
+            agent.config.mcp = MCPConfig(clients={})
+        agent.config.mcp.clients[client_key] = MCPClientConfig(
+            name=row["name"],
+            description=row.get("description", ""),
+            enabled=bool(row.get("enabled", True)),
+            transport=row.get("transport", "stdio"),
+            url=row.get("url", ""),
+            headers=_safe_json_field(row, "headers"),
+            command=row.get("command", ""),
+            args=_safe_json_field(row, "args"),
+            env=_safe_json_field(row, "env"),
+            cwd=row.get("cwd", ""),
+        )
+        save_agent_config(agent.agent_id, agent.config)
+        schedule_agent_reload(request, agent.agent_id)
+    except Exception:
+        logger.warning(
+            "Failed to sync updated MCP client '%s' to agent config",
+            client_key,
+        )
+
+    return MCPClientInfo(
+        key=client_key,
+        name=row["name"],
+        description=row.get("description", ""),
+        enabled=bool(row.get("enabled", True)),
+        transport=row.get("transport", "stdio"),
+        url=row.get("url", ""),
+        headers=_mask_env_dict(_safe_json_field(row, "headers")),
+        command=row.get("command", ""),
+        args=_safe_json_field(row, "args"),
+        env=_mask_env_dict(_safe_json_field(row, "env")),
+        cwd=row.get("cwd", ""),
+    )
 
 
 @router.patch(
@@ -435,24 +571,44 @@ async def toggle_mcp_client(
     client_key: str = Path(...),
 ) -> MCPClientInfo:
     """Toggle the enabled status of an MCP client."""
-    from ..agent_context import get_agent_for_request
-    from ...config.config import save_agent_config
+    store = _get_user_data_store(request)
+    username = _resolve_username(request)
 
-    agent = await get_agent_for_request(request)
-
-    if agent.config.mcp is None or client_key not in agent.config.mcp.clients:
+    existing = await store.get_mcp_server(username, client_key)
+    if existing is None:
         raise HTTPException(404, detail=f"MCP client '{client_key}' not found")
 
-    client = agent.config.mcp.clients[client_key]
+    # Toggle enabled
+    merged = dict(existing)
+    merged["enabled"] = 0 if existing.get("enabled") else 1
+    row = await store.save_mcp_server(username, merged)
 
-    # Toggle enabled status
-    client.enabled = not client.enabled
-    save_agent_config(agent.agent_id, agent.config)
+    # Sync to agent config
+    try:
+        from ..agent_context import get_agent_for_request
+        from ...config.config import save_agent_config
 
-    # Hot reload config (async, non-blocking)
-    schedule_agent_reload(request, agent.agent_id)
+        agent = await get_agent_for_request(request)
+        if agent.config.mcp and client_key in agent.config.mcp.clients:
+            agent.config.mcp.clients[client_key].enabled = bool(merged["enabled"])
+            save_agent_config(agent.agent_id, agent.config)
+            schedule_agent_reload(request, agent.agent_id)
+    except Exception:
+        pass
 
-    return _build_client_info(client_key, client)
+    return MCPClientInfo(
+        key=client_key,
+        name=row["name"],
+        description=row.get("description", ""),
+        enabled=bool(row.get("enabled", True)),
+        transport=row.get("transport", "stdio"),
+        url=row.get("url", ""),
+        headers=_mask_env_dict(_safe_json_field(row, "headers")),
+        command=row.get("command", ""),
+        args=_safe_json_field(row, "args"),
+        env=_mask_env_dict(_safe_json_field(row, "env")),
+        cwd=row.get("cwd", ""),
+    )
 
 
 @router.delete(
@@ -465,19 +621,24 @@ async def delete_mcp_client(
     client_key: str = Path(...),
 ) -> Dict[str, str]:
     """Delete an MCP client configuration."""
-    from ..agent_context import get_agent_for_request
-    from ...config.config import save_agent_config
+    store = _get_user_data_store(request)
+    username = _resolve_username(request)
 
-    agent = await get_agent_for_request(request)
-
-    if agent.config.mcp is None or client_key not in agent.config.mcp.clients:
+    deleted = await store.delete_mcp_server(username, client_key)
+    if not deleted:
         raise HTTPException(404, detail=f"MCP client '{client_key}' not found")
 
-    # Remove client
-    del agent.config.mcp.clients[client_key]
-    save_agent_config(agent.agent_id, agent.config)
+    # Sync to agent config
+    try:
+        from ..agent_context import get_agent_for_request
+        from ...config.config import save_agent_config
 
-    # Hot reload config (async, non-blocking)
-    schedule_agent_reload(request, agent.agent_id)
+        agent = await get_agent_for_request(request)
+        if agent.config.mcp and client_key in agent.config.mcp.clients:
+            del agent.config.mcp.clients[client_key]
+            save_agent_config(agent.agent_id, agent.config)
+            schedule_agent_reload(request, agent.agent_id)
+    except Exception:
+        pass
 
     return {"message": f"MCP client '{client_key}' deleted successfully"}

@@ -17,7 +17,6 @@ from .base_memory_manager import BaseMemoryManager, memory_registry
 from .prompts import (
     MEMORY_GUIDANCE_ZH,
     MEMORY_GUIDANCE_EN,
-    DREAM_OPTIMIZATION_ZH,
     DREAM_OPTIMIZATION_EN,
     MEMORY_GUIDANCE_VI,
     DREAM_OPTIMIZATION_VI
@@ -609,7 +608,7 @@ class ReMeLightMemoryManager(BaseMemoryManager):
         language = getattr(agent_config, "language", "en")
         current_date = datetime.now().strftime("%Y-%m-%d")
 
-        prompts = {"zh": DREAM_OPTIMIZATION_ZH, "en": DREAM_OPTIMIZATION_EN, "vi": DREAM_OPTIMIZATION_VI}
+        prompts = {"en": DREAM_OPTIMIZATION_EN, "vi": DREAM_OPTIMIZATION_VI}
         template = prompts.get(language, DREAM_OPTIMIZATION_EN)
         query_text = template.format(current_date=current_date)
 

@@ -427,6 +427,7 @@ class BaseChannel(ABC):
             user_id,
             channel_id,
             name=self._extract_chat_name(payload),
+            agent_id=self._workspace.agent_id,
         )
 
         logger.info(

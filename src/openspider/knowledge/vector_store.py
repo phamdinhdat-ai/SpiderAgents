@@ -397,3 +397,414 @@ class LocalVectorStore(VectorStore):
                 json.dump(data, f, ensure_ascii=False)
 
         await asyncio.to_thread(_write)
+
+
+# ---------------------------------------------------------------------------
+# Qdrant backend (remote vector database)
+# ---------------------------------------------------------------------------
+
+
+class QdrantVectorStore(VectorStore):
+    """Vector store backed by a remote Qdrant instance.
+
+    Requires the ``qdrant-client`` package: ``pip install qdrant-client``.
+    """
+
+    def __init__(
+        self,
+        collection_name: str,
+        url: str,
+        api_key: str = "",
+        vector_size: int = 1024,
+    ) -> None:
+        self._collection_name = collection_name
+        self._url = url
+        self._api_key = api_key
+        self._vector_size = vector_size
+        self._client: Any = None
+
+    async def start(self) -> None:
+        try:
+            from qdrant_client import QdrantClient
+            from qdrant_client.models import (
+                Distance,
+                VectorParams,
+            )
+        except ImportError:
+            raise RuntimeError(
+                "qdrant-client is required for QdrantVectorStore. "
+                "Install it: pip install qdrant-client",
+            ) from None
+
+        import asyncio
+
+        self._qdrant_models = _LazyQdrantModels()
+
+        def _init():
+            client = QdrantClient(
+                url=self._url,
+                api_key=self._api_key or None,
+            )
+            # Create collection if it doesn't exist
+            try:
+                client.get_collection(self._collection_name)
+            except Exception:
+                client.create_collection(
+                    collection_name=self._collection_name,
+                    vectors_config=VectorParams(
+                        size=self._vector_size,
+                        distance=Distance.COSINE,
+                    ),
+                )
+            return client
+
+        self._client = await asyncio.to_thread(_init)
+        logger.info(
+            "QdrantVectorStore ready: collection=%s url=%s",
+            self._collection_name,
+            self._url,
+        )
+
+    async def close(self) -> None:
+        self._client = None
+
+    async def add(
+        self,
+        chunks: list[DocumentChunk],
+        embeddings: list[list[float]],
+    ) -> int:
+        if not chunks:
+            return 0
+
+        import asyncio
+        from qdrant_client.models import PointStruct
+
+        points = [
+            PointStruct(
+                id=c.chunk_id,
+                vector=emb,
+                payload={
+                    "document_id": c.document_id,
+                    "text": c.text,
+                    "chunk_index": c.chunk_index,
+                    "page_number": c.page_number or -1,
+                },
+            )
+            for c, emb in zip(chunks, embeddings)
+        ]
+
+        def _upsert():
+            self._client.upsert(
+                collection_name=self._collection_name,
+                points=points,
+            )
+
+        await asyncio.to_thread(_upsert)
+        return len(chunks)
+
+    async def search(
+        self,
+        query_embedding: list[float],
+        top_k: int = 5,
+        filter_kb_names: list[str] | None = None,
+    ) -> list[SearchResult]:
+        import asyncio
+
+        def _search():
+            return self._client.search(
+                collection_name=self._collection_name,
+                query_vector=query_embedding,
+                limit=top_k,
+            )
+
+        hits = await asyncio.to_thread(_search)
+
+        results: list[SearchResult] = []
+        for hit in hits:
+            payload = hit.payload or {}
+            results.append(
+                SearchResult(
+                    document_id=payload.get("document_id", ""),
+                    filename="",
+                    text=payload.get("text", ""),
+                    score=max(0.0, min(1.0, hit.score)),
+                    chunk_id=str(hit.id),
+                    page_number=(
+                        int(payload["page_number"])
+                        if payload.get("page_number", -1) >= 0
+                        else None
+                    ),
+                ),
+            )
+        return results
+
+    async def delete(self, document_id: str) -> int:
+        import asyncio
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+
+        def _delete():
+            # Scroll to find matching points, then delete by ID
+            records, _ = self._client.scroll(
+                collection_name=self._collection_name,
+                scroll_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="document_id",
+                            match=MatchValue(value=document_id),
+                        ),
+                    ],
+                ),
+                limit=10000,
+            )
+            ids = [r.id for r in records]
+            if ids:
+                self._client.delete(
+                    collection_name=self._collection_name,
+                    points_selector=ids,
+                )
+            return len(ids)
+
+        return await asyncio.to_thread(_delete)
+
+    async def count(self) -> int:
+        import asyncio
+
+        def _count():
+            info = self._client.get_collection(self._collection_name)
+            return info.points_count
+
+        return await asyncio.to_thread(_count)
+
+
+# Stub for lazy imports
+class _LazyQdrantModels:
+    pass
+
+
+# ---------------------------------------------------------------------------
+# Milvus backend (remote vector database)
+# ---------------------------------------------------------------------------
+
+
+class MilvusVectorStore(VectorStore):
+    """Vector store backed by a remote Milvus / Zilliz Cloud instance.
+
+    Requires the ``pymilvus`` package: ``pip install pymilvus``.
+    """
+
+    def __init__(
+        self,
+        collection_name: str,
+        uri: str = "",
+        token: str = "",
+        host: str = "localhost",
+        port: int = 19530,
+        vector_size: int = 1024,
+    ) -> None:
+        self._collection_name = collection_name
+        self._uri = uri
+        self._token = token
+        self._host = host
+        self._port = port
+        self._vector_size = vector_size
+        self._connected = False
+
+    async def start(self) -> None:
+        try:
+            from pymilvus import (
+                Collection,
+                CollectionSchema,
+                DataType,
+                FieldSchema,
+                MilvusClient,
+                connections,
+            )
+        except ImportError:
+            raise RuntimeError(
+                "pymilvus is required for MilvusVectorStore. "
+                "Install it: pip install pymilvus",
+            ) from None
+
+        import asyncio
+
+        def _init():
+            # Connect to Milvus
+            if self._uri:
+                connections.connect(
+                    alias="default",
+                    uri=self._uri,
+                    token=self._token or None,
+                )
+            else:
+                connections.connect(
+                    alias="default",
+                    host=self._host,
+                    port=self._port,
+                )
+
+            # Create collection if needed
+            from pymilvus import Collection, utility
+
+            if not utility.has_collection(self._collection_name):
+                fields = [
+                    FieldSchema(
+                        name="id",
+                        dtype=DataType.VARCHAR,
+                        is_primary=True,
+                        max_length=100,
+                    ),
+                    FieldSchema(
+                        name="document_id",
+                        dtype=DataType.VARCHAR,
+                        max_length=100,
+                    ),
+                    FieldSchema(
+                        name="text",
+                        dtype=DataType.VARCHAR,
+                        max_length=65535,
+                    ),
+                    FieldSchema(
+                        name="chunk_index",
+                        dtype=DataType.INT64,
+                    ),
+                    FieldSchema(
+                        name="page_number",
+                        dtype=DataType.INT64,
+                    ),
+                    FieldSchema(
+                        name="embedding",
+                        dtype=DataType.FLOAT_VECTOR,
+                        dim=self._vector_size,
+                    ),
+                ]
+                schema = CollectionSchema(fields, description="KB chunks")
+                Collection(self._collection_name, schema)
+                # Create index
+                col = Collection(self._collection_name)
+                col.create_index(
+                    field_name="embedding",
+                    index_params={
+                        "metric_type": "COSINE",
+                        "index_type": "IVF_FLAT",
+                        "params": {"nlist": 128},
+                    },
+                )
+                col.load()
+
+            self._connected = True
+
+        await asyncio.to_thread(_init)
+        logger.info(
+            "MilvusVectorStore ready: collection=%s uri=%s",
+            self._collection_name,
+            self._uri or f"{self._host}:{self._port}",
+        )
+
+    async def close(self) -> None:
+        if self._connected:
+            import asyncio
+            from pymilvus import connections
+
+            def _disconnect():
+                connections.disconnect("default")
+
+            await asyncio.to_thread(_disconnect)
+            self._connected = False
+
+    async def add(
+        self,
+        chunks: list[DocumentChunk],
+        embeddings: list[list[float]],
+    ) -> int:
+        if not chunks:
+            return 0
+
+        import asyncio
+        from pymilvus import Collection
+
+        data = [
+            [c.chunk_id for c in chunks],
+            [c.document_id for c in chunks],
+            [c.text for c in chunks],
+            [c.chunk_index for c in chunks],
+            [c.page_number or -1 for c in chunks],
+            embeddings,
+        ]
+
+        def _insert():
+            col = Collection(self._collection_name)
+            col.insert(data)
+            col.flush()
+
+        await asyncio.to_thread(_insert)
+        return len(chunks)
+
+    async def search(
+        self,
+        query_embedding: list[float],
+        top_k: int = 5,
+        filter_kb_names: list[str] | None = None,
+    ) -> list[SearchResult]:
+        import asyncio
+        from pymilvus import Collection
+
+        def _search():
+            col = Collection(self._collection_name)
+            col.load()
+            search_params = {"metric_type": "COSINE", "params": {"nprobe": 10}}
+            results = col.search(
+                data=[query_embedding],
+                anns_field="embedding",
+                param=search_params,
+                limit=top_k,
+                output_fields=[
+                    "document_id",
+                    "text",
+                    "chunk_index",
+                    "page_number",
+                ],
+            )
+            return results[0]  # first (only) query vector
+
+        hits = await asyncio.to_thread(_search)
+
+        out: list[SearchResult] = []
+        for hit in hits:
+            out.append(
+                SearchResult(
+                    document_id=hit.entity.get("document_id", ""),
+                    filename="",
+                    text=hit.entity.get("text", ""),
+                    score=max(0.0, min(1.0, hit.score)),
+                    chunk_id=str(hit.id),
+                    page_number=(
+                        int(hit.entity["page_number"])
+                        if hit.entity.get("page_number", -1) >= 0
+                        else None
+                    ),
+                ),
+            )
+        return out
+
+    async def delete(self, document_id: str) -> int:
+        import asyncio
+        from pymilvus import Collection
+
+        def _delete():
+            col = Collection(self._collection_name)
+            expr = f'document_id == "{document_id}"'
+            result = col.delete(expr)
+            col.flush()
+            return result.delete_count if result else 0
+
+        return await asyncio.to_thread(_delete)
+
+    async def count(self) -> int:
+        import asyncio
+        from pymilvus import Collection
+
+        def _count():
+            col = Collection(self._collection_name)
+            return col.num_entities
+
+        return await asyncio.to_thread(_count)

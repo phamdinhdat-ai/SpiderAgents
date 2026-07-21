@@ -320,6 +320,13 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
     app.state.plugin_loader = None
     app.state.plugin_registry = None
 
+    # Start UserDataStore (per-user SQLite store for MCP, knowledge, settings)
+    from .user_data_store import UserDataStore
+
+    user_data_store = UserDataStore()
+    await user_data_store.start()
+    app.state.user_data_store = user_data_store
+
     if isinstance(runner, DynamicMultiAgentRunner):
         runner.set_multi_agent_manager(multi_agent_manager)
 
@@ -564,6 +571,15 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
             await token_usage_manager.stop()
         except Exception as e:
             logger.error(f"Error stopping TokenUsageManager: {e}")
+
+        # Stop UserDataStore
+        user_data_store = getattr(app.state, "user_data_store", None)
+        if user_data_store is not None:
+            logger.info("Stopping UserDataStore...")
+            try:
+                await user_data_store.close()
+            except Exception as e:
+                logger.error(f"Error stopping UserDataStore: {e}")
 
         logger.info("Application shutdown complete")
 

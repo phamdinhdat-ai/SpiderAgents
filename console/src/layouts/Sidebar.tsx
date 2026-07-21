@@ -20,7 +20,6 @@ import {
   SparkDateLine,
   SparkVoiceChat01Line,
   SparkMagicWandLine,
-  SparkLocalFileLine,
   SparkModePlazaLine,
   SparkInternetLine,
   SparkModifyLine,
@@ -222,16 +221,16 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       label: t("nav.heartbeat"),
     },
     {
-      key: "workspace",
-      icon: <SparkLocalFileLine size={18} />,
-      path: "/workspace",
-      label: t("nav.workspace"),
-    },
-    {
       key: "knowledge-base",
       icon: <SparkOtherLine size={18} />,
       path: "/knowledge-base",
       label: t("nav.knowledgeBase", "Knowledge Base"),
+    },
+    {
+      key: "core-instruction",
+      icon: <SparkBrowseLine size={18} />,
+      path: "/core-instruction",
+      label: t("nav.coreInstruction", "Core Instruction"),
     },
     {
       key: "skills",
@@ -370,14 +369,14 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       label: collapsed ? null : t("nav.agent"),
       children: [
         {
-          key: "workspace",
-          label: collapsed ? null : t("nav.workspace"),
-          icon: <SparkLocalFileLine size={16} />,
-        },
-        {
           key: "knowledge-base",
           label: collapsed ? null : (t("nav.knowledgeBase", "Knowledge Base") as string),
           icon: <SparkOtherLine size={16} />,
+        },
+        {
+          key: "core-instruction",
+          label: collapsed ? null : (t("nav.coreInstruction", "Core Instruction") as string),
+          icon: <SparkBrowseLine size={16} />,
         },
         {
           key: "skills",

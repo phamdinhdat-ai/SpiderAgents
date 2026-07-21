@@ -248,3 +248,71 @@ async def delete_chat(
             detail=f"Chat not found: {chat_id}",
         )
     return {"deleted": True}
+
+
+@router.get("/all", response_model=list[ChatSpec])
+async def list_all_chats(
+    request: Request,
+    user_id: Optional[str] = Query(None, description="Filter by user ID"),
+    channel: Optional[str] = Query(None, description="Filter by channel"),
+    agent_id: Optional[str] = Query(None, description="Filter by agent ID"),
+):
+    """List chats across ALL agents for the current user.
+
+    Unlike ``GET /chats`` which is scoped to the current agent, this
+    endpoint aggregates chats from every registered agent workspace.
+
+    Query params:
+    - **user_id**: Filter by user ID.
+    - **channel**: Filter by channel (default: all).
+    - **agent_id**: Filter to a specific agent (omit for all agents).
+    """
+    from ..agent_context import get_current_auth_user_id, get_current_auth_user_role
+    from ..auth import is_auth_enabled, get_current_user
+    from ...config.config import load_config
+
+    # Auth-aware scoping
+    effective_user_id = user_id
+    if is_auth_enabled():
+        caller = get_current_user(request)
+        if caller is not None:
+            caller_username, caller_role = caller
+            if caller_role != "admin":
+                effective_user_id = caller_username
+
+    config = load_config()
+    all_chats: list[ChatSpec] = []
+
+    # Determine which agent IDs to query
+    if agent_id:
+        target_agents = [agent_id]
+    else:
+        target_agents = list(config.agents.profiles.keys())
+
+    multi_agent_manager = getattr(request.app.state, "multi_agent_manager", None)
+    if multi_agent_manager is None:
+        # Fallback: only current workspace
+        workspace = await get_workspace(request)
+        chats = await workspace.chat_manager.list_chats(
+            user_id=effective_user_id, channel=channel, agent_id=agent_id,
+        )
+        return chats
+
+    for aid in target_agents:
+        try:
+            ws = await multi_agent_manager.get_agent(aid)
+        except Exception:
+            continue  # skip agents that failed to load
+        if ws is None or ws.chat_manager is None:
+            continue
+        try:
+            chats = await ws.chat_manager.list_chats(
+                user_id=effective_user_id, channel=channel, agent_id=aid,
+            )
+            all_chats.extend(chats)
+        except Exception:
+            continue  # skip agents whose chat manager is unavailable
+
+    # Sort by updated_at descending (most recent first)
+    all_chats.sort(key=lambda c: c.updated_at, reverse=True)
+    return all_chats

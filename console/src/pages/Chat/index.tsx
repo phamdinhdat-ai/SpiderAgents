@@ -829,33 +829,32 @@ export default function ChatPage() {
 
   // Setup multimodal capabilities tracking via custom hook
 
-  // Refresh chat when selectedAgent changes, preserving last active chat per agent
-  const { setLastChatId, getLastChatId } = useAgentStore();
+  // Track agent switches — save last chat for analytics, notify user
+  const { setLastChatId } = useAgentStore();
   const prevSelectedAgentRef = useRef(selectedAgent);
   useEffect(() => {
     const prevAgent = prevSelectedAgentRef.current;
     if (prevAgent !== selectedAgent && prevAgent !== undefined) {
-      // Save current chat ID for the agent we're leaving
+      // Save current chat ID for the agent we're leaving (analytics only)
       const currentChatId =
         chatIdRef.current || lastSessionIdRef.current || undefined;
       if (currentChatId && prevAgent) {
         setLastChatId(prevAgent, currentChatId);
       }
 
-      // Restore last chat ID for the agent we're switching to
-      const restored = getLastChatId(selectedAgent);
-      if (restored) {
-        navigateRef.current(`/chat/${restored}`, { replace: true });
-        sessionApi.preferredChatId = restored;
-      } else {
-        navigateRef.current("/chat", { replace: true });
-      }
-      lastSessionIdRef.current = null;
+      // NOTIFY user that agent changed — chat continues with new agent's tools
+      message.info(
+        t("chat.agentSwitched", {
+          agent: selectedAgent,
+          defaultValue: `Switched to agent: ${selectedAgent}`,
+        }),
+      );
 
-      setRefreshKey((prev) => prev + 1);
+      // NOTE: We intentionally do NOT navigate or remount the chat component.
+      // The chat persists; only the backend agent (via X-Agent-Id header) changes.
     }
     prevSelectedAgentRef.current = selectedAgent;
-  }, [selectedAgent, setLastChatId, getLastChatId]);
+  }, [selectedAgent, setLastChatId, message, t]);
 
   const copyResponse = useCallback(
     async (response: CopyableResponse) => {

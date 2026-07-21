@@ -98,23 +98,6 @@ Before answering questions about past work, decisions, dates, people, preference
 2. If you need to read daily notes from memory/YYYY-MM-DD.md, you can directly access them using `read_file`."""
 
 # Dream optimization prompts - instructs agent to consolidate memories
-DREAM_OPTIMIZATION_ZH = """\
-现在进入梦境状态，对长期记忆进行优化整理。请读取今日日志与现有长期记忆，在梦境中提炼高价值增量信息并去重合并，最终覆写至 `MEMORY.md`，确保长期记忆文件保持最新、精简、无冗余。
-
-当前日期: {current_date}
-
-【梦境优化原则】
-1. 极简去冗：严禁记录流水账、Bug修复细节或单次任务。仅保留"核心业务决策"、"确认的用户偏好"与"高价值可复用经验"。
-2. 状态覆写：若发现状态变更（如技术栈更改、配置更新），必须用新状态替换旧状态，严禁新旧矛盾信息并存。
-3. 归纳整合：主动将零碎的相似规则提炼、合并为通用性强的独立条目。
-4. 废弃剔除：主动删除已被证伪的假设或不再适用的陈旧条目。
-
-【梦境执行步骤】
-步骤 1 [加载]：调用 `read` 工具，读取根目录下的 `MEMORY.md` 以及当天的日志文件 `memory/YYYY-MM-DD.md`。
-步骤 2 [梦境提纯]：在梦境中对比新旧内容，严格按照【梦境优化原则】进行去重、替换、剔除和合并，生成一份全新的记忆内容。
-步骤 3 [落盘]：调用 `write` 或 `edit` 工具，将整理后全新的 Markdown 内容覆盖写入到 `MEMORY.md` 中（请保持清晰的层级与列表结构）。
-步骤 4 [苏醒汇报]：从梦境中苏醒后，在对话中向我简短汇报：1) 新增/沉淀了哪些核心记忆；2) 修正/删除了哪些过期内容。"""
-
 DREAM_OPTIMIZATION_EN = """\
 Enter dream state for memory optimization. Read today's logs and existing long-term memory, extract high-value incremental information in your dream state, deduplicate and merge, and ultimately overwrite `MEMORY.md`. Ensure the long-term memory file remains up-to-date, concise, and non-redundant.
 

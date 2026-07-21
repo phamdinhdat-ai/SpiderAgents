@@ -51,6 +51,17 @@ export const workspaceApi = {
       })),
     ),
 
+  /** List files including system instruction files (AGENTS.md, SOUL.md, etc.) */
+  listSystemFiles: () =>
+    request<MdFileInfo[]>(
+      "/workspace/files?include_system=true",
+    ).then((files) =>
+      files.map((file) => ({
+        ...file,
+        updated_at: new Date(file.modified_time).getTime(),
+      })),
+    ),
+
   loadFile: (fileName: string) =>
     request<MdFileContent>(`/workspace/files/${encodeURIComponent(fileName)}`),
 

@@ -678,6 +678,81 @@ class KnowledgeBaseConfig(BaseModel):
     )
 
 
+class FileStorageConfig(BaseModel):
+    """Pluggable file storage backend configuration.
+
+    Persisted to ``settings.json`` under the ``"file_storage"`` key.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    backend: str = Field(
+        default="local",
+        description="Storage backend: ``\"local\"`` or ``\"minio\"``",
+    )
+    # MinIO / S3
+    minio_endpoint: str = Field(
+        default="",
+        description="MinIO endpoint (e.g. ``play.min.io:9000``)",
+    )
+    minio_access_key: str = Field(default="", description="MinIO access key")
+    minio_secret_key: str = Field(default="", description="MinIO secret key")
+    minio_bucket: str = Field(
+        default="openspider-kb",
+        description="MinIO bucket name",
+    )
+    minio_secure: bool = Field(
+        default=False,
+        description="Use HTTPS for MinIO connections",
+    )
+    minio_prefix: str = Field(
+        default="knowledge_base",
+        description="Object key prefix within the MinIO bucket",
+    )
+
+
+class VectorStoreConfig(BaseModel):
+    """Pluggable vector store backend configuration.
+
+    Persisted to ``settings.json`` under the ``"vector_store"`` key.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    backend: str = Field(
+        default="auto",
+        description=(
+            "Vector store backend: ``\"auto\"`` (detect), ``\"chroma\"``, "
+            "``\"local\"``, ``\"qdrant\"``, or ``\"milvus\"``"
+        ),
+    )
+    # Qdrant
+    qdrant_url: str = Field(default="", description="Qdrant server URL")
+    qdrant_api_key: str = Field(default="", description="Qdrant API key")
+    # Milvus
+    milvus_uri: str = Field(
+        default="",
+        description="Milvus URI (e.g. ``https://xxx.zillizcloud.com``)",
+    )
+    milvus_token: str = Field(default="", description="Milvus / Zilliz token")
+    milvus_host: str = Field(
+        default="localhost",
+        description="Milvus host (when not using URI)",
+    )
+    milvus_port: int = Field(
+        default=19530,
+        description="Milvus gRPC port",
+    )
+
+
+class BackendStatus(BaseModel):
+    """Connectivity status response for a storage backend."""
+
+    backend: str = Field(..., description="Backend name")
+    reachable: bool = Field(..., description="Whether the backend is reachable")
+    message: str = Field(default="", description="Human-readable status")
+
+
 class ContextCompactConfig(BaseModel):
     """Context compaction configuration."""
 

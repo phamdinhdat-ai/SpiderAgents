@@ -28,13 +28,13 @@ class BootstrapHook:
     def __init__(
         self,
         working_dir: Path,
-        language: str = "zh",
+        language: str = "en",
     ):
         """Initialize bootstrap hook.
 
         Args:
             working_dir: Working directory containing BOOTSTRAP.md
-            language: Language code for bootstrap guidance (en/zh)
+            language: Language code for bootstrap guidance (en/zh/ja/ru/vi)
         """
         self.working_dir = working_dir
         self.language = language

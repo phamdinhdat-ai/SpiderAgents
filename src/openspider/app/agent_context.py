@@ -89,9 +89,15 @@ async def get_agent_for_request(
     if config is None:
         config = load_config()
     if target_agent_id not in config.agents.profiles:
+        available = ", ".join(sorted(config.agents.profiles.keys())) or "(none)"
         raise HTTPException(
             status_code=404,
-            detail=f"Agent '{target_agent_id}' not found",
+            detail=(
+                f"Agent '{target_agent_id}' not found in configuration. "
+                f"Available agents: [{available}]. "
+                f"Set an active agent via X-Agent-Id header or "
+                f"config.agents.active_agent."
+            ),
         )
 
     agent_ref = config.agents.profiles[target_agent_id]

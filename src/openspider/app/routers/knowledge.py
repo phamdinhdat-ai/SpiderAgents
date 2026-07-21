@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
+logger.info("Knowledge API router loaded — endpoints at /api/knowledge/*")
+
 # Size limit for uploads: 50 MB
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024
 
@@ -63,14 +65,73 @@ class ShareDocumentRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _get_user_context() -> tuple[str | None, str | None]:
-    """Extract authenticated user identity from ContextVar.
+def _get_user_context(request: Request | None = None) -> tuple[str | None, str | None]:
+    """Extract authenticated user identity.
+
+    Resolution order:
+    1. ContextVar (set by AgentContextMiddleware when auth enforced)
+    2. ``request.scope["auth_user"]`` (set by AuthMiddleware)
+    3. Manual token decode from ``Authorization`` header — handles the
+       case where auth is skipped for localhost (``allow_no_auth_hosts``)
+       but the frontend still sends a valid Bearer token.
 
     Returns:
         ``(user_id, role)`` tuple.  Both values are ``None`` when
-        auth is disabled or unauthenticated.
+        auth is disabled / skipped AND no token is present.
     """
-    return get_current_auth_user_id(), get_current_auth_user_role()
+    user_id = get_current_auth_user_id()
+    role = get_current_auth_user_role()
+
+    # Belt-and-suspenders: fall back to request.scope when ContextVar
+    # is unset (covers edge cases where middleware ordering or asyncio
+    # task spawning loses the ContextVar).
+    if request is not None:
+        scope_user = request.scope.get("auth_user")
+        scope_role = request.scope.get("auth_role")
+        if not user_id and scope_user:
+            user_id = scope_user
+        if not role and scope_role:
+            role = scope_role
+
+        # When auth is skipped (e.g. localhost in allow_no_auth_hosts)
+        # but the frontend sends a Bearer token, manually extract the
+        # user identity so multi-user isolation still works in dev.
+        if not user_id:
+            token = _extract_bearer_token(request)
+            if token:
+                extracted = _verify_token_soft(token)
+                if extracted:
+                    user_id, role = extracted
+
+    logger.info(
+        "KB auth context: user_id=%s role=%s",
+        user_id, role,
+    )
+    return user_id, role
+
+
+def _extract_bearer_token(request: Request) -> str | None:
+    """Extract Bearer token from the Authorization header."""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        if token:
+            return token
+    return None
+
+
+def _verify_token_soft(token: str) -> tuple[str, str] | None:
+    """Verify a token and return (username, role), or None.
+
+    Wraps :func:`openspider.app.auth.verify_token` with a broad except
+    so token extraction never crashes the request.
+    """
+    try:
+        from ..auth import verify_token
+
+        return verify_token(token)
+    except Exception:
+        return None
 
 
 def _resolve_kb_name(kb_name: str, user_id: str | None) -> str:
@@ -127,7 +188,7 @@ async def upload_documents(
 
     workspace = await get_agent_for_request(request)
     kb = _get_kb_manager(workspace)
-    user_id, _role = _get_user_context()
+    user_id, _role = _get_user_context(request)
     kb_name = _resolve_kb_name(kb_name, user_id)
 
     results = []
@@ -160,6 +221,7 @@ async def upload_documents(
                 file_path=Path(tmp_path),
                 kb_name=kb_name,
                 owner=user_id,
+                original_name=file.filename or None,
             )
             results.append({
                 "document_id": doc.id,
@@ -216,8 +278,14 @@ async def list_documents(
     """
     workspace = await get_agent_for_request(request)
     kb = _get_kb_manager(workspace)
-    user_id, role = _get_user_context()
+    user_id, role = _get_user_context(request)
     kb_name = _resolve_kb_name(kb_name or "default", user_id)
+
+    logger.info(
+        "KB list_documents: kb_name=%s scope=%s user_id=%s role=%s resolved_kb=%s",
+        kb_name, scope, user_id, role,
+        _resolve_kb_name(kb_name or "default", user_id),
+    )
 
     docs = await kb.list_documents(
         kb_name=kb_name,
@@ -225,6 +293,7 @@ async def list_documents(
         user_role=role,
         scope_filter=scope,
     )
+    logger.info("KB list_documents result: %d documents", len(docs))
     return {
         "documents": [d.model_dump() for d in docs],
         "total": len(docs),
@@ -239,7 +308,7 @@ async def list_knowledge_bases(
     """List all named knowledge bases with summary stats."""
     workspace = await get_agent_for_request(request)
     kb = _get_kb_manager(workspace)
-    user_id, role = _get_user_context()
+    user_id, role = _get_user_context(request)
 
     kbs = await kb.list_knowledge_bases(user_id=user_id, user_role=role)
     return {
@@ -257,7 +326,7 @@ async def get_document(
     """Get a single document's metadata by ID (access-controlled)."""
     workspace = await get_agent_for_request(request)
     kb = _get_kb_manager(workspace)
-    user_id, role = _get_user_context()
+    user_id, role = _get_user_context(request)
 
     doc = await kb.get_document(
         document_id,
@@ -279,7 +348,7 @@ async def delete_document(
     """Delete a document and all its vector chunks (owner or admin only)."""
     workspace = await get_agent_for_request(request)
     kb = _get_kb_manager(workspace)
-    user_id, role = _get_user_context()
+    user_id, role = _get_user_context(request)
 
     removed = await kb.remove_document(
         document_id,
@@ -301,7 +370,7 @@ async def search_knowledge_base(
     """Semantic search across documents accessible to the user."""
     workspace = await get_agent_for_request(request)
     kb = _get_kb_manager(workspace)
-    user_id, role = _get_user_context()
+    user_id, role = _get_user_context(request)
 
     results = await kb.search(
         query=body.query,
@@ -333,7 +402,7 @@ async def get_status(
     """Get aggregate indexing progress and stats for accessible documents."""
     workspace = await get_agent_for_request(request)
     kb = _get_kb_manager(workspace)
-    user_id, role = _get_user_context()
+    user_id, role = _get_user_context(request)
     kb_name = _resolve_kb_name(kb_name, user_id)
 
     status = await kb.get_indexing_status(
@@ -356,7 +425,7 @@ async def reindex_all(
     """
     workspace = await get_agent_for_request(request)
     kb = _get_kb_manager(workspace)
-    user_id, role = _get_user_context()
+    user_id, role = _get_user_context(request)
     kb_name = _resolve_kb_name(body.kb_name if body else "default", user_id)
 
     result = await kb.reindex_all(
@@ -384,7 +453,7 @@ async def share_document(
 
     workspace = await get_agent_for_request(request)
     kb = _get_kb_manager(workspace)
-    user_id, role = _get_user_context()
+    user_id, role = _get_user_context(request)
 
     # Validate scope
     if body.scope not in ("shared", "public"):

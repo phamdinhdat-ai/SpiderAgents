@@ -936,12 +936,27 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
         "</system-hint>"
     )
 
+    _AUTO_CONTINUE_HINTS_VI = {
+        "auto_continue_hint": (
+            "<system-hint>"
+            "Lần trước trợ lý chỉ có văn bản, không gọi công cụ. "
+            "Hãy sử dụng ngữ cảnh và <previous-assistant-tail> (nếu có) "
+            "để quyết định trong bước **reasoning** này: nếu nhiệm vụ của "
+            "người dùng vẫn cần công cụ, hãy phát hành tool_use ngay; nếu "
+            "nó đã hoàn tất, hãy trả lời bằng văn bản ngắn gọn (không có "
+            "công cụ)."
+            "</system-hint>"
+        ),
+    }
+
     def _auto_continue_system_hint(self) -> str:
         """Pick hint by agent language (zh vs others)."""
         raw_lang = getattr(self._agent_config, "language", None)
         lang = (raw_lang or "").strip().lower()
         if lang == "zh":
             return self._AUTO_CONTINUE_HINT_ZH
+        if lang == "vi":
+            return self._AUTO_CONTINUE_HINTS_VI["auto_continue_hint"]
         return self._AUTO_CONTINUE_HINT_EN
 
     @staticmethod

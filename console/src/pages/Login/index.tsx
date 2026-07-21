@@ -5,7 +5,7 @@ import { Alert, Button, Form, Input } from "antd";
 import { useAppMessage } from "../../hooks/useAppMessage";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { authApi } from "../../api/modules/auth";
-import { setAuthToken, setCurrentUsername } from "../../api/config";
+import { setAuthToken, setCurrentUsername, setCurrentUserRole } from "../../api/config";
 import { useTheme } from "../../contexts/ThemeContext";
 import styles from "./index.module.less";
 
@@ -49,6 +49,12 @@ export default function LoginPage() {
         if (res.token) {
           setAuthToken(res.token);
           setCurrentUsername(res.username || values.username);
+          // Decode role from token payload
+          try {
+            const raw = atob(res.token.split(".")[0].replace(/-/g, "+").replace(/_/g, "/"));
+            const payload = JSON.parse(raw) as { role?: string };
+            if (payload.role) setCurrentUserRole(payload.role);
+          } catch { /* ignore */ }
           message.success(t("login.registerSuccess"));
           navigate(redirect, { replace: true });
         }
@@ -57,6 +63,12 @@ export default function LoginPage() {
         if (res.token) {
           setAuthToken(res.token);
           setCurrentUsername(res.username || values.username);
+          // Decode role from token payload
+          try {
+            const raw = atob(res.token.split(".")[0].replace(/-/g, "+").replace(/_/g, "/"));
+            const payload = JSON.parse(raw) as { role?: string };
+            if (payload.role) setCurrentUserRole(payload.role);
+          } catch { /* ignore */ }
           navigate(redirect, { replace: true });
         } else {
           message.info(t("login.authNotEnabled"));

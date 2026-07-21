@@ -59,7 +59,7 @@ class PromptBuilder:
         working_dir: Path,
         enabled_files: list[str] | None = None,
         heartbeat_enabled: bool = False,
-        language: str = "zh",
+        language: str = "en",
         memory_manager: BaseMemoryManager | None = None,
     ):
         """Initialize prompt builder.
@@ -234,7 +234,7 @@ def build_system_prompt_from_working_dir(
     enabled_files: list[str] | None = None,
     agent_id: str | None = None,
     heartbeat_enabled: bool = False,
-    language: str = "zh",
+    language: str = "en",
     memory_manager: BaseMemoryManager | None = None,
 ) -> str:
     """
@@ -321,12 +321,12 @@ def build_system_prompt_from_working_dir(
 
 
 def build_bootstrap_guidance(
-    language: str = "zh",
+    language: str = "en",
 ) -> str:
     """Build bootstrap guidance message for first-time setup.
 
     Args:
-        language: Language code (zh/en/ru)
+        language: Language code (zh/en/ru/vi)
 
     Returns:
         Formatted bootstrap guidance message
@@ -350,6 +350,7 @@ def build_bootstrap_guidance(
             "---\n"
             "\n"
         )
+    # vi / en / other — default to English
     # en / ru / other — default to English
     return (
         "# BOOTSTRAP MODE\n"

@@ -41,7 +41,7 @@ import type {
   DocumentStatus,
   KnowledgeBaseInfo,
 } from "../../api/modules/knowledge";
-import { getCurrentUsername } from "../../api/config";
+import { getCurrentUsername, getCurrentUserRole } from "../../api/config";
 import styles from "./index.module.less";
 
 const { Dragger } = Upload;
@@ -95,6 +95,7 @@ export default function KnowledgeBasePage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseInfo[]>([]);
   const [username, setUsername] = useState<string>("");
+  const [userRole, setUserRole] = useState<string>("");
   const [activeKB, setActiveKB] = useState<string>("default");
   const [scopeFilter, setScopeFilter] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
@@ -107,14 +108,25 @@ export default function KnowledgeBasePage() {
     filename: string;
   }>({ stage: "idle", filename: "" });
 
-  // Resolve username on mount → set KB name
+  // Resolve username and role on mount → set KB name and default scope
+  const [contextReady, setContextReady] = useState(false);
   useEffect(() => {
-    getCurrentUsername().then((name) => {
-      if (name) {
-        setUsername(name);
-        setActiveKB(name);
-      }
-    });
+    Promise.all([getCurrentUsername(), getCurrentUserRole()]).then(
+      ([name, role]) => {
+        if (name) {
+          setUsername(name);
+          setActiveKB(name);
+        }
+        if (role) {
+          setUserRole(role);
+          // Non-admin users default to "My Docs" scope
+          if (role !== "admin") {
+            setScopeFilter("my");
+          }
+        }
+        setContextReady(true);
+      },
+    );
   }, []);
 
   // Share modal
@@ -147,9 +159,10 @@ export default function KnowledgeBasePage() {
   }, []);
 
   useEffect(() => {
+    if (!contextReady) return;
     fetchDocuments();
     fetchKnowledgeBases();
-  }, [fetchDocuments, fetchKnowledgeBases]);
+  }, [contextReady, fetchDocuments, fetchKnowledgeBases]);
 
   // Delete document
   const handleDelete = async (docId: string) => {
@@ -431,7 +444,9 @@ export default function KnowledgeBasePage() {
             optionType="button"
             buttonStyle="solid"
           >
-            <Radio.Button value={undefined}>All</Radio.Button>
+            {userRole === "admin" && (
+              <Radio.Button value={undefined}>All</Radio.Button>
+            )}
             <Radio.Button value="my">My Docs</Radio.Button>
             <Radio.Button value="shared">Shared</Radio.Button>
           </Radio.Group>

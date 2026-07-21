@@ -6,6 +6,9 @@ and initialize service components. Extracted from local functions to
 improve testability and code organization.
 """
 
+from __future__ import annotations
+
+from pathlib import Path
 from typing import TYPE_CHECKING
 import logging
 
@@ -13,6 +16,28 @@ if TYPE_CHECKING:
     from .workspace import Workspace
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_chats_path(ws: Workspace) -> str:
+    """Resolve the path to ``chats.json`` for the current user.
+
+    When an authenticated user context is available, chats are stored in
+    ``{WORKING_DIR}/user_data/{username}/chats.json`` so they persist across
+    agent switches.  Falls back to the agent workspace directory otherwise.
+    """
+    try:
+        from ..agent_context import get_current_auth_user_id
+
+        user_id = get_current_auth_user_id()
+        if user_id:
+            from ...constant import WORKING_DIR
+
+            user_chat_dir = WORKING_DIR / "user_data" / user_id
+            user_chat_dir.mkdir(parents=True, exist_ok=True)
+            return str(user_chat_dir / "chats.json")
+    except Exception:
+        pass
+    return str(ws.workspace_dir / "chats.json")
 
 
 async def create_mcp_service(ws: "Workspace", mcp):
@@ -49,8 +74,10 @@ async def create_chat_service(ws: "Workspace", service):
         cm = service
         logger.info(f"Reusing ChatManager for {ws.agent_id}")
     else:
-        # Create new ChatManager
-        chats_path = str(ws.workspace_dir / "chats.json")
+        # Create new ChatManager — store chats per-user so they persist
+        # across agent switches. Fall back to agent workspace when no
+        # authenticated user context is available.
+        chats_path = _resolve_chats_path(ws)
         chat_repo = JsonChatRepository(chats_path)
         cm = ChatManager(repo=chat_repo)
         ws._service_manager.services["chat_manager"] = cm

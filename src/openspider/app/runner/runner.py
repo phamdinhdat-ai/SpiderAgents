@@ -642,6 +642,7 @@ class AgentRunner(Runner):
                     user_id,
                     channel,
                     name=name,
+                    agent_id=self.agent_id,
                 )
                 logger.debug(f"Runner: Got chat: {chat.id}")
             else:

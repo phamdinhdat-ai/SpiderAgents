@@ -29,6 +29,10 @@ class ChatSpec(BaseModel):
     )
     user_id: str = Field(..., description="User identifier")
     channel: str = Field(default=DEFAULT_CHANNEL, description="Channel name")
+    agent_id: str = Field(
+        default="",
+        description="Agent that owns this chat (empty = implicit from workspace)",
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Chat creation timestamp",

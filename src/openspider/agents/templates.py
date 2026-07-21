@@ -67,7 +67,7 @@ def build_agent_template(
     language: str | None = None,
 ) -> AgentTemplateBuildResult:
     """Build a builtin template into a concrete agent configuration."""
-    resolved_language = language or fallback_language or "zh"
+    resolved_language = language or fallback_language or "en"
 
     if template_id == DEFAULT_AGENT_TEMPLATE:
         if name is None:

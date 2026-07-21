@@ -142,6 +142,11 @@ class LazyGroup(click.Group):
         "agents": ("openspider.cli.agents_cmd", "agents_group", ".agents_cmd"),
         "agent": ("openspider.cli.agents_cmd", "agents_group", ".agents_cmd"),
         "mcp": ("openspider.cli.mcp_cmd", "mcp_group", ".mcp_cmd"),
+        "mcp-sim": (
+            "openspider.cli.mcp_sim_cmd",
+            "mcp_sim_cmd",
+            ".mcp_sim_cmd",
+        ),
         "plugin": (
             "openspider.cli.plugin_commands",
             "plugin",

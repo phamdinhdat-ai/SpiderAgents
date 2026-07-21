@@ -65,12 +65,17 @@ function MCPPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newClientJson, setNewClientJson] = useState(`{
   "mcpServers": {
-    "example-client": {
+    "example-stdio": {
+      "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@example/mcp-server"],
       "env": {
         "API_KEY": "<YOUR_API_KEY>"
       }
+    },
+    "example-http": {
+      "transport": "streamable_http",
+      "url": "http://127.0.0.1:8100/mcp"
     }
   }
 }`);
@@ -145,12 +150,17 @@ function MCPPage() {
         setCreateModalOpen(false);
         setNewClientJson(`{
   "mcpServers": {
-    "example-client": {
+    "example-stdio": {
+      "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@example/mcp-server"],
       "env": {
         "API_KEY": "<YOUR_API_KEY>"
       }
+    },
+    "example-http": {
+      "transport": "streamable_http",
+      "url": "http://127.0.0.1:8100/mcp"
     }
   }
 }`);

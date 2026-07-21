@@ -43,9 +43,9 @@ from .store import (
 
 logger = logging.getLogger(__name__)
 
-_BUILTIN_SKILL_LANGUAGES = ("en", "zh")
+_BUILTIN_SKILL_LANGUAGES = ("en", "vi", "zh")
 _BUILTIN_SKILL_DIR_RE = re.compile(
-    r"^(?P<name>.+)-(?P<language>en|zh)$",
+    r"^(?P<name>.+)-(?P<language>en|vi|zh)$",
 )
 
 _ACTIVE_SKILL_ENV_ENTRIES: dict[str, dict[str, Any]] = {}
@@ -92,7 +92,7 @@ def get_builtin_skill_language_preference() -> str:
             result = explicit
         else:
             ui_lang = str(payload.get("language", "") or "").strip().lower()
-            result = "zh" if ui_lang.startswith("zh") else "en"
+            result = "vi" if ui_lang.startswith("vi") else "en"
         _builtin_cache["language_preference"] = result
         return result
 
@@ -419,9 +419,9 @@ def _resolve_pool_builtin_language(
         ]
         if len(matching) == 1:
             return matching[0]
-        # Guess from actual content: significant CJK presence → zh.
+        # Guess from actual content: significant CJK presence → vi.
         cjk_count = len(re.findall(r"[\u4e00-\u9fff]", pool_content))
-        guessed = "zh" if cjk_count >= 32 else "en"
+        guessed = "vi" if cjk_count >= 32 else "en"
         if guessed in variants:
             return guessed
 

@@ -170,6 +170,7 @@ async def post_console_chat(
         native_payload["sender_id"],
         native_payload["channel_id"],
         name=name,
+        agent_id=workspace.agent_id,
     )
     tracker = workspace.task_tracker
 

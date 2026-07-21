@@ -22,7 +22,6 @@ const AgentConfigPage = lazyImportWithRetry("../../pages/Agent/Config");
 const SkillsPage = lazyImportWithRetry("../../pages/Agent/Skills");
 const SkillPoolPage = lazyImportWithRetry("../../pages/Settings/SkillPool");
 const ToolsPage = lazyImportWithRetry("../../pages/Agent/Tools");
-const WorkspacePage = lazyImportWithRetry("../../pages/Agent/Workspace");
 const MCPPage = lazyImportWithRetry("../../pages/Agent/MCP");
 const ACPPage = lazyImportWithRetry("../../pages/Agent/ACP");
 const ModelsPage = lazyImportWithRetry("../../pages/Settings/Models");
@@ -43,6 +42,9 @@ const UserManagementPage = lazyImportWithRetry(
 const KnowledgeBasePage = lazyImportWithRetry(
   "../../pages/KnowledgeBase",
 );
+const CoreInstructionPage = lazyImportWithRetry(
+  "../../pages/Agent/CoreInstruction",
+);
 
 const { Content } = Layout;
 
@@ -57,7 +59,7 @@ const pathToKey: Record<string, string> = {
   "/tools": "tools",
   "/mcp": "mcp",
   "/acp": "acp",
-  "/workspace": "workspace",
+  "/core-instruction": "core-instruction",
   "/agents": "agents",
   "/models": "models",
   "/environments": "environments",
@@ -118,7 +120,7 @@ export default function MainLayout() {
                   <Route path="/mcp" element={<MCPPage />} />
                   <Route path="/acp" element={<ACPPage />} />
                   <Route path="/ACP" element={<Navigate to="/acp" replace />} />
-                  <Route path="/workspace" element={<WorkspacePage />} />
+                  <Route path="/core-instruction" element={<CoreInstructionPage />} />
                   <Route path="/agents" element={<AgentsPage />} />
                   <Route path="/models" element={<ModelsPage />} />
                   <Route path="/environments" element={<EnvironmentsPage />} />
