@@ -475,6 +475,30 @@ SNAPSHOT_MAX_BACKUP_SIZE_MB = EnvVarLoader.get_int(
 )
 
 # ------------------------------------------------------------------
+# PostgreSQL database
+# ------------------------------------------------------------------
+
+DATABASE_URL: str = EnvVarLoader.get_str(
+    "OPENSPIDER_DATABASE_URL",
+    "postgresql+asyncpg://5gai:Vht%402025@localhost:5433/5gai",
+)
+"""PostgreSQL connection URL (asyncpg driver).
+
+Set ``OPENSPIDER_DATABASE_URL`` to override.  The default matches the
+standalone ``docker-compose.postgres.yaml`` shipped in the repo root.
+"""
+
+DATABASE_ENABLED: bool = EnvVarLoader.get_bool(
+    "OPENSPIDER_DATABASE_ENABLED",
+    False,
+)
+"""Feature flag: when ``True``, PostgreSQL is used instead of SQLite + JSON.
+
+Set ``OPENSPIDER_DATABASE_ENABLED=true`` to enable.  Existing data should
+be migrated before enabling (see ``scripts/migrate_to_postgres.py``).
+"""
+
+# ------------------------------------------------------------------
 # Multi-user data directories
 # ------------------------------------------------------------------
 

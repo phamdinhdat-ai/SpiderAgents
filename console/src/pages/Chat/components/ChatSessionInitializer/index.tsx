@@ -24,7 +24,13 @@ const ChatSessionInitializer: React.FC = () => {
 
   useEffect(() => {
     if (!chatId || !sessions.length) return;
-    const matching = sessions.find((s) => s.id === chatId);
+    // Search by id first, then by realId (for sessions that keep timestamp id
+    // after backend UUID resolution — needed when restoring from tab navigation).
+    const matching =
+      sessions.find((s) => s.id === chatId) ||
+      sessions.find(
+        (s) => (s as { realId?: string }).realId === chatId,
+      );
     if (matching && currentSessionIdRef.current !== matching.id) {
       setCurrentSessionId(matching.id);
     }

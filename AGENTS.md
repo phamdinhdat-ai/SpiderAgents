@@ -70,6 +70,53 @@ make coverage-full               # HTML + terminal coverage
 
 See [Makefile](Makefile) for all targets. `pytest` uses `asyncio_mode = "auto"` (no `@pytest.mark.asyncio` needed). Coverage threshold: **30%** on `src/openspider`.
 
+## Database Configuration
+
+OpenSpider uses **SQLite + JSON files** by default for all persistent data (auth, MCP config, chat history, settings, knowledge docs).
+
+To switch to **PostgreSQL**, set these environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENSPIDER_DATABASE_ENABLED` | `false` | Set to `true` to use PostgreSQL for all storage |
+| `OPENSPIDER_DATABASE_URL` | `postgresql+asyncpg://5gai:Vht%402025@localhost:5433/5gai` | PostgreSQL connection URL (asyncpg driver) |
+
+### Quick Start with PostgreSQL
+
+```bash
+# 1. Start the database
+docker compose -f docker-compose.postgres.yaml up -d
+
+# 2. Enable PG in your environment
+export OPENSPIDER_DATABASE_ENABLED=true
+
+# 3. (First time) Migrate existing data from SQLite/JSON
+python scripts/migrate_to_postgres.py
+
+# 4. Start normally
+openspider app
+```
+
+### Architecture
+
+When PG is enabled, data migrates as follows:
+
+| Data | File/SQLite (legacy) | PostgreSQL table |
+|------|---------------------|-----------------|
+| Users & passwords | `auth.json` | `openspider_users` |
+| JWT secret | `auth.json` (encrypted) | `auth_meta` |
+| Token revocation | `auth.json` | `token_revocations` |
+| MCP server configs | `user_data.db` | `mcp_servers` |
+| Knowledge documents | `user_data.db` | `knowledge_documents` |
+| User settings | `user_data.db` | `user_settings` |
+| Chat list | `chats.json` | `chats` |
+| Chat history | Session JSON files | `session_messages` |
+| User config overlay | `config.json` per user | `user_configs` |
+
+The file-based storage remains fully functional as fallback when `OPENSPIDER_DATABASE_ENABLED` is `false` or unset.
+
+See `.env.example` for all available environment variables.
+
 ## Code Conventions
 
 - **Pydantic everywhere**: config, provider info, plan schemas — `BaseModel`, `model_validate()` for cross-module loads.

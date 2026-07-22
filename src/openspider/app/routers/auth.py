@@ -7,20 +7,32 @@ from pydantic import BaseModel
 
 from ..auth import (
     authenticate,
+    authenticate_async,
     create_user_admin,
+    create_user_admin_async,
     delete_user,
+    delete_user_async,
     get_current_admin,
     get_current_user,
     get_user_count,
+    get_user_count_async,
     has_registered_users,
+    has_registered_users_async,
     is_auth_enabled,
     list_users,
+    list_users_async,
     register_user,
+    register_user_async,
     revoke_all_tokens,
+    revoke_all_tokens_async,
     revoke_token,
+    revoke_token_async,
     update_credentials,
+    update_credentials_async,
     update_user_role,
+    update_user_role_async,
     verify_token,
+    verify_token_async,
 )
 from ..users.models import (
     AdminSessionsResponse,
@@ -80,7 +92,7 @@ async def login(req: LoginRequest):
     if not is_auth_enabled():
         return LoginResponse(token="", username="")
 
-    token = authenticate(req.username, req.password, req.expires_in)
+    token = await authenticate_async(req.username, req.password, req.expires_in)
     if token is None:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
@@ -105,7 +117,7 @@ async def register(req: RegisterRequest):
             detail="Authentication is not enabled",
         )
 
-    if has_registered_users():
+    if await has_registered_users_async():
         raise HTTPException(
             status_code=403,
             detail="Initial admin already registered. Additional users must be created by an admin.",
@@ -117,7 +129,7 @@ async def register(req: RegisterRequest):
             detail="Username and password are required",
         )
 
-    token = register_user(req.username.strip(), req.password, req.expires_in)
+    token = await register_user_async(req.username.strip(), req.password, req.expires_in)
     if token is None:
         raise HTTPException(
             status_code=409,
@@ -153,7 +165,7 @@ async def verify(request: Request):
     if not token:
         raise HTTPException(status_code=401, detail="No token provided")
 
-    result = verify_token(token)
+    result = await verify_token_async(token)
     if result is None:
         raise HTTPException(
             status_code=401,
@@ -182,7 +194,7 @@ async def update_profile(req: UpdateProfileRequest, request: Request):
             detail="Authentication is not enabled",
         )
 
-    if not has_registered_users():
+    if not await has_registered_users_async():
         raise HTTPException(
             status_code=403,
             detail="No user registered",
@@ -212,7 +224,7 @@ async def update_profile(req: UpdateProfileRequest, request: Request):
             detail="Password cannot be empty",
         )
 
-    token = update_credentials(
+    token = await update_credentials_async(
         current_password=req.current_password,
         current_username=current_username,
         new_username=req.new_username,
@@ -264,7 +276,7 @@ async def revoke_single_token(req: RevokeTokenRequest, request: Request):
     token_to_revoke = req.token if req.token else caller_token
     is_current_token = token_to_revoke == caller_token
 
-    success = revoke_token(token_to_revoke)
+    success = await revoke_token_async(token_to_revoke)
     if not success:
         raise HTTPException(
             status_code=500,
@@ -306,7 +318,7 @@ async def revoke_all_sessions(request: Request):
     if user_info is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    success = revoke_all_tokens()
+    success = await revoke_all_tokens_async()
     if not success:
         raise HTTPException(
             status_code=500,
@@ -394,14 +406,14 @@ async def admin_revoke_user_tokens(
         )
 
     # Verify the target user exists
-    users = list_users()
+    users = await list_users_async()
     if not any(u["username"] == username for u in users):
         raise HTTPException(
             status_code=404,
             detail=f"User '{username}' not found",
         )
 
-    success = revoke_all_tokens()
+    success = await revoke_all_tokens_async()
     return RevokeUserTokensResponse(
         message=(
             f"All tokens revoked (including '{username}'). "
@@ -454,7 +466,7 @@ async def admin_list_users(
     admin: str = Depends(get_current_admin),
 ):
     """List all registered users (admin-only)."""
-    users = list_users()
+    users = await list_users_async()
     return UserListResponse(
         users=[UserInfo(**u) for u in users],
         total=len(users),
@@ -478,7 +490,7 @@ async def admin_create_user(
             detail="Role must be 'admin' or 'user'",
         )
 
-    token = create_user_admin(req.username.strip(), req.password, req.role)
+    token = await create_user_admin_async(req.username.strip(), req.password, req.role)
     if token is None:
         raise HTTPException(
             status_code=409,
@@ -508,7 +520,7 @@ async def admin_update_role(
             detail="Role must be 'admin' or 'user'",
         )
 
-    if not update_user_role(username, req.role):
+    if not await update_user_role_async(username, req.role):
         raise HTTPException(
             status_code=404,
             detail="User not found or invalid role",
@@ -522,12 +534,12 @@ async def admin_delete_user(
     admin: str = Depends(get_current_admin),
 ):
     """Delete a user account (admin-only, cannot delete self)."""
-    if not delete_user(username, admin):
-        if username == admin:
-            raise HTTPException(
-                status_code=403,
-                detail="Cannot delete your own account",
-            )
+    if username == admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Cannot delete your own account",
+        )
+    if not await delete_user_async(username):
         raise HTTPException(
             status_code=404,
             detail="User not found",

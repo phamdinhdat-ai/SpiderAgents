@@ -43,6 +43,7 @@ import { Package } from "lucide-react";
 import { clearAuthToken, getApiUrl } from "../api/config";
 import { authApi } from "../api/modules/auth";
 import { usePlugins } from "../plugins/PluginContext";
+import { getLastActiveChat } from "../pages/Chat/sessionApi";
 import styles from "./index.module.less";
 import { useTheme } from "../contexts/ThemeContext";
 import { KEY_TO_PATH, DEFAULT_OPEN_KEYS } from "./constants";
@@ -514,7 +515,14 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
                   className={`${styles.collapsedNavItem} ${
                     isActive ? styles.collapsedNavItemActive : ""
                   }`}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => {
+                    if (item.key === "chat") {
+                      const lastActive = getLastActiveChat();
+                      navigate(lastActive ? `/chat/${lastActive}` : "/chat");
+                    } else {
+                      navigate(item.path);
+                    }
+                  }}
                 >
                   {item.icon}
                 </button>
@@ -535,7 +543,10 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
                     ? ` ${styles.stickyChatButtonActive}`
                     : ""
                 }`}
-                onClick={() => navigate("/chat")}
+                onClick={() => {
+                  const lastActive = getLastActiveChat();
+                  navigate(lastActive ? `/chat/${lastActive}` : "/chat");
+                }}
               >
                 <SparkChatTabFill size={16} />
                 <span>{t("nav.chat")}</span>

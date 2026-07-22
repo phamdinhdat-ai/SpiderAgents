@@ -1,0 +1,62 @@
+# docker-compose.postgres.yaml
+#
+# Standalone PostgreSQL + pgAdmin for local development.
+# Credentials match .env DATABASE_URL:
+#   postgresql+asyncpg://openspider:spiderman@localhost:5433/openspider
+#
+# Usage:
+#   docker compose -f docker-compose.postgres.yaml up -d
+#   docker compose -f docker-compose.postgres.yaml down
+#   docker compose -f docker-compose.postgres.yaml down -v   # wipe data
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_openspider
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "openspider"
+      POSTGRES_PASSWORD: "spiderman"
+      POSTGRES_DB: "openspider"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openspider -d openspider"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - db_net
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: pgadmin_openspider
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@openspider.local"
+      PGADMIN_DEFAULT_PASSWORD: "spiderman"
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - db_net
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  db_net:
+    driver: bridge

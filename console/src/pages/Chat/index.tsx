@@ -11,7 +11,11 @@ import { SparkCopyLine, SparkAttachmentLine } from "@agentscope-ai/icons";
 import { usePlugins } from "../../plugins/PluginContext";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import sessionApi from "./sessionApi";
+import sessionApi, {
+  saveLastActiveChat,
+  getLastActiveChat,
+  clearLastActiveChat,
+} from "./sessionApi";
 import defaultConfig, { getDefaultConfig } from "./OptionsPanel/defaultConfig";
 import { chatApi } from "../../api/modules/chat";
 import { agentApi } from "../../api/modules/agent";
@@ -753,12 +757,12 @@ export default function ChatPage() {
   // Register session API event callbacks for URL synchronization
 
   useEffect(() => {
-    sessionApi.onSessionIdResolved = (realId) => {
+    sessionApi.onSessionIdResolved = (tempId, realId) => {
       if (!isChatActiveRef.current) return;
-      // Update URL when realId is resolved, regardless of current chatId
-      // (chatId may be undefined if URL was cleared in onSessionCreated)
-      lastSessionIdRef.current = realId;
-      navigateRef.current(`/chat/${realId}`, { replace: true });
+      // Update URL to use the real backend UUID, save it for tab-navigation restore.
+      lastSessionIdRef.current = realId || tempId;
+      saveLastActiveChat(realId || tempId);
+      navigateRef.current(`/chat/${realId || tempId}`, { replace: true });
     };
 
     sessionApi.onSessionRemoved = (removedId) => {
@@ -770,6 +774,7 @@ export default function ChatPage() {
       );
       if (chatIdRef.current === removedId || currentRealId === removedId) {
         lastSessionIdRef.current = null;
+        clearLastActiveChat();
         navigateRef.current("/chat", { replace: true });
       }
     };
@@ -808,6 +813,7 @@ export default function ChatPage() {
 
       if (targetId !== lastSessionIdRef.current) {
         lastSessionIdRef.current = targetId;
+        saveLastActiveChat(targetId);
         navigateRef.current(`/chat/${targetId}`, { replace: true });
       }
     };
@@ -825,6 +831,22 @@ export default function ChatPage() {
       sessionApi.onSessionSelected = null;
       sessionApi.onSessionCreated = null;
     };
+  }, []);
+
+  // Restore last active session when returning to /chat without a session ID.
+  // Only fires on mount (empty deps) — the "New Chat" flow stays on the same
+  // /chat/* route so the component is not remounted and this doesn't interfere.
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (!chatId && !restoredRef.current) {
+      restoredRef.current = true;
+      const lastActive = getLastActiveChat();
+      if (lastActive) {
+        sessionApi.preferredChatId = lastActive;
+        navigate(`/chat/${lastActive}`, { replace: true });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Setup multimodal capabilities tracking via custom hook

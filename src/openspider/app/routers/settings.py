@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """Global UI settings (language, theme, storage backends, etc.).
 
-Persisted in ``WORKING_DIR/settings.json``, independent of
-per-agent configuration.  All endpoints are public (no auth required).
+When ``OPENSPIDER_DATABASE_ENABLED`` is ``True``, settings are persisted
+in PostgreSQL (``user_settings`` table).  Otherwise they live in
+``WORKING_DIR/settings.json``.  The file is always kept up-to-date as
+a backup.
 """
 from __future__ import annotations
 
@@ -14,7 +16,8 @@ from fastapi import APIRouter, Body, HTTPException
 from ...agents.skill_system.registry import (
     set_builtin_skill_language_preference,
 )
-from ...constant import WORKING_DIR
+from ...constant import DATABASE_ENABLED, WORKING_DIR
+from ..settings_store import SettingsStore, _file_load, _file_save
 
 logger = logging.getLogger(__name__)
 
@@ -25,26 +28,22 @@ _SETTINGS_FILE = WORKING_DIR / "settings.json"
 _VALID_LANGUAGES = {"en", "zh", "ja", "ru", "pt-BR", "id", "vi"}
 
 
-def _load() -> dict:
-    if _SETTINGS_FILE.is_file():
-        try:
-            return json.loads(_SETTINGS_FILE.read_text("utf-8"))
-        except (json.JSONDecodeError, OSError):
-            return {}
-    return {}
+async def _load() -> dict:
+    """Load settings from the active backend."""
+    store = SettingsStore()
+    return await store.load()
 
 
-def _save(data: dict) -> None:
-    _SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _SETTINGS_FILE.write_text(
-        json.dumps(data, indent=2, ensure_ascii=False),
-        "utf-8",
-    )
+async def _save(data: dict) -> None:
+    """Persist settings to the active backend(s)."""
+    store = SettingsStore()
+    await store.save(data)
 
 
 @router.get("/language", summary="Get UI language")
 async def get_language() -> dict:
-    return {"language": _load().get("language", "en")}
+    data = await _load()
+    return {"language": data.get("language", "en")}
 
 
 @router.put("/language", summary="Update UI language")
@@ -58,9 +57,9 @@ async def put_language(
             detail=f"Invalid language, must be one of "
             f"{sorted(_VALID_LANGUAGES)}",
         )
-    data = _load()
+    data = await _load()
     data["language"] = language
-    _save(data)
+    await _save(data)
     # Update cached builtin preference since it falls back to UI language.
     if not data.get("builtin_skill_language"):
         set_builtin_skill_language_preference(
@@ -77,7 +76,7 @@ async def put_language(
 @router.get("/storage", summary="Get storage backend configuration")
 async def get_storage_config() -> dict:
     """Return the current file-storage and vector-store backend settings."""
-    data = _load()
+    data = await _load()
     return data.get("storage_backends", {})
 
 
@@ -107,7 +106,7 @@ async def put_storage_config(
     Only the keys that are provided are updated — other settings
     are left unchanged.
     """
-    data = _load()
+    data = await _load()
     current = data.get("storage_backends", {})
 
     # Merge incoming config into current (shallow merge per section)
@@ -116,7 +115,7 @@ async def put_storage_config(
             current.setdefault(section, {}).update(body[section])
 
     data["storage_backends"] = current
-    _save(data)
+    await _save(data)
     logger.info("Storage backends configuration updated")
     return current
 
@@ -128,7 +127,7 @@ async def get_storage_status() -> dict:
     Attempts to connect to the configured file-storage and
     vector-store backends and reports whether each is reachable.
     """
-    data = _load()
+    data = await _load()
     sb = data.get("storage_backends", {})
     results = {}
 
@@ -238,3 +237,62 @@ async def get_storage_status() -> dict:
         }
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Database backend status
+# ---------------------------------------------------------------------------
+
+
+@router.get("/database/status", summary="Get PostgreSQL database status")
+async def get_database_status() -> dict:
+    """Return the current database backend configuration and health.
+
+    Reports whether PostgreSQL is enabled, whether the connection is
+    healthy, and a masked version of the connection URL for diagnostics.
+    """
+    from ...constant import DATABASE_URL as _URL
+    from ..settings_store import SettingsStore
+
+    store = SettingsStore()
+
+    result: dict = {
+        "enabled": store.pg_enabled,
+        "reachable": False,
+        "url": _mask_url(_URL) if store.pg_enabled else "",
+        "message": "Database backend is disabled.",
+    }
+
+    if not store.pg_enabled:
+        return result
+
+    try:
+        from ...db.engine import get_engine
+        from sqlalchemy import text
+
+        engine = get_engine()
+        if engine is not None:
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+            result["reachable"] = True
+            result["message"] = "PostgreSQL connection healthy."
+        else:
+            result["message"] = "Engine not initialised."
+    except Exception as exc:
+        result["reachable"] = False
+        result["message"] = str(exc)
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _mask_url(url: str) -> str:
+    """Return *url* with the password replaced by ``***``."""
+    import re
+
+    return re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", url)
+

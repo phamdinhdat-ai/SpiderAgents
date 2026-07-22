@@ -344,6 +344,36 @@ function clearPendingUserMessage(sessionId: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// Last active chat session persistence (survives tab navigation)
+// ---------------------------------------------------------------------------
+
+const LAST_ACTIVE_KEY = "qwenpaw_last_active_chat";
+
+function saveLastActiveChat(chatId: string): void {
+  try {
+    sessionStorage.setItem(LAST_ACTIVE_KEY, chatId);
+  } catch {
+    /* quota exceeded – ignore */
+  }
+}
+
+function getLastActiveChat(): string | null {
+  try {
+    return sessionStorage.getItem(LAST_ACTIVE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function clearLastActiveChat(): void {
+  try {
+    sessionStorage.removeItem(LAST_ACTIVE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+// ---------------------------------------------------------------------------
 // SessionApi
 // ---------------------------------------------------------------------------
 
@@ -766,4 +796,5 @@ class SessionApi implements IAgentScopeRuntimeWebUISessionAPI {
   }
 }
 
+export { saveLastActiveChat, getLastActiveChat, clearLastActiveChat };
 export default new SessionApi();

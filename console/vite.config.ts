@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       proxy: {
         "/api": {
-          target: "http://127.0.0.1:8088",
+          target: "http://127.0.0.1:8000",
           changeOrigin: true,
         },
       },
@@ -95,8 +95,6 @@ export default defineConfig(({ mode }) => {
           "src/main.tsx",
           "src/vite-env.d.ts",
         ],
-        // 第一阶段：记录基线，不强制卡点
-        // 后续稳定后可开启：thresholds: { statements: 60, functions: 60 }
       },
     },
     optimizeDeps: {

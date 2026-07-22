@@ -74,14 +74,23 @@ async def create_chat_service(ws: "Workspace", service):
         cm = service
         logger.info(f"Reusing ChatManager for {ws.agent_id}")
     else:
-        # Create new ChatManager — store chats per-user so they persist
-        # across agent switches. Fall back to agent workspace when no
-        # authenticated user context is available.
-        chats_path = _resolve_chats_path(ws)
-        chat_repo = JsonChatRepository(chats_path)
-        cm = ChatManager(repo=chat_repo)
-        ws._service_manager.services["chat_manager"] = cm
-        logger.info(f"ChatManager created: {chats_path}")
+        # Create new ChatManager — when PG is enabled use PostgreSQL,
+        # otherwise fall back to JSON file storage.
+        from ...constant import DATABASE_ENABLED as _DB_ENABLED
+
+        if _DB_ENABLED:
+            from ...db.repos.pg_chat_repository import PgChatRepository
+
+            chat_repo = PgChatRepository()
+            cm = ChatManager(repo=chat_repo)
+            ws._service_manager.services["chat_manager"] = cm
+            logger.info(f"ChatManager created with PgChatRepository for {ws.agent_id}")
+        else:
+            chats_path = _resolve_chats_path(ws)
+            chat_repo = JsonChatRepository(chats_path)
+            cm = ChatManager(repo=chat_repo)
+            ws._service_manager.services["chat_manager"] = cm
+            logger.info(f"ChatManager created: {chats_path}")
 
     # Always wire to new runner
     ws._service_manager.services["runner"].set_chat_manager(cm)

@@ -320,10 +320,27 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
     app.state.plugin_loader = None
     app.state.plugin_registry = None
 
-    # Start UserDataStore (per-user SQLite store for MCP, knowledge, settings)
-    from .user_data_store import UserDataStore
+    # Start database manager / UserDataStore
+    # When OPENSPIDER_DATABASE_ENABLED=true, PostgreSQL replaces SQLite.
+    from ..db.engine import DatabaseManager, init_db, is_database_enabled
+    from ..db.repos.pg_user_data_store import PgUserDataStore
 
-    user_data_store = UserDataStore()
+    db_manager = DatabaseManager()
+    await db_manager.start()
+    app.state.db_manager = db_manager
+
+    if is_database_enabled():
+        # PostgreSQL-backed store (MCP, knowledge, settings)
+        await init_db()
+        user_data_store = PgUserDataStore()
+        logger.info("Using PostgreSQL (PgUserDataStore) for user data.")
+    else:
+        # Legacy SQLite store
+        from .user_data_store import UserDataStore
+
+        user_data_store = UserDataStore()
+        logger.info("Using SQLite (UserDataStore) for user data.")
+
     await user_data_store.start()
     app.state.user_data_store = user_data_store
 
@@ -580,6 +597,15 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
                 await user_data_store.close()
             except Exception as e:
                 logger.error(f"Error stopping UserDataStore: {e}")
+
+        # Stop DatabaseManager (PostgreSQL)
+        db_manager = getattr(app.state, "db_manager", None)
+        if db_manager is not None:
+            logger.info("Stopping DatabaseManager...")
+            try:
+                await db_manager.close()
+            except Exception as e:
+                logger.error(f"Error stopping DatabaseManager: {e}")
 
         logger.info("Application shutdown complete")
 

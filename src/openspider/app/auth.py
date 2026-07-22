@@ -16,6 +16,7 @@ dependencies.  The password is stored as a salted SHA-256 hash in
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import json
@@ -724,6 +725,255 @@ def delete_user(username: str, admin_username: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# PostgreSQL-backed async wrappers
+# ---------------------------------------------------------------------------
+# When OPENSPIDER_DATABASE_ENABLED is true, these dispatch to
+# ``openspider.db.repos.pg_auth_store``.  Otherwise they delegate to the
+# synchronous file-based functions above (via asyncio.to_thread for
+# blocking I/O operations).
+
+
+async def authenticate_async(
+    username: str,
+    password: str,
+    expiry_seconds: Optional[int] = None,
+) -> Optional[str]:
+    """Async variant of :func:`authenticate` — uses PG when enabled."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        from ..db.repos.pg_auth_store import authenticate as _pg_auth
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_auth(sess, username, password, expiry_seconds)
+
+    return await asyncio.to_thread(
+        authenticate, username, password, expiry_seconds,
+    )
+
+
+async def register_user_async(
+    username: str,
+    password: str,
+    expiry_seconds: Optional[int] = None,
+    role: str | None = None,
+) -> Optional[str]:
+    """Async variant of :func:`register_user`."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        from ..db.repos.pg_auth_store import register_user as _pg_reg
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_reg(sess, username, password, role)
+
+    return await asyncio.to_thread(
+        register_user, username, password, expiry_seconds, role,
+    )
+
+
+async def verify_token_async(token: str) -> Optional[tuple[str, str]]:
+    """Async variant of :func:`verify_token`."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        from ..db.repos.pg_auth_store import verify_token as _pg_verify
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_verify(sess, token)
+
+    return await asyncio.to_thread(verify_token, token)
+
+
+async def revoke_token_async(token: str) -> bool:
+    """Async variant of :func:`revoke_token`."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        import base64 as _b64
+        import json as _json
+
+        parts = token.split(".", 1)
+        if len(parts) != 2:
+            return False
+        try:
+            payload = _json.loads(_b64.urlsafe_b64decode(parts[0]))
+            jti = payload.get("jti")
+            exp = payload.get("exp", 0)
+        except Exception:
+            return False
+        if not jti:
+            return False
+
+        from ..db.repos.pg_auth_store import revoke_token as _pg_revoke
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_revoke(sess, jti, exp)
+
+    return await asyncio.to_thread(revoke_token, token)
+
+
+async def revoke_all_tokens_async() -> bool:
+    """Async variant of :func:`revoke_all_tokens`."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        from ..db.repos.pg_auth_store import revoke_all_tokens as _pg_revoke_all
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_revoke_all(sess)
+
+    return await asyncio.to_thread(revoke_all_tokens)
+
+
+async def list_users_async() -> list[dict]:
+    """Async variant of :func:`list_users`."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        from ..db.repos.pg_auth_store import list_users as _pg_list
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_list(sess)
+
+    return await asyncio.to_thread(list_users)
+
+
+async def create_user_admin_async(
+    username: str,
+    password: str,
+    role: str = "user",
+) -> Optional[str]:
+    """Async variant of :func:`create_user_admin`."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        from ..db.repos.pg_auth_store import register_user as _pg_reg
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_reg(sess, username, password, role)
+
+    return await asyncio.to_thread(
+        create_user_admin, username, password, role,
+    )
+
+
+async def delete_user_async(username: str) -> bool:
+    """Async variant of :func:`delete_user`."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        from ..db.repos.pg_auth_store import delete_user as _pg_del
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_del(sess, username)
+
+    return await asyncio.to_thread(
+        delete_user, username, "",
+    )
+
+
+async def update_user_role_async(username: str, new_role: str) -> bool:
+    """Async variant of :func:`update_user_role`."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        from ..db.repos.pg_auth_store import (
+            update_user_role as _pg_update_role,
+        )
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_update_role(sess, username, new_role)
+
+    return await asyncio.to_thread(update_user_role, username, new_role)
+
+
+async def update_credentials_async(
+    current_password: str,
+    current_username: str,
+    new_username: Optional[str] = None,
+    new_password: Optional[str] = None,
+    expiry_seconds: Optional[int] = None,
+) -> Optional[str]:
+    """Async variant of :func:`update_credentials`."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        from ..db.repos.pg_auth_store import (
+            update_credentials as _pg_update_creds,
+        )
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_update_creds(
+                sess,
+                current_password,
+                current_username,
+                new_username,
+                new_password,
+                expiry_seconds,
+            )
+
+    return await asyncio.to_thread(
+        update_credentials,
+        current_password,
+        current_username,
+        new_username,
+        new_password,
+        expiry_seconds,
+    )
+
+
+async def has_registered_users_async() -> bool:
+    """Async variant of :func:`has_registered_users`."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        from ..db.repos.pg_auth_store import (
+            has_registered_users as _pg_has_users,
+        )
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_has_users(sess)
+
+    return await asyncio.to_thread(has_registered_users)
+
+
+async def get_user_count_async() -> int:
+    """Async variant of :func:`get_user_count`."""
+    from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+    if _DB_ENABLED:
+        from ..db.repos.pg_auth_store import get_user_count as _pg_count
+        from ..db.engine import _session_factory
+
+        async with _session_factory() as sess:
+            return await _pg_count(sess)
+
+    return await asyncio.to_thread(get_user_count)
+
+
+def get_current_user_async(request: Request) -> Optional[tuple[str, str]]:
+    """Async-aware variant of :func:`get_current_user`.
+
+    When the DB backend is enabled the middleware already caches
+    ``auth_user`` / ``auth_role`` on the request scope, so this
+    function can remain synchronous and just read the cached values.
+    """
+    return get_current_user(request)
+
+
+# ---------------------------------------------------------------------------
 # FastAPI middleware
 # ---------------------------------------------------------------------------
 
@@ -748,7 +998,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 media_type="application/json",
             )
 
-        result = verify_token(token)
+        # Use async variant when PG backend is enabled
+        from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+        if _DB_ENABLED:
+            result = await verify_token_async(token)
+        else:
+            result = verify_token(token)
+
         if result is None:
             return Response(
                 content=json.dumps(

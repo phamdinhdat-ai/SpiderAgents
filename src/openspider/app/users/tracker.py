@@ -36,6 +36,9 @@ class UserSessionTracker:
 
     def __init__(self) -> None:
         self._storage = UserStorageManager()
+        from ...constant import DATABASE_ENABLED as _DB_ENABLED
+
+        self._pg_enabled = _DB_ENABLED
 
     # ------------------------------------------------------------------
     # All-users summary (admin dashboard)
@@ -53,6 +56,9 @@ class UserSessionTracker:
         Returns:
             ``AdminSessionsResponse`` with per-user summaries.
         """
+        if self._pg_enabled:
+            return await self._get_all_users_summary_pg(agent_id)
+
         users: list[UserActivitySummary] = []
         total_sessions = 0
         active_sessions = 0
@@ -102,6 +108,9 @@ class UserSessionTracker:
         Returns:
             List of ``UserSessionInfo``, newest first.
         """
+        if self._pg_enabled:
+            return await self._get_user_sessions_pg(username, agent_id)
+
         user_dir = get_user_storage_dir(username)
         sessions_dir = (
             user_dir / "workspaces" / agent_id / "sessions"
@@ -263,6 +272,23 @@ class UserSessionTracker:
         Returns:
             ``True`` if the file was deleted, ``False`` if not found.
         """
+        if self._pg_enabled:
+            from ...db.engine import _session_factory
+            from ...db.models import SessionMessage
+            from sqlalchemy import delete as sqla_delete
+
+            if _session_factory is None:
+                return False
+            async with _session_factory() as sess:
+                result = await sess.execute(
+                    sqla_delete(SessionMessage).where(
+                        SessionMessage.session_id == session_id,
+                        SessionMessage.user_id == username,
+                    ),
+                )
+                await sess.commit()
+                return result.rowcount > 0
+
         from ...constant import get_user_sessions_dir
 
         sessions_dir = get_user_sessions_dir(username, agent_id)
@@ -278,3 +304,111 @@ class UserSessionTracker:
         except OSError:
             pass
         return False
+
+    # ------------------------------------------------------------------
+    # PostgreSQL-backed helpers
+    # ------------------------------------------------------------------
+
+    async def _get_all_users_summary_pg(
+        self,
+        agent_id: str,
+    ) -> AdminSessionsResponse:
+        """Query ``session_messages`` for per-user summaries."""
+        from ...db.engine import _session_factory
+        from ...db.models import SessionMessage, User as UserModel
+        from sqlalchemy import func as sqlfunc
+
+        users_list: list[UserActivitySummary] = []
+
+        if _session_factory is None:
+            return AdminSessionsResponse(
+                users=[], total_users=0, total_sessions=0, active_sessions=0,
+            )
+
+        async with _session_factory() as sess:
+            # Count total users
+            user_count_result = await sess.execute(
+                sqlfunc.count(UserModel.id),
+            )
+            total_users = user_count_result.scalar() or 0
+
+            # Per-user session aggregates
+            result = await sess.execute(
+                sqlfunc.count(SessionMessage.id).label("msg_count"),
+                SessionMessage.user_id,
+                SessionMessage.session_id,
+            ).group_by(
+                SessionMessage.user_id,
+                SessionMessage.session_id,
+            )
+            rows = result.all()
+
+            # Build per-user summaries
+            user_map: dict[str, dict] = {}
+            for row in rows:
+                uid = row.user_id
+                if uid not in user_map:
+                    user_map[uid] = {
+                        "username": uid,
+                        "total_sessions": 0,
+                        "active_sessions": 0,
+                        "total_messages": 0,
+                        "last_active": "",
+                    }
+                user_map[uid]["total_sessions"] += 1
+                user_map[uid]["total_messages"] += row.msg_count
+
+            for uid, data in user_map.items():
+                users_list.append(UserActivitySummary(
+                    username=data["username"],
+                    total_sessions=data["total_sessions"],
+                    active_sessions=0,  # PG doesn't track running state
+                    total_messages=data["total_messages"],
+                    last_active=data["last_active"],
+                ))
+
+        total_sessions = sum(u.total_sessions for u in users_list)
+
+        return AdminSessionsResponse(
+            users=users_list,
+            total_users=total_users,
+            total_sessions=total_sessions,
+            active_sessions=0,
+        )
+
+    async def _get_user_sessions_pg(
+        self,
+        username: str,
+        agent_id: str,
+    ) -> list[UserSessionInfo]:
+        """Query ``session_messages`` for a specific user's sessions."""
+        from ...db.engine import _session_factory
+        from ...db.models import SessionMessage
+        from sqlalchemy import func as sqlfunc
+
+        if _session_factory is None:
+            return []
+
+        async with _session_factory() as sess:
+            result = await sess.execute(
+                sqlfunc.count(SessionMessage.id).label("msg_count"),
+                SessionMessage.session_id,
+            ).where(
+                SessionMessage.user_id == username,
+            ).group_by(
+                SessionMessage.session_id,
+            ).order_by(
+                SessionMessage.created_at.desc(),
+            )
+            rows = result.all()
+
+            sessions: list[UserSessionInfo] = []
+            for row in rows:
+                sessions.append(UserSessionInfo(
+                    session_id=row.session_id,
+                    channel="",
+                    last_active="",
+                    message_count=row.msg_count,
+                    status="idle",
+                ))
+            return sessions
