@@ -28,8 +28,8 @@ try:
 except ImportError:
     _HAS_DEFAULT_HINT = False
 
-_DESC_LIMIT = 80
-_PLAN_DESC_LIMIT = 200
+from ..constant import PLAN_DESC_LIMIT, PLAN_PLAN_DESC_LIMIT
+# (_DESC_LIMIT, _PLAN_DESC_LIMIT migrated to constant.py)
 
 
 def set_plan_gate(  # pylint: disable=protected-access
@@ -105,8 +105,8 @@ def _compact_plan_text(plan: "Plan") -> str:
     description.
     """
     desc = plan.description
-    if len(desc) > _PLAN_DESC_LIMIT:
-        desc = desc[: _PLAN_DESC_LIMIT - 3] + "..."
+    if len(desc) > PLAN_PLAN_DESC_LIMIT:
+        desc = desc[: PLAN_PLAN_DESC_LIMIT - 3] + "..."
 
     lines = [
         f"# {plan.name}",
@@ -123,8 +123,8 @@ def _compact_plan_text(plan: "Plan") -> str:
             lines.append(f"     Expected: {st.expected_outcome}")
         else:
             d = st.description
-            if len(d) > _DESC_LIMIT:
-                d = d[: _DESC_LIMIT - 3] + "..."
+            if len(d) > PLAN_DESC_LIMIT:
+                d = d[: PLAN_DESC_LIMIT - 3] + "..."
             lines.append(f"  {i}. [todo] {st.name}")
             lines.append(f"     Desc: {d}")
     return "\n".join(lines)

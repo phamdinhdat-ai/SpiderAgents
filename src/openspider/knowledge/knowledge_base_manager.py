@@ -127,11 +127,13 @@ Bạn có quyền truy cập vào kho kiến thức chứa các tài liệu đã
   kèm tên tệp nguồn và điểm liên quan.
 """
 
+from ..constant import KNOWLEDGE_MAX_FILE_SIZE_BYTES
+
 SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({
     ".pdf", ".docx", ".xlsx", ".xlsm", ".md", ".markdown",
     ".txt", ".log", ".csv", ".tsv",
 })
-MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
+# (MAX_FILE_SIZE_BYTES migrated to constant.py as KNOWLEDGE_MAX_FILE_SIZE_BYTES)
 MAX_PAGES = 500
 KB_STORE_VERSION = "v1"
 
@@ -311,10 +313,10 @@ class KnowledgeBaseManager:
             )
 
         file_size = file_path.stat().st_size
-        if file_size > MAX_FILE_SIZE_BYTES:
+        if file_size > KNOWLEDGE_MAX_FILE_SIZE_BYTES:
             raise ValueError(
                 f"File too large: {file_size} bytes "
-                f"(max {MAX_FILE_SIZE_BYTES})",
+                f"(max {KNOWLEDGE_MAX_FILE_SIZE_BYTES})",
             )
 
         # --- Deduplication: same content hash + same filename → skip ---

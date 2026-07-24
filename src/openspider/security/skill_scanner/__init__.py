@@ -48,7 +48,7 @@ from .models import (
     ThreatCategory,
 )
 from .scan_policy import ScanPolicy
-from ...constant import EnvVarLoader
+from ...constant import EnvVarLoader, SKILL_SCAN_MAX_CACHE_ENTRIES
 from .analyzers import BaseAnalyzer
 from .analyzers.pattern_analyzer import PatternAnalyzer
 from .scanner import SkillScanner
@@ -333,7 +333,7 @@ def _get_scanner() -> SkillScanner:
 # Scan result cache (mtime-based)
 # ---------------------------------------------------------------------------
 
-_MAX_CACHE_ENTRIES = 64
+# (migrated to constant.py as SKILL_SCAN_MAX_CACHE_ENTRIES)
 _scan_cache: dict[str, tuple[float, ScanResult]] = {}
 _cache_lock = threading.Lock()
 
@@ -383,7 +383,7 @@ def _store_cached_result(
     with _cache_lock:
         _scan_cache.pop(key, None)
         _scan_cache[key] = (mtime, result)
-        while len(_scan_cache) > _MAX_CACHE_ENTRIES:
+        while len(_scan_cache) > SKILL_SCAN_MAX_CACHE_ENTRIES:
             oldest = next(iter(_scan_cache))
             del _scan_cache[oldest]
 

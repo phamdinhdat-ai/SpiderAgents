@@ -60,7 +60,12 @@ from .tools import (
 )
 from .utils import process_file_and_media_blocks_in_message
 from ..constant import (
+    AUTO_CONTINUE_HINT_EN,
+    AUTO_CONTINUE_HINT_VI,
+    AUTO_CONTINUE_MAX_EXTRA,
+    AUTO_CONTINUE_TAIL_CHARS,
     MEDIA_UNSUPPORTED_PLACEHOLDER,
+    ROUND_END_NOTICE,
     WORKING_DIR,
 )
 from ..providers.model_capability_cache import get_capability_cache
@@ -245,6 +250,11 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
         self._snapshot_manager = SnapshotManager(
             workspace_dir=self._workspace_dir,
         )
+        # Per-reply reasoning counter: 0 at start of each reply,
+        # incremented each time SpiderAgent._reasoning() is called.
+        # Used to skip auto-continue on the first reasoning call
+        # (text-only = correct answer, not mid-task cutoff).
+        self._reply_reasoning_count = 0
         logger.debug(
             "Harness modules initialized: loop_detect=%s, self_verify=%s, "
             "tool_retry=%s, snapshot=%s",
@@ -914,50 +924,13 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
 
         return result
 
-    _AUTO_CONTINUE_MAX_EXTRA = 2
-    _AUTO_CONTINUE_TAIL_CHARS = 600
-
-    _AUTO_CONTINUE_HINT_EN = (
-        "<system-hint>"
-        "Your previous assistant turn had text only (no tool calls). "
-        "Use the trailing excerpt in <previous-assistant-tail> (if present) "
-        "plus the conversation to decide in this **reasoning** step: if the "
-        "user's task still needs tools, emit tool_use now; if it is fully "
-        "done, reply with a short text only (no tools). "
-        "Do not stop with plans or code fences alone when tools are still "
-        "needed."
-        "</system-hint>"
-    )
-    _AUTO_CONTINUE_HINT_ZH = (
-        "<system-hint>"
-        "上轮助手仅文字、未调工具。请结合上下文与 <previous-assistant-tail> "
-        "（若有）在本轮推理中判断：仍需执行则立刻 tool；已完结则简短收尾。"
-        "需要操作时勿只输出计划或代码块。"
-        "</system-hint>"
-    )
-
-    _AUTO_CONTINUE_HINTS_VI = {
-        "auto_continue_hint": (
-            "<system-hint>"
-            "Lần trước trợ lý chỉ có văn bản, không gọi công cụ. "
-            "Hãy sử dụng ngữ cảnh và <previous-assistant-tail> (nếu có) "
-            "để quyết định trong bước **reasoning** này: nếu nhiệm vụ của "
-            "người dùng vẫn cần công cụ, hãy phát hành tool_use ngay; nếu "
-            "nó đã hoàn tất, hãy trả lời bằng văn bản ngắn gọn (không có "
-            "công cụ)."
-            "</system-hint>"
-        ),
-    }
-
     def _auto_continue_system_hint(self) -> str:
-        """Pick hint by agent language (zh vs others)."""
+        """Pick hint by agent language (vi vs others)."""
         raw_lang = getattr(self._agent_config, "language", None)
         lang = (raw_lang or "").strip().lower()
-        if lang == "zh":
-            return self._AUTO_CONTINUE_HINT_ZH
         if lang == "vi":
-            return self._AUTO_CONTINUE_HINTS_VI["auto_continue_hint"]
-        return self._AUTO_CONTINUE_HINT_EN
+            return AUTO_CONTINUE_HINT_VI
+        return AUTO_CONTINUE_HINT_EN
 
     @staticmethod
     def _auto_continue_tail_context(msg: Msg, max_chars: int) -> str:
@@ -969,6 +942,25 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
         if len(text) <= max_chars:
             return text
         return text[-max_chars:].lstrip()
+
+    # Characters that indicate a natural sentence / response ending.
+    _SENTENCE_END_CHARS = frozenset({".", "!", "?", ")", "]", "}", "。",
+                                      "！", "？", "”", "\n"})
+
+    @staticmethod
+    def _response_appears_complete(msg: Msg) -> bool:
+        """Return True if *msg* looks like a finished answer.
+
+        A text-only response that is substantial (≥ 200 chars) and ends
+        with sentence-ending punctuation is almost certainly a complete
+        answer — not a context-window truncation.  The auto-continue
+        nudge is only needed for short or abruptly-ending (mid-word)
+        responses that suggest the LLM was cut off.
+        """
+        text = (msg.get_text_content() or "").strip()
+        if len(text) < 200:
+            return False
+        return text[-1] in SpiderAgent._SENTENCE_END_CHARS
 
     async def _auto_continue_if_text_only(
         self,
@@ -984,6 +976,10 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
         hit.  Uses the original ``tool_choice`` unchanged (no switching).
         If an extra pass still returns text-only, keep the prior response to
         avoid repeated duplicated answers.
+
+        Skips auto-continue when the conversation has no prior tool calls
+        (i.e. a trivial Q&A where text-only is the correct final answer,
+        not a context-window cutoff mid-task).
         """
         from ..plan.hints import should_skip_auto_continue
 
@@ -997,29 +993,69 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
         if msg is None or msg.has_content_blocks("tool_use"):
             return msg
 
+        # ------------------------------------------------------------------
+        # Skip auto-continue on the first reasoning call of each reply.
+        # Text-only on the first call means the task is trivially done
+        # (e.g. "how are you") — not a mid-task context-window cutoff.
+        # Auto-continue is only needed on subsequent loop iterations
+        # where tools were already executed and the LLM may have been
+        # cut off before producing its next tool_use.
+        # ------------------------------------------------------------------
+        if self._reply_reasoning_count <= 1:
+            logger.debug(
+                "Auto-continue skipped: first reasoning call in reply "
+                "(count=%d), text-only is the correct final answer.",
+                self._reply_reasoning_count,
+            )
+            return msg
+
+        # ------------------------------------------------------------------
+        # Skip auto-continue when the response looks complete (substantial
+        # text ending with sentence-ending punctuation).  A long, properly
+        # terminated response is a finished answer, not a context-window
+        # truncation.  Only short or abruptly-ending responses need the
+        # hint-based re-reasoning nudge.
+        # ------------------------------------------------------------------
+        if self._response_appears_complete(msg):
+            logger.debug(
+                "Auto-continue skipped: response appears complete "
+                "(text-only but well-formed final answer).",
+            )
+            return msg
+
         extra = 0
-        while extra < self._AUTO_CONTINUE_MAX_EXTRA:
+        while extra < AUTO_CONTINUE_MAX_EXTRA:
             if msg.has_content_blocks("tool_use"):
                 break
             extra += 1
             tail = self._auto_continue_tail_context(
                 msg,
-                self._AUTO_CONTINUE_TAIL_CHARS,
+                AUTO_CONTINUE_TAIL_CHARS,
             )
-            hint_body = self._auto_continue_system_hint()
+            # hint_body = self._auto_continue_system_hint()
             if tail:
-                hint_body += (
+                hint_body = (
                     "\n\n<previous-assistant-tail>\n"
                     f"{tail}\n"
                     "</previous-assistant-tail>"
                 )
             logger.info(
                 "Auto-continue: text-only (%d/%d); hint + _reasoning "
-                "tool_choice=%r",
+                "tool_choice=%r"
+                "tail=%r",
                 extra,
-                self._AUTO_CONTINUE_MAX_EXTRA,
+                AUTO_CONTINUE_MAX_EXTRA,
                 tool_choice,
+                tail,
+                
             )
+            # check hint body, if empty, skip adding to memory
+            if not hint_body.strip():
+                logger.warning(
+                    "Auto-continue hint is empty; skipping memory injection",
+                )
+                break
+            logger.debug("Auto-continue hint body:\n%s", hint_body)
             hint_msg = Msg("user", hint_body, "user")
             await self.memory.add(hint_msg, marks=_MemoryMark.HINT)
             try:
@@ -1175,6 +1211,7 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
             if should_strip and self._uses_request_time_media_normalization():
                 self._set_formatter_media_strip(False)
 
+        self._reply_reasoning_count += 1
         return await self._auto_continue_if_text_only(msg, tool_choice)
 
     # pylint: disable=too-many-branches
@@ -1194,7 +1231,30 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
         Some models (e.g. kimi-k2.5) generate tool_use blocks even when
         no tools are provided.  We set ``_in_summarizing`` so that
         ``print`` can strip tool_use blocks from streaming chunks.
+
+        Skips the LLM summarization call when the conversation is
+        trivial (no tools were used) — the user already saw the
+        reasoning output and a second LLM call is wasteful.
         """
+        # ------------------------------------------------------------------
+        # Skip LLM summarization when no tools were used in this reply
+        # cycle (only one reasoning call).  There is nothing to
+        # summarize — the user already saw the reasoning output.
+        # Return a lightweight pass-through so the ReActAgent loop
+        # still gets a valid Msg without an extra (wasteful) API call.
+        # ------------------------------------------------------------------
+        if self._reply_reasoning_count <= 1:
+            logger.debug(
+                "_summarizing skipped: no tools used in this reply "
+                "cycle (count=%d), nothing to summarize.",
+                self._reply_reasoning_count,
+            )
+            return Msg(
+                "assistant",
+                [{"type": "text", "text": ROUND_END_NOTICE}],
+                "assistant",
+            )
+
         # --- Proactive filtering layer ---
         should_strip = (
             not get_active_model_supports_multimodal()
@@ -1316,11 +1376,11 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
                 msg.content = filtered
                 if last:
                     msg.content.append(
-                        {"type": "text", "text": self._ROUND_END_NOTICE},
+                        {"type": "text", "text": ROUND_END_NOTICE},
                     )
                 modified = True
         elif isinstance(original, str) and last:
-            msg.content = original + self._ROUND_END_NOTICE
+            msg.content = original + ROUND_END_NOTICE
             modified = True
         if modified:
             try:
@@ -1328,13 +1388,6 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
             finally:
                 msg.content = original
         return await super().print(msg, last, speech=speech)
-
-    _ROUND_END_NOTICE = (
-        "\n\n---\n"
-        "本轮调用已达最大次数，回复已终止，请继续输入。\n"
-        "Maximum iterations reached for this round. "
-        "Please send a new message to continue."
-    )
 
     @staticmethod
     def _strip_tool_use_from_msg(msg: Msg) -> Msg:
@@ -1346,7 +1399,7 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
         round of calls has ended.
         """
         if isinstance(msg.content, str):
-            msg.content += SpiderAgent._ROUND_END_NOTICE
+            msg.content += ROUND_END_NOTICE
             return msg
 
         filtered = [
@@ -1365,7 +1418,7 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
             )
 
         filtered.append(
-            {"type": "text", "text": SpiderAgent._ROUND_END_NOTICE},
+            {"type": "text", "text": ROUND_END_NOTICE},
         )
         msg.content = filtered
         return msg
@@ -1509,6 +1562,7 @@ class SpiderAgent(ToolGuardMixin, ReActAgent):
             return msg
 
         # Normal message processing
+        self._reply_reasoning_count = 0
         logger.info("SpiderAgent.reply: max_iters=%s", self.max_iters)
 
         request_context = getattr(self, "_request_context", {}) or {}

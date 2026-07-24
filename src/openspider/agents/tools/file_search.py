@@ -15,7 +15,16 @@ from typing import Optional
 from agentscope.message import TextBlock
 from agentscope.tool import ToolResponse
 
-from ...constant import WORKING_DIR
+from ...constant import (
+    FILE_SEARCH_GLOB_TIMEOUT,
+    FILE_SEARCH_GREP_TIMEOUT,
+    FILE_SEARCH_MAX_CONTEXT_LINES,
+    FILE_SEARCH_MAX_FILES_SCANNED,
+    FILE_SEARCH_MAX_FILE_SIZE,
+    FILE_SEARCH_MAX_MATCHES,
+    FILE_SEARCH_MAX_OUTPUT_CHARS,
+    WORKING_DIR,
+)
 from ...config.context import get_current_workspace_dir
 from .file_io import _resolve_file_path
 
@@ -94,16 +103,8 @@ _SKIP_DIRS = frozenset(
     },
 )
 
-_MAX_MATCHES = 200
-_MAX_FILE_SIZE = 2 * 1024 * 1024  # 2 MB
-_MAX_CONTEXT_LINES = 5
-_MAX_OUTPUT_CHARS = 50_000  # ~50 KB
-_MAX_FILES_SCANNED = 10_000
-_GREP_TIMEOUT = 30  # seconds
-_GLOB_TIMEOUT = 15  # seconds
-
 # ---------------------------------------------------------------------------
-# Helpers
+# Tool functions
 # ---------------------------------------------------------------------------
 
 
@@ -112,7 +113,7 @@ def _is_text_file(path: Path) -> bool:
     if path.suffix.lower() in _BINARY_EXTENSIONS:
         return False
     try:
-        if path.stat().st_size > _MAX_FILE_SIZE:
+        if path.stat().st_size > FILE_SEARCH_MAX_FILE_SIZE:
             return False
     except OSError:
         return False
@@ -187,12 +188,12 @@ def _emit_match_entries(
         were appended, False if limits were reached.
     """
     for ln, content, is_hit in entries:
-        if len(matches) >= _MAX_MATCHES:
+        if len(matches) >= FILE_SEARCH_MAX_MATCHES:
             return False, total_chars
         prefix = ">" if is_hit else " "
         entry = f"{disp_path}:{ln}:{prefix} {content}"
         projected_total = total_chars + len(entry) + 1
-        if projected_total > _MAX_OUTPUT_CHARS:
+        if projected_total > FILE_SEARCH_MAX_OUTPUT_CHARS:
             return False, total_chars
         total_chars = projected_total
         matches.append(entry)
@@ -258,10 +259,10 @@ def _output_context_for_hit(
 
     # Append separator if needed
     if context_lines > 0:
-        if len(matches) >= _MAX_MATCHES:
+        if len(matches) >= FILE_SEARCH_MAX_MATCHES:
             return False, total_chars
         projected_total = total_chars + 4
-        if projected_total > _MAX_OUTPUT_CHARS:
+        if projected_total > FILE_SEARCH_MAX_OUTPUT_CHARS:
             return False, total_chars
         matches.append("---")
         total_chars = projected_total
@@ -287,7 +288,7 @@ def _walk_and_grep(  # noqa: C901  pylint: disable=too-many-branches,too-many-lo
     whatever it has so far.  *status* is one of ``"ok"``, ``"truncated:…"``
     or ``"timeout"``.
     """
-    context_lines = min(max(context_lines, 0), _MAX_CONTEXT_LINES)
+    context_lines = min(max(context_lines, 0), FILE_SEARCH_MAX_CONTEXT_LINES)
     single_file = search_root.is_file()
 
     matches: list[str] = []
@@ -316,9 +317,9 @@ def _walk_and_grep(  # noqa: C901  pylint: disable=too-many-branches,too-many-lo
                 ):
                     continue
                 file_iter.append(fp)
-                if len(file_iter) >= _MAX_FILES_SCANNED:
+                if len(file_iter) >= FILE_SEARCH_MAX_FILES_SCANNED:
                     break
-            if len(file_iter) >= _MAX_FILES_SCANNED:
+            if len(file_iter) >= FILE_SEARCH_MAX_FILES_SCANNED:
                 break
         file_iter.sort()
 
@@ -373,9 +374,9 @@ def _walk_and_grep(  # noqa: C901  pylint: disable=too-many-branches,too-many-lo
                             )
                             if not success:
                                 status = (
-                                    f"truncated: match limit ({_MAX_MATCHES})"
-                                    if len(matches) >= _MAX_MATCHES
-                                    else f"truncated: output size limit (~{_MAX_OUTPUT_CHARS // 1000}KB)"
+                                    f"truncated: match limit ({FILE_SEARCH_MAX_MATCHES})"
+                                    if len(matches) >= FILE_SEARCH_MAX_MATCHES
+                                    else f"truncated: output size limit (~{FILE_SEARCH_MAX_OUTPUT_CHARS // 1000}KB)"
                                 )
                                 break
 
@@ -395,9 +396,9 @@ def _walk_and_grep(  # noqa: C901  pylint: disable=too-many-branches,too-many-lo
                             )
                             if not success:
                                 status = (
-                                    f"truncated: match limit ({_MAX_MATCHES})"
-                                    if len(matches) >= _MAX_MATCHES
-                                    else f"truncated: output size limit (~{_MAX_OUTPUT_CHARS // 1000}KB)"
+                                    f"truncated: match limit ({FILE_SEARCH_MAX_MATCHES})"
+                                    if len(matches) >= FILE_SEARCH_MAX_MATCHES
+                                    else f"truncated: output size limit (~{FILE_SEARCH_MAX_OUTPUT_CHARS // 1000}KB)"
                                 )
                                 break
                         # Slide the window forward by removing the oldest line.
@@ -423,9 +424,9 @@ def _walk_and_grep(  # noqa: C901  pylint: disable=too-many-branches,too-many-lo
                     )
                     if not success:
                         status = (
-                            f"truncated: match limit ({_MAX_MATCHES})"
-                            if len(matches) >= _MAX_MATCHES
-                            else f"truncated: output size limit (~{_MAX_OUTPUT_CHARS // 1000}KB)"
+                            f"truncated: match limit ({FILE_SEARCH_MAX_MATCHES})"
+                            if len(matches) >= FILE_SEARCH_MAX_MATCHES
+                            else f"truncated: output size limit (~{FILE_SEARCH_MAX_OUTPUT_CHARS // 1000}KB)"
                         )
                         break
 
@@ -463,7 +464,7 @@ def _walk_and_glob(
             display_path = _relative_display(entry, search_root)
             suffix = "/" if entry.is_dir() else ""
             results.append(f"{display_path}{suffix}")
-            if len(results) >= _MAX_MATCHES:
+            if len(results) >= FILE_SEARCH_MAX_MATCHES:
                 truncated = True
                 break
     except OSError:
@@ -539,13 +540,13 @@ async def grep_search(
     try:
         match_lines, status = await asyncio.wait_for(
             asyncio.to_thread(_worker),
-            timeout=_GREP_TIMEOUT,
+            timeout=FILE_SEARCH_GREP_TIMEOUT,
         )
     except asyncio.TimeoutError:
         cancel.set()
         await asyncio.sleep(0.05)
         return _make_response(
-            f"Error: Search timed out after {_GREP_TIMEOUT}s. "
+            f"Error: Search timed out after {FILE_SEARCH_GREP_TIMEOUT}s. "
             f"Try narrowing the search path or using a more specific pattern.",
         )
 
@@ -572,7 +573,7 @@ async def grep_search(
         result = "\n".join(match_lines)
         if status == "timeout":
             result += (
-                f"\n\n(Partial results — search timed out after {_GREP_TIMEOUT}s. "
+                f"\n\n(Partial results — search timed out after {FILE_SEARCH_GREP_TIMEOUT}s. "
                 f"Try narrowing the search scope.)"
             )
 
@@ -611,13 +612,13 @@ async def glob_search(
     try:
         results, truncated = await asyncio.wait_for(
             asyncio.to_thread(_worker),
-            timeout=_GLOB_TIMEOUT,
+            timeout=FILE_SEARCH_GLOB_TIMEOUT,
         )
     except asyncio.TimeoutError:
         cancel.set()
         await asyncio.sleep(0.05)
         return _make_response(
-            f"Error: Glob search timed out after {_GLOB_TIMEOUT}s. "
+            f"Error: Glob search timed out after {FILE_SEARCH_GLOB_TIMEOUT}s. "
             f"Try a more specific pattern or narrower search path.",
         )
 
@@ -626,6 +627,6 @@ async def glob_search(
 
     text = "\n".join(results)
     if truncated:
-        text += f"\n\n(Results truncated at {_MAX_MATCHES} entries.)"
+        text += f"\n\n(Results truncated at {FILE_SEARCH_MAX_MATCHES} entries.)"
 
     return _make_response(text)

@@ -29,11 +29,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ...constant import SKILL_SCAN_MAX_PATTERN_LENGTH
 import yaml
 
 logger = logging.getLogger(__name__)
 
-_MAX_PATTERN_LENGTH = 1000
+# (_MAX_PATTERN_LENGTH migrated to constant.py as SKILL_SCAN_MAX_PATTERN_LENGTH)
 
 # Where the built-in default policy lives (ships with the package)
 _DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -50,7 +51,7 @@ def _safe_compile(
     pattern: str,
     flags: int = 0,
     *,
-    max_length: int = _MAX_PATTERN_LENGTH,
+    max_length: int = SKILL_SCAN_MAX_PATTERN_LENGTH,
 ) -> re.Pattern | None:
     if len(pattern) > max_length:
         logger.warning(

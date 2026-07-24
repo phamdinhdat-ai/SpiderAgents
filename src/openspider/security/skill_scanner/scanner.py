@@ -25,6 +25,7 @@ from .analyzers import BaseAnalyzer
 from .analyzers.pattern_analyzer import PatternAnalyzer
 from .models import Finding, ScanResult, SkillFile
 from .scan_policy import ScanPolicy
+from ...constant import SKILL_SCAN_MAX_FILES, SKILL_SCAN_MAX_FILE_SIZE
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +70,7 @@ _FALLBACK_SKIP_EXTENSIONS: set[str] = {
 
 # Fallback numeric limits used when no policy is provided *and* the
 # caller does not pass explicit constructor values.
-_FALLBACK_MAX_FILES = 500
-_FALLBACK_MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+# (migrated to constant.py as SKILL_SCAN_MAX_FILES, SKILL_SCAN_MAX_FILE_SIZE)
 
 
 class SkillScanner:
@@ -118,12 +118,12 @@ class SkillScanner:
         self._max_files = (
             max_files
             if max_files is not None
-            else policy_limits.max_file_count or _FALLBACK_MAX_FILES
+            else policy_limits.max_file_count or SKILL_SCAN_MAX_FILES
         )
         self._max_file_size = (
             max_file_size
             if max_file_size is not None
-            else policy_limits.max_file_size_bytes or _FALLBACK_MAX_FILE_SIZE
+            else policy_limits.max_file_size_bytes or SKILL_SCAN_MAX_FILE_SIZE
         )
 
         # --- skip extensions: policy classification > hardcoded fallback --

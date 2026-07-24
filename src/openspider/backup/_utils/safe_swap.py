@@ -50,6 +50,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import BinaryIO
 
+from ...constant import LOCK_RETRY_INTERVAL, LOCK_TIMEOUT
 from ._mount_swap import (
     SwapPreparation,
     prepare_destination_for_swap,
@@ -63,9 +64,8 @@ _RESTORE_TMP_SUFFIX = ".restore_tmp"
 _RESTORE_OLD_SUFFIX = ".restore_old"
 _RESTORE_LOCK_FILE = ".openspider_restore.lock"
 _LOCK_REGION_SIZE = 1
-_LOCK_RETRY_INTERVAL_SECONDS = 0.1
-_LOCK_TIMEOUT_SECONDS_ENV = "OPENSPIDER_RESTORE_LOCK_TIMEOUT_SECONDS"
-_LOCK_TIMEOUT_SECONDS = 300.0
+# (LOCK_RETRY_INTERVAL, LOCK_TIMEOUT migrated to constant.py)
+LOCK_TIMEOUT_ENV = "OPENSPIDER_RESTORELOCK_TIMEOUT"
 
 # Per-destination threading locks.  The dict itself is guarded by _LOCKS_GUARD.
 _LOCKS: dict[str, threading.Lock] = {}
@@ -113,7 +113,7 @@ def _acquire_file_lock(handle: BinaryIO, lock_path: Path) -> None:
                 )
                 break
             except OSError:
-                time.sleep(_LOCK_RETRY_INTERVAL_SECONDS)
+                time.sleep(LOCK_RETRY_INTERVAL)
         else:
             _raise_restore_lock_timeout(lock_path)
         return
@@ -125,7 +125,7 @@ def _acquire_file_lock(handle: BinaryIO, lock_path: Path) -> None:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             break
         except OSError:
-            time.sleep(_LOCK_RETRY_INTERVAL_SECONDS)
+            time.sleep(LOCK_RETRY_INTERVAL)
     else:
         _raise_restore_lock_timeout(lock_path)
 
@@ -135,18 +135,18 @@ def _raise_restore_lock_timeout(lock_path: Path) -> None:
         "Timed out waiting to acquire restore lock after "
         f"{_restore_lock_timeout_seconds():g}s: {lock_path}. "
         "Another restore or startup cleanup may still be running; "
-        f"set {_LOCK_TIMEOUT_SECONDS_ENV} to wait longer.",
+        f"set {LOCK_TIMEOUT_ENV} to wait longer.",
     )
 
 
 def _restore_lock_timeout_seconds() -> float:
-    raw = os.environ.get(_LOCK_TIMEOUT_SECONDS_ENV)
+    raw = os.environ.get(LOCK_TIMEOUT_ENV)
     if not raw:
-        return _LOCK_TIMEOUT_SECONDS
+        return LOCK_TIMEOUT
     try:
         value = float(raw)
     except ValueError:
-        return _LOCK_TIMEOUT_SECONDS
+        return LOCK_TIMEOUT
     return max(value, 1.0)
 
 

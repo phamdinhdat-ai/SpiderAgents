@@ -9,11 +9,11 @@ from pathlib import Path
 from typing import NamedTuple, Optional
 
 from .storage import load_data, save_data_sync
-from ..constant import TOKEN_USAGE_QUEUE_MAX
+from ..constant import TOKEN_USAGE_QUEUE_MAX, TOKEN_USAGE_FLUSH_INTERVAL
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_FLUSH_INTERVAL = 10  # seconds
+# (migrated to constant.py as TOKEN_USAGE_FLUSH_INTERVAL)
 
 
 class _UsageEvent(NamedTuple):
@@ -33,7 +33,7 @@ class TokenUsageBuffer:
     def __init__(
         self,
         path: Path,
-        flush_interval: int = _DEFAULT_FLUSH_INTERVAL,
+        flush_interval: int = TOKEN_USAGE_FLUSH_INTERVAL,
     ) -> None:
         self._path = path
         self._flush_interval = flush_interval

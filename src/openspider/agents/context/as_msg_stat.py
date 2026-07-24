@@ -3,10 +3,9 @@
 
 from pydantic import BaseModel, Field
 
-from ...constant import TRUNCATION_NOTICE_MARKER
+from ...constant import TRUNCATION_NOTICE_MARKER, MSG_STAT_BLOCK_PREVIEW_LENGTH, MSG_STAT_FORMATTER_TEXT_LENGTH
 
-_DEFAULT_MAX_BLOCK_TEXT_PREVIEW_LENGTH = 100
-_DEFAULT_MAX_FORMATTER_TEXT_LENGTH = 1000
+# (migrated to constant.py as MSG_STAT_BLOCK_PREVIEW_LENGTH, MSG_STAT_FORMATTER_TEXT_LENGTH)
 
 
 class AsBlockStat(BaseModel):
@@ -43,7 +42,7 @@ class AsBlockStat(BaseModel):
     @property
     def preview(self) -> str:
         """Return a short preview of the block content."""
-        return self.format(_DEFAULT_MAX_BLOCK_TEXT_PREVIEW_LENGTH)
+        return self.format(MSG_STAT_BLOCK_PREVIEW_LENGTH)
 
     def _truncate(self, text: str, max_length: int) -> str:
         """Truncate text with ellipsis, replacing newlines with spaces."""
@@ -55,7 +54,7 @@ class AsBlockStat(BaseModel):
     # pylint: disable=too-many-return-statements
     def format(
         self,
-        max_length: int = _DEFAULT_MAX_FORMATTER_TEXT_LENGTH,
+        max_length: int = MSG_STAT_FORMATTER_TEXT_LENGTH,
         include_thinking: bool = True,
     ) -> str:
         """Format block content to string representation.
@@ -115,11 +114,11 @@ class AsMsgStat(BaseModel):
     @property
     def preview(self) -> str:
         """Return a short preview of the message content."""
-        return self.format(_DEFAULT_MAX_BLOCK_TEXT_PREVIEW_LENGTH)
+        return self.format(MSG_STAT_BLOCK_PREVIEW_LENGTH)
 
     def format(
         self,
-        max_length: int = _DEFAULT_MAX_FORMATTER_TEXT_LENGTH,
+        max_length: int = MSG_STAT_FORMATTER_TEXT_LENGTH,
         include_thinking: bool = True,
     ) -> str:
         """Format message to string representation."""

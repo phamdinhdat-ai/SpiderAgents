@@ -13,11 +13,11 @@ from pathlib import Path
 
 import httpx
 
-from ..constant import WORKING_DIR
+from ..constant import WORKING_DIR, TUNNEL_DOWNLOAD_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
-_DOWNLOAD_TIMEOUT = 90  # seconds
+# (migrated to constant.py as TUNNEL_DOWNLOAD_TIMEOUT)
 
 _BIN_DIR = Path(f"{WORKING_DIR}/bin").expanduser()
 
@@ -150,7 +150,7 @@ class BinaryManager:
             url,
         )
 
-        timeout = httpx.Timeout(_DOWNLOAD_TIMEOUT, connect=30)
+        timeout = httpx.Timeout(TUNNEL_DOWNLOAD_TIMEOUT, connect=30)
         async with httpx.AsyncClient(timeout=timeout) as client:
             if url.endswith(".tgz"):
                 import tarfile

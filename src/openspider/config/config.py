@@ -21,6 +21,8 @@ from agentscope_runtime.engine.schemas.exception import (
 
 from .timezone import detect_system_timezone
 from ..constant import (
+    AGENT_ID_MIN_LENGTH,
+    AGENT_ID_MAX_LENGTH,
     HEARTBEAT_DEFAULT_EVERY,
     HEARTBEAT_DEFAULT_TARGET,
     LLM_ACQUIRE_TIMEOUT,
@@ -136,8 +138,7 @@ class ACPConfig(BaseModel):
 _AGENT_ID_PATTERN = re.compile(
     r"^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$",
 )
-_AGENT_ID_MIN_LENGTH = 2
-_AGENT_ID_MAX_LENGTH = 64
+# (AGENT_ID_MIN_LENGTH, AGENT_ID_MAX_LENGTH migrated to constant.py)
 _RESERVED_AGENT_IDS = frozenset({"default"})
 
 
@@ -177,14 +178,14 @@ def validate_agent_id(
     Raises:
         ValueError: If the ID is invalid.
     """
-    if len(agent_id) < _AGENT_ID_MIN_LENGTH:
+    if len(agent_id) < AGENT_ID_MIN_LENGTH:
         raise ValueError(
-            f"Agent ID must be at least {_AGENT_ID_MIN_LENGTH} characters, "
+            f"Agent ID must be at least {AGENT_ID_MIN_LENGTH} characters, "
             f"got {len(agent_id)}.",
         )
-    if len(agent_id) > _AGENT_ID_MAX_LENGTH:
+    if len(agent_id) > AGENT_ID_MAX_LENGTH:
         raise ValueError(
-            f"Agent ID must be at most {_AGENT_ID_MAX_LENGTH} characters, "
+            f"Agent ID must be at most {AGENT_ID_MAX_LENGTH} characters, "
             f"got {len(agent_id)}.",
         )
     if not _AGENT_ID_PATTERN.match(agent_id):

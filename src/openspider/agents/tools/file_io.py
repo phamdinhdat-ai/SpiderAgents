@@ -11,7 +11,7 @@ from agentscope.tool import ToolResponse
 from .utils import (
     truncate_text_output,
     read_file_safe,
-    DEFAULT_MAX_BYTES,
+    TOOL_OUTPUT_MAX_BYTES,
 )
 from ...config.context import (
     get_current_workspace_dir,
@@ -182,7 +182,7 @@ async def read_file(  # pylint: disable=too-many-return-statements
         selected_content = "\n".join(all_lines[s - 1 : e])
 
         # Apply smart truncation (consistent with shell output format)
-        max_bytes = get_current_recent_max_bytes() or DEFAULT_MAX_BYTES
+        max_bytes = get_current_recent_max_bytes() or TOOL_OUTPUT_MAX_BYTES
         text = truncate_text_output(
             selected_content,
             start_line=s,

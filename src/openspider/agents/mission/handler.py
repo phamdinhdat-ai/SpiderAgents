@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from .prompts import build_master_prompt
+from ...constant import MISSION_DEFAULT_MAX_ITERATIONS, MISSION_MIN_MAX_ITERATIONS, MISSION_MAX_MAX_ITERATIONS
 from .state import (
     create_loop_dir,
     detect_git_context,
@@ -35,9 +36,7 @@ logger = logging.getLogger(__name__)
 MISSION_COMMANDS = frozenset({"/mission"})
 
 # Defaults and limits for --max-iterations
-_DEFAULT_MAX_ITERATIONS = 20
-_MIN_MAX_ITERATIONS = 1
-_MAX_MAX_ITERATIONS = 100
+# (migrated to constant.py as MISSION_DEFAULT_MAX_ITERATIONS, MISSION_MIN_MAX_ITERATIONS, MISSION_MAX_MAX_ITERATIONS)
 
 
 def is_mission_command(query: str | None) -> bool:
@@ -56,7 +55,7 @@ def _parse_mission_args(query: str) -> dict[str, Any]:
     args: dict[str, Any] = {
         "task_text": "",
         "verify_commands": "",
-        "max_iterations": _DEFAULT_MAX_ITERATIONS,
+        "max_iterations": MISSION_DEFAULT_MAX_ITERATIONS,
     }
 
     tokens = raw.split()
@@ -80,20 +79,20 @@ def _parse_mission_args(query: str) -> dict[str, Any]:
 
     # Clamp max_iterations to a sane range
     max_iters = args["max_iterations"]
-    if max_iters < _MIN_MAX_ITERATIONS:
+    if max_iters < MISSION_MIN_MAX_ITERATIONS:
         logger.warning(
             "Mission: --max-iterations %d too low, clamping to %d",
             max_iters,
-            _MIN_MAX_ITERATIONS,
+            MISSION_MIN_MAX_ITERATIONS,
         )
-        args["max_iterations"] = _MIN_MAX_ITERATIONS
-    elif max_iters > _MAX_MAX_ITERATIONS:
+        args["max_iterations"] = MISSION_MIN_MAX_ITERATIONS
+    elif max_iters > MISSION_MAX_MAX_ITERATIONS:
         logger.warning(
             "Mission: --max-iterations %d too high, clamping to %d",
             max_iters,
-            _MAX_MAX_ITERATIONS,
+            MISSION_MAX_MAX_ITERATIONS,
         )
-        args["max_iterations"] = _MAX_MAX_ITERATIONS
+        args["max_iterations"] = MISSION_MAX_MAX_ITERATIONS
 
     return args
 
@@ -181,8 +180,8 @@ async def handle_mission_command(  # pylint: disable=too-many-return-statements
             "Options:\n"
             "- `--verify <command>` — verification command (e.g. `pytest`)\n"
             f"- `--max-iterations <n>` — max Phase 2 iterations "
-            f"(range: {_MIN_MAX_ITERATIONS}-{_MAX_MAX_ITERATIONS}, "
-            f"default: {_DEFAULT_MAX_ITERATIONS})\n\n"
+            f"(range: {MISSION_MIN_MAX_ITERATIONS}-{MISSION_MAX_MAX_ITERATIONS}, "
+            f"default: {MISSION_DEFAULT_MAX_ITERATIONS})\n\n"
             "⚠️ **Security Warning**:\n"
             "- Worker agents bypass security guards (auto-disabled via "
             "`--background`)\n"

@@ -32,9 +32,10 @@ import os
 from datetime import datetime, timezone
 from typing import Any
 
+from ..constant import AUDIT_LOG_MAX_BYTES, AUDIT_LOG_BACKUP_COUNT
+
 _AUDIT_LOGGER_NAME = "openspider.audit"
-_DEFAULT_MAX_BYTES = 10 * 1024 * 1024  # 10 MiB
-_DEFAULT_BACKUP_COUNT = 5
+# (AUDIT_LOG_MAX_BYTES, AUDIT_LOG_BACKUP_COUNT migrated to constant.py)
 
 _audit_logger: logging.Logger | None = None
 
@@ -71,8 +72,8 @@ def _build_audit_logger() -> logging.Logger:
             os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
             handler: logging.Handler = logging.handlers.RotatingFileHandler(
                 file_path,
-                maxBytes=_DEFAULT_MAX_BYTES,
-                backupCount=_DEFAULT_BACKUP_COUNT,
+                maxBytes=AUDIT_LOG_MAX_BYTES,
+                backupCount=AUDIT_LOG_BACKUP_COUNT,
                 encoding="utf-8",
             )
         except OSError as exc:

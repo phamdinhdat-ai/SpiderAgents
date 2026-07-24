@@ -9,16 +9,9 @@ import logging
 
 import aiofiles
 
-from ...constant import TRUNCATION_NOTICE_MARKER
+from ...constant import FILE_READ_MAX_BYTES, TOOL_OUTPUT_MAX_BYTES, TRUNCATION_NOTICE_MARKER
 
 logger = logging.getLogger(__name__)
-
-
-# Default truncation limit
-DEFAULT_MAX_BYTES = 50 * 1024
-
-# Maximum file size to read into memory (1GB)
-MAX_FILE_READ_BYTES = 1024 * 1024 * 1024
 
 
 # pylint: disable=too-many-return-statements
@@ -45,9 +38,9 @@ def _truncate_fresh(
         return text
 
     # Slice at the byte boundary.
-    # Assuming every single line is shorter than DEFAULT_MAX_BYTES, this cut always
+    # Assuming every single line is shorter than TOOL_OUTPUT_MAX_BYTES, this cut always
     # lands mid-line, guaranteeing at least one complete line before the boundary.
-    # Lines that exceed DEFAULT_MAX_BYTES are not handled and may be skipped entirely.
+    # Lines that exceed TOOL_OUTPUT_MAX_BYTES are not handled and may be skipped entirely.
     truncated = text_bytes[:max_bytes]
     # Decode back to str; errors="ignore" drops any split multi-byte character
     # at the cut boundary without raising an exception.
@@ -72,7 +65,7 @@ def _truncate_fresh(
         # Re-read from the start of the last line so the caller gets it in full.
         read_from = total_lines
     else:
-        # start_line == total_lines: the last line itself exceeds DEFAULT_MAX_BYTES.
+        # start_line == total_lines: the last line itself exceeds TOOL_OUTPUT_MAX_BYTES.
         # This case is outside our handled range — return without a truncation notice.
         return result
 
@@ -119,7 +112,7 @@ def _retruncate(
     start_line_parsed = int(start_match.group(1))
 
     # Re-slice to the new byte limit.
-    # Because every line is assumed to be shorter than DEFAULT_MAX_BYTES, the cut
+    # Because every line is assumed to be shorter than TOOL_OUTPUT_MAX_BYTES, the cut
     # always falls somewhere mid-line, so at least one complete line is preserved.
     truncated_bytes = text_bytes[:max_bytes]
     # errors="ignore" silently drops any incomplete multi-byte character at the cut boundary.
@@ -130,7 +123,7 @@ def _retruncate(
 
     # The next read should start at the line immediately after all complete lines.
     # max(1, ...) guards against the theoretical zero-newline case
-    # (impossible when every line is shorter than DEFAULT_MAX_BYTES).
+    # (impossible when every line is shorter than TOOL_OUTPUT_MAX_BYTES).
     next_line = start_line_parsed + max(1, newline_count)
 
     if not re.search(r"covers the next \d+ bytes", old_notice):
@@ -154,7 +147,7 @@ def truncate_text_output(
     text: str,
     start_line: int = 1,
     total_lines: int = 0,
-    max_bytes: int = DEFAULT_MAX_BYTES,
+    max_bytes: int = TOOL_OUTPUT_MAX_BYTES,
     file_path: str | None = None,
     encoding: str = "utf-8",
 ) -> str:
@@ -208,7 +201,7 @@ def truncate_text_output(
 
 async def read_file_safe(
     file_path: str,
-    max_bytes: int = MAX_FILE_READ_BYTES,
+    max_bytes: int = FILE_READ_MAX_BYTES,
 ) -> str:
     """Read file with Unicode error handling and memory protection.
 

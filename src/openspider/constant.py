@@ -197,8 +197,6 @@ TOKEN_USAGE_FILE = EnvVarLoader.get_str(
 CONFIG_FILE = EnvVarLoader.get_str("OPENSPIDER_CONFIG_FILE", "config.json")
 
 HEARTBEAT_FILE = EnvVarLoader.get_str("OPENSPIDER_HEARTBEAT_FILE", "HEARTBEAT.md")
-HEARTBEAT_DEFAULT_EVERY = "6h"
-HEARTBEAT_DEFAULT_TARGET = "main"
 HEARTBEAT_TARGET_LAST = "last"
 
 # Debug history file for /dump_history and /load_history commands
@@ -206,8 +204,6 @@ DEBUG_HISTORY_FILE = EnvVarLoader.get_str(
     "OPENSPIDER_DEBUG_HISTORY_FILE",
     "debug_history.jsonl",
 )
-MAX_LOAD_HISTORY_COUNT = 10000
-
 # Env key for app log level (used by CLI and app load for reload child).
 LOG_LEVEL_ENV = "OPENSPIDER_LOG_LEVEL"
 
@@ -472,6 +468,388 @@ SNAPSHOT_MAX_BACKUP_SIZE_MB = EnvVarLoader.get_int(
     50,
     min_value=1,
     max_value=500,
+)
+
+# ------------------------------------------------------------------
+# Auto-continue: when the model returns text-only (no tool calls),
+# inject a hint and allow extra reasoning passes.
+# ------------------------------------------------------------------
+
+AUTO_CONTINUE_MAX_EXTRA = EnvVarLoader.get_int(
+    "OPENSPIDER_AUTO_CONTINUE_MAX_EXTRA",
+    1,
+    min_value=0,
+    max_value=10,
+)
+
+AUTO_CONTINUE_TAIL_CHARS = EnvVarLoader.get_int(
+    "OPENSPIDER_AUTO_CONTINUE_TAIL_CHARS",
+    600,
+    min_value=50,
+    max_value=10000,
+)
+
+AUTO_CONTINUE_HINT_EN = EnvVarLoader.get_str(
+    "OPENSPIDER_AUTO_CONTINUE_HINT_EN",
+    (
+        "<system-hint>"
+        "Your previous assistant turn had text only (no tool calls). "
+        "Use the trailing excerpt in <previous-assistant-tail> (if present) "
+        "plus the conversation to decide in this **reasoning** step: if the "
+        "user's task still needs tools, emit tool_use now; if it is fully "
+        "done, reply with a short text only (no tools). "
+        "Do not stop with plans or code fences alone when tools are still "
+        "needed."
+        "</system-hint>"
+    ),
+)
+
+AUTO_CONTINUE_HINT_VI = EnvVarLoader.get_str(
+    "OPENSPIDER_AUTO_CONTINUE_HINT_VI",
+    (
+        "<system-hint>"
+        "Lần trước trợ lý chỉ có văn bản, không gọi công cụ. "
+        "Hãy sử dụng ngữ cảnh và <previous-assistant-tail> (nếu có) "
+        "để quyết định trong bước **reasoning** này: nếu nhiệm vụ của "
+        "người dùng vẫn cần công cụ, hãy phát hành tool_use ngay; nếu "
+        "nó đã hoàn tất, hãy trả lời bằng văn bản ngắn gọn (không có "
+        "công cụ)."
+        "</system-hint>"
+    ),
+)
+
+ROUND_END_NOTICE = EnvVarLoader.get_str(
+    "OPENSPIDER_ROUND_END_NOTICE",
+    (
+        "\n\n---\n"
+        "Maximum iterations reached for this round. "
+        "Please send a new message to continue."
+    ),
+)
+
+# ------------------------------------------------------------------
+# Heartbeat defaults
+# ------------------------------------------------------------------
+
+HEARTBEAT_DEFAULT_EVERY = EnvVarLoader.get_str(
+    "OPENSPIDER_HEARTBEAT_DEFAULT_EVERY",
+    "6h",
+)
+
+HEARTBEAT_DEFAULT_TARGET = EnvVarLoader.get_str(
+    "OPENSPIDER_HEARTBEAT_DEFAULT_TARGET",
+    "main",
+)
+
+# ------------------------------------------------------------------
+# History / debug
+# ------------------------------------------------------------------
+
+MAX_LOAD_HISTORY_COUNT = EnvVarLoader.get_int(
+    "OPENSPIDER_MAX_LOAD_HISTORY_COUNT",
+    10000,
+    min_value=1,
+)
+
+# ------------------------------------------------------------------
+# Logging
+# ------------------------------------------------------------------
+
+LOG_MAX_BYTES = EnvVarLoader.get_int(
+    "OPENSPIDER_LOG_MAX_BYTES",
+    5 * 1024 * 1024,  # 5 MiB
+    min_value=1024,
+)
+
+AUDIT_LOG_MAX_BYTES = EnvVarLoader.get_int(
+    "OPENSPIDER_AUDIT_LOG_MAX_BYTES",
+    10 * 1024 * 1024,  # 10 MiB
+    min_value=1024,
+)
+
+AUDIT_LOG_BACKUP_COUNT = EnvVarLoader.get_int(
+    "OPENSPIDER_AUDIT_LOG_BACKUP_COUNT",
+    5,
+    min_value=0,
+    max_value=100,
+)
+
+# ------------------------------------------------------------------
+# Tool output display
+# ------------------------------------------------------------------
+
+TOOL_OUTPUT_MAX_BYTES = EnvVarLoader.get_int(
+    "OPENSPIDER_TOOL_OUTPUT_MAX_BYTES",
+    50 * 1024,  # 50 KB
+    min_value=1024,
+)
+
+# Maximum file size to read into memory (1 GB) — used by read_file tool.
+# Files larger than this are rejected outright to avoid OOM.
+FILE_READ_MAX_BYTES = EnvVarLoader.get_int(
+    "OPENSPIDER_FILE_READ_MAX_BYTES",
+    1024 * 1024 * 1024,  # 1 GB
+    min_value=1024,
+)
+
+# ------------------------------------------------------------------
+# File search tools
+# ------------------------------------------------------------------
+
+FILE_SEARCH_MAX_MATCHES = EnvVarLoader.get_int(
+    "OPENSPIDER_FILE_SEARCH_MAX_MATCHES",
+    200,
+    min_value=1,
+)
+
+FILE_SEARCH_MAX_FILE_SIZE = EnvVarLoader.get_int(
+    "OPENSPIDER_FILE_SEARCH_MAX_FILE_SIZE",
+    2 * 1024 * 1024,  # 2 MB
+    min_value=1024,
+)
+
+FILE_SEARCH_MAX_CONTEXT_LINES = EnvVarLoader.get_int(
+    "OPENSPIDER_FILE_SEARCH_MAX_CONTEXT_LINES",
+    5,
+    min_value=0,
+    max_value=100,
+)
+
+FILE_SEARCH_MAX_OUTPUT_CHARS = EnvVarLoader.get_int(
+    "OPENSPIDER_FILE_SEARCH_MAX_OUTPUT_CHARS",
+    50_000,
+    min_value=100,
+)
+
+FILE_SEARCH_MAX_FILES_SCANNED = EnvVarLoader.get_int(
+    "OPENSPIDER_FILE_SEARCH_MAX_FILES_SCANNED",
+    10_000,
+    min_value=1,
+)
+
+FILE_SEARCH_GREP_TIMEOUT = EnvVarLoader.get_int(
+    "OPENSPIDER_FILE_SEARCH_GREP_TIMEOUT",
+    30,
+    min_value=1,
+)
+
+FILE_SEARCH_GLOB_TIMEOUT = EnvVarLoader.get_int(
+    "OPENSPIDER_FILE_SEARCH_GLOB_TIMEOUT",
+    15,
+    min_value=1,
+)
+
+# ------------------------------------------------------------------
+# Browser control
+# ------------------------------------------------------------------
+
+BROWSER_IDLE_TIMEOUT = EnvVarLoader.get_float(
+    "OPENSPIDER_BROWSER_IDLE_TIMEOUT",
+    600.0,
+    min_value=1.0,
+)
+
+# ------------------------------------------------------------------
+# Agent management API
+# ------------------------------------------------------------------
+
+AGENT_API_TIMEOUT = EnvVarLoader.get_float(
+    "OPENSPIDER_AGENT_API_TIMEOUT",
+    30.0,
+    min_value=1.0,
+)
+
+# ------------------------------------------------------------------
+# Mission runner
+# ------------------------------------------------------------------
+
+MISSION_DEFAULT_MAX_ITERATIONS = EnvVarLoader.get_int(
+    "OPENSPIDER_MISSION_DEFAULT_MAX_ITERATIONS",
+    20,
+    min_value=1,
+)
+
+MISSION_MIN_MAX_ITERATIONS = EnvVarLoader.get_int(
+    "OPENSPIDER_MISSION_MIN_MAX_ITERATIONS",
+    1,
+    min_value=1,
+)
+
+MISSION_MAX_MAX_ITERATIONS = EnvVarLoader.get_int(
+    "OPENSPIDER_MISSION_MAX_MAX_ITERATIONS",
+    100,
+    min_value=1,
+)
+
+MISSION_MAX_PRD_FIX_ATTEMPTS = EnvVarLoader.get_int(
+    "OPENSPIDER_MISSION_MAX_PRD_FIX_ATTEMPTS",
+    2,
+    min_value=0,
+    max_value=10,
+)
+
+# ------------------------------------------------------------------
+# Message statistics display
+# ------------------------------------------------------------------
+
+MSG_STAT_BLOCK_PREVIEW_LENGTH = EnvVarLoader.get_int(
+    "OPENSPIDER_MSG_STAT_BLOCK_PREVIEW_LENGTH",
+    100,
+    min_value=10,
+)
+
+MSG_STAT_FORMATTER_TEXT_LENGTH = EnvVarLoader.get_int(
+    "OPENSPIDER_MSG_STAT_FORMATTER_TEXT_LENGTH",
+    1000,
+    min_value=10,
+)
+
+# ------------------------------------------------------------------
+# Skill system hub
+# ------------------------------------------------------------------
+
+SKILLS_HUB_MAX_ZIP_ENTRIES = EnvVarLoader.get_int(
+    "OPENSPIDER_SKILLS_HUB_MAX_ZIP_ENTRIES",
+    256,
+    min_value=1,
+)
+
+SKILLS_HUB_MAX_ZIP_BYTES = EnvVarLoader.get_int(
+    "OPENSPIDER_SKILLS_HUB_MAX_ZIP_BYTES",
+    5 * 1024 * 1024,  # 5 MB
+    min_value=1024,
+)
+
+SKILLS_HUB_CACHE_TTL = EnvVarLoader.get_int(
+    "OPENSPIDER_SKILLS_HUB_CACHE_TTL",
+    300,
+    min_value=0,
+)
+
+# ------------------------------------------------------------------
+# Skill store
+# ------------------------------------------------------------------
+
+SKILL_STORE_MAX_ZIP_BYTES = EnvVarLoader.get_int(
+    "OPENSPIDER_SKILL_STORE_MAX_ZIP_BYTES",
+    200 * 1024 * 1024,  # 200 MB
+    min_value=1024,
+)
+
+# ------------------------------------------------------------------
+# Memory
+# ------------------------------------------------------------------
+
+MEMORY_MAX_QUERY_TOKENS = EnvVarLoader.get_int(
+    "OPENSPIDER_MEMORY_MAX_QUERY_TOKENS",
+    50,
+    min_value=1,
+)
+
+# ------------------------------------------------------------------
+# Skill scanner
+# ------------------------------------------------------------------
+
+SKILL_SCAN_MAX_CACHE_ENTRIES = EnvVarLoader.get_int(
+    "OPENSPIDER_SKILL_SCAN_MAX_CACHE_ENTRIES",
+    64,
+    min_value=1,
+)
+
+SKILL_SCAN_MAX_PATTERN_LENGTH = EnvVarLoader.get_int(
+    "OPENSPIDER_SKILL_SCAN_MAX_PATTERN_LENGTH",
+    1000,
+    min_value=10,
+)
+
+SKILL_SCAN_MAX_FILES = EnvVarLoader.get_int(
+    "OPENSPIDER_SKILL_SCAN_MAX_FILES",
+    500,
+    min_value=1,
+)
+
+SKILL_SCAN_MAX_FILE_SIZE = EnvVarLoader.get_int(
+    "OPENSPIDER_SKILL_SCAN_MAX_FILE_SIZE",
+    10 * 1024 * 1024,  # 10 MB
+    min_value=1024,
+)
+
+# ------------------------------------------------------------------
+# Knowledge base
+# ------------------------------------------------------------------
+
+KNOWLEDGE_MAX_FILE_SIZE_BYTES = EnvVarLoader.get_int(
+    "OPENSPIDER_KNOWLEDGE_MAX_FILE_SIZE_BYTES",
+    50 * 1024 * 1024,  # 50 MB
+    min_value=1024,
+)
+
+# ------------------------------------------------------------------
+# Tunnel binary download
+# ------------------------------------------------------------------
+
+TUNNEL_DOWNLOAD_TIMEOUT = EnvVarLoader.get_int(
+    "OPENSPIDER_TUNNEL_DOWNLOAD_TIMEOUT",
+    90,
+    min_value=5,
+)
+
+# ------------------------------------------------------------------
+# Agent ID validation
+# ------------------------------------------------------------------
+
+AGENT_ID_MIN_LENGTH = EnvVarLoader.get_int(
+    "OPENSPIDER_AGENT_ID_MIN_LENGTH",
+    2,
+    min_value=1,
+)
+
+AGENT_ID_MAX_LENGTH = EnvVarLoader.get_int(
+    "OPENSPIDER_AGENT_ID_MAX_LENGTH",
+    64,
+    min_value=1,
+)
+
+# ------------------------------------------------------------------
+# Token usage buffer
+# ------------------------------------------------------------------
+
+TOKEN_USAGE_FLUSH_INTERVAL = EnvVarLoader.get_int(
+    "OPENSPIDER_TOKEN_USAGE_FLUSH_INTERVAL",
+    10,
+    min_value=1,
+)
+
+# ------------------------------------------------------------------
+# File lock / safe swap
+# ------------------------------------------------------------------
+
+LOCK_RETRY_INTERVAL = EnvVarLoader.get_float(
+    "OPENSPIDER_LOCK_RETRY_INTERVAL",
+    0.1,
+    min_value=0.01,
+)
+
+LOCK_TIMEOUT = EnvVarLoader.get_float(
+    "OPENSPIDER_LOCK_TIMEOUT",
+    300.0,
+    min_value=1.0,
+)
+
+# ------------------------------------------------------------------
+# Plan hints
+# ------------------------------------------------------------------
+
+PLAN_DESC_LIMIT = EnvVarLoader.get_int(
+    "OPENSPIDER_PLAN_DESC_LIMIT",
+    80,
+    min_value=10,
+)
+
+PLAN_PLAN_DESC_LIMIT = EnvVarLoader.get_int(
+    "OPENSPIDER_PLAN_PLAN_DESC_LIMIT",
+    200,
+    min_value=10,
 )
 
 # ------------------------------------------------------------------

@@ -24,7 +24,7 @@ import yaml
 
 from agentscope_runtime.engine.schemas.exception import ConfigurationException
 from ...exceptions import SkillsError
-from ...constant import EnvVarLoader
+from ...constant import EnvVarLoader, SKILLS_HUB_MAX_ZIP_ENTRIES, SKILLS_HUB_MAX_ZIP_BYTES, SKILLS_HUB_CACHE_TTL
 from .models import SkillConflictError
 from .pool_service import SkillPoolService
 from .store import suggest_conflict_name
@@ -84,11 +84,9 @@ RETRYABLE_HTTP_STATUS = {
     504,
 }
 
-LOBEHUB_MAX_ZIP_ENTRIES = 256
-LOBEHUB_MAX_ZIP_BYTES = 5 * 1024 * 1024
 HTTP_READ_CHUNK_BYTES = 64 * 1024
 
-_GITHUB_CACHE_DEFAULT_TTL = 300  # 5 minutes
+# (SKILLS_HUB_MAX_ZIP_ENTRIES, SKILLS_HUB_MAX_ZIP_BYTES, SKILLS_HUB_CACHE_TTL migrated to constant.py)
 _github_cache: dict[str, tuple[float, Any]] = {}
 
 
@@ -99,7 +97,7 @@ def _github_cache_ttl() -> float:
             return max(0.0, float(raw))
         except (TypeError, ValueError):
             pass
-    return float(_GITHUB_CACHE_DEFAULT_TTL)
+    return float(SKILLS_HUB_CACHE_TTL)
 
 
 def _github_cache_get(key: str) -> Any:
@@ -1351,12 +1349,12 @@ def _lobehub_zip_to_bundle(identifier: str, payload: bytes) -> dict[str, Any]:
                 if info.is_dir():
                     continue
                 entry_count += 1
-                if entry_count > LOBEHUB_MAX_ZIP_ENTRIES:
+                if entry_count > SKILLS_HUB_MAX_ZIP_ENTRIES:
                     raise SkillsError(
                         message="LobeHub skill package has too many files",
                     )
                 total_bytes += max(0, info.file_size)
-                if total_bytes > LOBEHUB_MAX_ZIP_BYTES:
+                if total_bytes > SKILLS_HUB_MAX_ZIP_BYTES:
                     raise SkillsError(
                         message="LobeHub skill package is too large to import",
                     )
@@ -1500,7 +1498,7 @@ def _fetch_bundle_from_lobehub_url(
             _lobehub_download_url(identifier),
             params=params,
             accept="application/zip, application/octet-stream, */*",
-            max_bytes=LOBEHUB_MAX_ZIP_BYTES,
+            max_bytes=SKILLS_HUB_MAX_ZIP_BYTES,
         )
     except HTTPError as e:
         raise SkillsError(

@@ -39,22 +39,13 @@ from agentscope.pipeline import stream_printing_messages
 
 from .state import read_loop_config, read_prd, write_loop_config
 from ...config.config import load_agent_config
+from ...constant import MISSION_MAX_PRD_FIX_ATTEMPTS
 
 logger = logging.getLogger(__name__)
 
 # ── Internationalization ──────────────────────────────────────────────────
 
 _MESSAGES = {
-    "zh": {
-        "phase2_no_prd": "⚠️ **无法进入 Phase 2**: prd.json 未找到或为空。\n请先生成有效的 PRD。",
-        "phase2_invalid_prd": "⚠️ **无法进入 Phase 2**: prd.json 格式错误:\n{detail}\n\n请修正 PRD 格式后再确认。",
-        "phase2_startup_no_prd": "⚠️ **Phase 2 启动失败**: prd.json 未找到或为空。\n无法继续执行。",
-        "phase2_startup_invalid": "⚠️ **Phase 2 启动失败**: prd.json 格式错误:\n{detail}\n\n请返回 Phase 1 修正 PRD。",
-        "prd_still_invalid": "⚠️ **prd.json 仍然不符合格式** (已尝试 {attempts} 次):\n{detail}\n\n请手动检查并修正 prd.json 后再确认。",
-        "mission_complete": "**Mission 完成** — {passed}/{total} stories 通过 ✅\n",
-        "mission_max_iterations": "⚠️ **Mission 已达到最大迭代次数** ({max_iter})。已完成 {passed}/{total} 个 story。\n\n你可以使用 `/mission status` 查看剩余内容，然后启动一个新的 mission，或手动完成剩余工作。",
-        "prd_no_stories": "⚠️ prd.json 缺失 user stories. 循环终止.",
-    },
     "en": {
         "phase2_no_prd": "⚠️ **Cannot enter Phase 2**: prd.json not found or empty.\nPlease generate a valid PRD first.",
         "phase2_invalid_prd": "⚠️ **Cannot enter Phase 2**: prd.json format errors:\n{detail}\n\nPlease fix the PRD format before confirming.",
@@ -87,7 +78,7 @@ def _get_message(key: str, agent_id: str, **kwargs) -> str:
         **kwargs: Format arguments for the message
 
     Returns:
-        Formatted message string in the agent's language (zh, en, or vi)
+        Formatted message string in the agent's language ( en, or vi)
     """
     try:
         config = load_agent_config(agent_id)
@@ -304,7 +295,7 @@ Keep the same task decomposition \
 but restructure it into the required schema.
 """
 
-_MAX_PRD_FIX_ATTEMPTS = 2
+# (migrated to constant.py as MISSION_MAX_PRD_FIX_ATTEMPTS)
 
 
 async def run_mission_phase1(
@@ -318,7 +309,7 @@ async def run_mission_phase1(
 
     Runs the agent for one turn.  After the agent finishes:
     - If prd.json has schema errors → auto-inject correction prompt
-      and re-run (up to ``_MAX_PRD_FIX_ATTEMPTS`` times).
+      and re-run (up to ``MISSION_MAX_PRD_FIX_ATTEMPTS`` times).
     - If the agent set ``current_phase`` to ``"execution_confirmed"``
       in loop_config.json → seamlessly transition to Phase 2.
     - Otherwise → return control to the user.
@@ -388,12 +379,12 @@ async def run_mission_phase1(
     if not problems:
         return
 
-    for attempt in range(1, _MAX_PRD_FIX_ATTEMPTS + 1):
+    for attempt in range(1, MISSION_MAX_PRD_FIX_ATTEMPTS + 1):
         detail = "\n".join(f"  - {p}" for p in problems)
         logger.warning(
             "Mission Phase 1: PRD validation failed (attempt %d/%d): %s",
             attempt,
-            _MAX_PRD_FIX_ATTEMPTS,
+            MISSION_MAX_PRD_FIX_ATTEMPTS,
             detail,
         )
 
@@ -405,7 +396,7 @@ async def run_mission_phase1(
                     type="text",
                     text=(
                         f"⚠️ prd.json 格式不正确 (尝试修正 {attempt}"
-                        f"/{_MAX_PRD_FIX_ATTEMPTS}):\n{detail}\n\n"
+                        f"/{MISSION_MAX_PRD_FIX_ATTEMPTS}):\n{detail}\n\n"
                         "正在要求 agent 按正确格式重写..."
                     ),
                 ),
@@ -467,7 +458,7 @@ async def run_mission_phase1(
                 text=_get_message(
                     "prd_still_invalid",
                     agent_id,
-                    attempts=_MAX_PRD_FIX_ATTEMPTS,
+                    attempts=MISSION_MAX_PRD_FIX_ATTEMPTS,
                     detail=detail,
                 ),
             ),

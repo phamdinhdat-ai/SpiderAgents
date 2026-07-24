@@ -8,10 +8,10 @@ import platform
 import sys
 from pathlib import Path
 
-from ..constant import PROJECT_NAME, WORKING_DIR
+from ..constant import PROJECT_NAME, WORKING_DIR, LOG_MAX_BYTES
 
 # Rotating file handler limits (idempotent add avoids duplicate handlers)
-_LOG_MAX_BYTES = 5 * 1024 * 1024  # 5 MiB
+# (LOG_MAX_BYTES migrated to constant.py)
 _LOG_BACKUP_COUNT = 3
 
 
@@ -213,7 +213,7 @@ def add_project_file_handler(log_path: Path) -> None:
     file_handler = _SafeRotatingFileHandler(
         log_path,
         encoding="utf-8",
-        maxBytes=_LOG_MAX_BYTES,
+        maxBytes=LOG_MAX_BYTES,
         backupCount=_LOG_BACKUP_COUNT,
     )
 

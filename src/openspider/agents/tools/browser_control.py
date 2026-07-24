@@ -33,7 +33,7 @@ from ...config import (
     is_running_in_container,
 )
 from ...config.context import get_current_workspace_dir
-from ...constant import WORKING_DIR, EnvVarLoader
+from ...constant import WORKING_DIR, EnvVarLoader, BROWSER_IDLE_TIMEOUT
 
 from .browser_snapshot import build_role_snapshot_from_aria
 
@@ -173,7 +173,7 @@ def _get_workspace_state(
 
 
 # Stop the browser after this many seconds of inactivity (default 10 minutes).
-_BROWSER_IDLE_TIMEOUT = 600.0
+# (moved to constant.py as BROWSER_IDLE_TIMEOUT)
 
 
 def _touch_activity(state: dict) -> None:
@@ -222,7 +222,7 @@ def _reset_browser_state(state: dict) -> None:
 
 async def _idle_watchdog(
     state: dict,
-    idle_seconds: float = _BROWSER_IDLE_TIMEOUT,
+    idle_seconds: float = BROWSER_IDLE_TIMEOUT,
 ) -> None:
     """Background task: stop the browser after it has been idle for *idle_seconds*.
 

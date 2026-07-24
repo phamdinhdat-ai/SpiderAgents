@@ -23,6 +23,7 @@ import frontmatter
 
 from ...exceptions import SkillsError
 from ...security.skill_scanner import scan_skill_directory
+from ...constant import SKILL_STORE_MAX_ZIP_BYTES
 from ..utils.file_handling import read_text_file_with_encoding_fallback
 from .models import SkillInfo, SkillRequirements
 
@@ -44,7 +45,7 @@ if fcntl is None and msvcrt is None:  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 _RegistryResult = TypeVar("_RegistryResult")
-_MAX_ZIP_BYTES = 200 * 1024 * 1024
+# (migrated to constant.py as SKILL_STORE_MAX_ZIP_BYTES)
 _REQUIREMENTS_METADATA_NAMESPACES = ("openclaw", "qwenpaw", "clawdbot")
 
 
@@ -384,7 +385,7 @@ def _is_hidden(name: str) -> bool:
 def _extract_and_validate_zip(data: bytes, tmp_dir: Path) -> None:
     with zipfile.ZipFile(io.BytesIO(data)) as zf:
         total = sum(info.file_size for info in zf.infolist())
-        if total > _MAX_ZIP_BYTES:
+        if total > SKILL_STORE_MAX_ZIP_BYTES:
             raise SkillsError(
                 message="Uncompressed zip exceeds 200MB limit",
             )

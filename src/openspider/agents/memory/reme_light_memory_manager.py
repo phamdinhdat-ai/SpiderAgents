@@ -29,14 +29,14 @@ from ...config.context import (
     set_current_workspace_dir,
     set_current_recent_max_bytes,
 )
-from ...constant import EnvVarLoader
+from ...constant import EnvVarLoader, MEMORY_MAX_QUERY_TOKENS
 
 logger = logging.getLogger(__name__)
 
 _REME_STORE_VERSION = "v1"
 _EXPECTED_REME_VERSION = "0.3.1.8"
 # Maximum number of tokens from query splitting
-MAX_QUERY_TOKENS = 50
+# (migrated to constant.py as MEMORY_MAX_QUERY_TOKENS)
 
 
 def _detect_memory_manager_backend() -> str:
@@ -292,7 +292,7 @@ class ReMeLightMemoryManager(BaseMemoryManager):
     def tokenize_query(
         self,
         query: str,
-        max_tokens: int = MAX_QUERY_TOKENS,
+        max_tokens: int = MEMORY_MAX_QUERY_TOKENS,
     ) -> list[str]:
         """Tokenize query: CJK chars as 1-gram, non-CJK split by whitespace.
 

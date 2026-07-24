@@ -30,7 +30,7 @@ from .compactor_prompts import (
     UPDATE_USER_MESSAGE_VI
 )
 from ..model_factory import create_model_and_formatter
-from ..tools.utils import truncate_text_output, DEFAULT_MAX_BYTES
+from ..tools.utils import truncate_text_output, TOOL_OUTPUT_MAX_BYTES
 from ..utils import get_token_counter
 from ..utils.estimate_token_counter import EstimatedTokenCounter
 from ...config.config import load_agent_config
@@ -234,7 +234,7 @@ class LightContextManager(BaseContextManager):
         messages: list[Msg],
         recent_n: int = 1,
         old_max_bytes: int = 3000,
-        recent_max_bytes: int = DEFAULT_MAX_BYTES,
+        recent_max_bytes: int = TOOL_OUTPUT_MAX_BYTES,
         **_kwargs,
     ) -> list[Msg]:
         """Process all messages, truncating large tool results.

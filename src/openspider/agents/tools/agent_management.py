@@ -14,10 +14,10 @@ from agentscope.tool import ToolResponse
 
 from ...config.utils import read_last_api
 from ...utils.http import trust_env_for_url
+from ...constant import AGENT_API_TIMEOUT
 
 
 DEFAULT_AGENT_API_BASE_URL = "http://127.0.0.1:8088"
-DEFAULT_AGENT_API_TIMEOUT = 30.0
 
 
 def resolve_agent_api_base_url(base_url: Optional[str] = None) -> str:
@@ -63,7 +63,7 @@ def normalize_id(id_to_normalize: Optional[str]) -> Optional[str]:
 
 def create_agent_api_client(
     base_url: Optional[str],
-    default_timeout: float = DEFAULT_AGENT_API_TIMEOUT,
+    default_timeout: float = AGENT_API_TIMEOUT,
 ) -> httpx.Client:
     """Create an HTTP client targeting the local agent API."""
     normalized = _normalize_api_base_url(base_url)
@@ -728,7 +728,7 @@ async def submit_to_agent(
         None,
         request_payload,
         normalized_to_agent,
-        int(DEFAULT_AGENT_API_TIMEOUT),
+        int(AGENT_API_TIMEOUT),
     )
     return _tool_text_response(
         format_background_submission_text(result, final_session_id),

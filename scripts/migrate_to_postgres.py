@@ -53,7 +53,7 @@ logger = logging.getLogger("migrate_to_postgres")
 
 DATABASE_URL = os.environ.get(
     "OPENSPIDER_DATABASE_URL",
-    "postgresql+asyncpg://openspider:spiderman@localhost:5433/openspider",
+    "postgresql+asyncpg://openspider:spiderman@192.168.100.26:5433/openspider",
 )
 
 # Resolve WORKING_DIR and SECRET_DIR
@@ -154,10 +154,15 @@ async def migrate_auth(session) -> int:
     if jwt_secret:
         # Try Fernet decryption if the value looks encrypted
         try:
-            from openspider.security.secret_store import is_encrypted, decrypt_value
+            from openspider.security.secret_store import is_encrypted, decrypt
 
             if is_encrypted(jwt_secret):
-                jwt_secret = decrypt_value(jwt_secret)
+                jwt_secret = decrypt(jwt_secret)
+        except ImportError:
+            logger.warning(
+                "Could not import secret_store — saving jwt_secret as-is. "
+                "Tokens issued before migration may be invalid.",
+            )
         except Exception:
             logger.warning(
                 "Could not decrypt jwt_secret — saving as-is. "
