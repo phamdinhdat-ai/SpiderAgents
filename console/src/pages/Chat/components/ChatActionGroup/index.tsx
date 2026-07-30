@@ -7,10 +7,13 @@ import {
 } from "@agentscope-ai/icons";
 import { useChatAnywhereSessions } from "@agentscope-ai/chat";
 import { useTranslation } from "react-i18next";
-import { Flex, Tooltip } from "antd";
+import { Badge, Flex, Tooltip } from "antd";
+import { FileText } from "lucide-react";
 import ChatSessionDrawer from "../ChatSessionDrawer";
 import ChatSearchPanel from "../ChatSearchPanel";
 import PlanPanel from "../../../../components/PlanPanel";
+import FilePanel from "../FilePanel";
+import { useFilePanelStore } from "../../../../stores/filePanelStore";
 
 const PlanIcon = () => (
   <svg
@@ -40,6 +43,8 @@ const ChatActionGroup: React.FC<ChatActionGroupProps> = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const { createSession } = useChatAnywhereSessions();
+  const fileCount = useFilePanelStore((s) => s.files.length);
+  const toggleFilePanel = useFilePanelStore((s) => s.togglePanelOpen);
 
   return (
     <Flex gap={8} align="center">
@@ -66,6 +71,15 @@ const ChatActionGroup: React.FC<ChatActionGroupProps> = ({
           onClick={() => setSearchOpen(true)}
         />
       </Tooltip>
+      <Tooltip title={t("filePanel.title", "Files")} mouseEnterDelay={0.5}>
+        <Badge count={fileCount} size="small" offset={[-2, 2]}>
+          <IconButton
+            bordered={false}
+            icon={<FileText size={18} />}
+            onClick={toggleFilePanel}
+          />
+        </Badge>
+      </Tooltip>
       <Tooltip title={t("chat.chatHistoryTooltip")} mouseEnterDelay={0.5}>
         <IconButton
           bordered={false}
@@ -81,6 +95,7 @@ const ChatActionGroup: React.FC<ChatActionGroupProps> = ({
       {planEnabled && (
         <PlanPanel open={planOpen} onClose={() => setPlanOpen(false)} />
       )}
+      <FilePanel />
     </Flex>
   );
 };

@@ -199,4 +199,30 @@ export const knowledgeApi = {
   /** List all knowledge bases with stats. */
   listKnowledgeBases: () =>
     request<ListKBResponse>("/knowledge/list"),
+
+  /** Ingest an existing server-side file into the knowledge base by path. */
+  ingestByPath: (body: IngestByPathRequest) =>
+    request<IngestByPathResponse>("/knowledge/documents/ingest-by-path", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
+
+// ---------------------------------------------------------------------------
+// Ingest-by-path types
+// ---------------------------------------------------------------------------
+
+export interface IngestByPathRequest {
+  file_path: string;
+  kb_name?: string;
+  original_name?: string;
+}
+
+export interface IngestByPathResponse {
+  document_id: string;
+  filename: string;
+  kb_name: string;
+  status: string;
+  chunk_count: number;
+  message: string;
+}

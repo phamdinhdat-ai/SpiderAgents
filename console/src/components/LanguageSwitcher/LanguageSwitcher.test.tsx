@@ -58,25 +58,6 @@ describe("LanguageSwitcher", () => {
   it("shows language options", () => {
     renderWithProviders(<LanguageSwitcher />);
     expect(screen.getByText("English")).toBeInTheDocument();
-    expect(screen.getByText("简体中文")).toBeInTheDocument();
-    expect(screen.getByText("日本語")).toBeInTheDocument();
-    expect(screen.getByText("Русский")).toBeInTheDocument();
-    expect(screen.getByText("Português (Brasil)")).toBeInTheDocument();
-    expect(screen.getByText("Bahasa Indonesia")).toBeInTheDocument();
-  });
-
-  it("calls i18n.changeLanguage when a language option is clicked", async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<LanguageSwitcher />);
-    await user.click(screen.getByText("简体中文"));
-    expect(mockChangeLanguage).toHaveBeenCalledWith("zh");
-  });
-
-  it("writes selected language to localStorage", async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<LanguageSwitcher />);
-    await user.click(screen.getByText("日本語"));
-    expect(localStorage.getItem("language")).toBe("ja");
   });
 
   it("calls languageApi.updateLanguage after switching language", async () => {

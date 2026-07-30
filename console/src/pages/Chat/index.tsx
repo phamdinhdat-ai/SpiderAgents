@@ -30,6 +30,7 @@ import { useChatAnywhereInput } from "@agentscope-ai/chat";
 import styles from "./index.module.less";
 import { IconButton } from "@agentscope-ai/design";
 import ChatActionGroup from "./components/ChatActionGroup";
+import FileEventBridge from "./components/FilePanel/FileEventBridge";
 import ChatHeaderTitle from "./components/ChatHeaderTitle";
 import ChatSessionInitializer from "./components/ChatSessionInitializer";
 import { ApprovalCard } from "../../components/ApprovalCard/ApprovalCard";
@@ -1066,6 +1067,7 @@ export default function ChatPage() {
             <span style={{ flex: 1 }} />
             <ModelSelector />
             <ChatActionGroup planEnabled={planEnabled} />
+            <FileEventBridge />
           </>
         ),
       },

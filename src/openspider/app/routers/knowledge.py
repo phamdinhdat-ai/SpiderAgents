@@ -486,3 +486,90 @@ async def share_document(
         "scope": body.scope,
         "shared_with": body.shared_with,
     }
+
+
+# ---------------------------------------------------------------------------
+# Ingest by server-side path
+# ---------------------------------------------------------------------------
+
+
+class IngestByPathRequest(BaseModel):
+    """Request body for ingesting an existing server-side file into KB."""
+
+    file_path: str = Field(..., description="Absolute path to the file on server")
+    kb_name: str = Field(default="default", description="Target knowledge base name")
+    original_name: str | None = Field(
+        default=None,
+        description="Original filename override (defaults to basename of file_path)",
+    )
+
+
+@router.post(
+    "/documents/ingest-by-path",
+    summary="Ingest a file by server path into the knowledge base",
+)
+async def ingest_document_by_path(
+    body: IngestByPathRequest,
+    request: Request,
+    x_agent_id: Optional[str] = Header(None, alias="X-Agent-Id"),
+):
+    """Ingest a file that already exists on the server into the knowledge base.
+
+    Unlike ``/documents/upload`` which requires multipart file upload, this
+    endpoint takes a server-side file path. The file must already exist within
+    the agent's workspace directory.
+
+    The document is automatically assigned to the authenticated user
+    (``owner``), ensuring per-user KB isolation.
+    """
+    from pathlib import Path as _Path
+
+    workspace = await get_agent_for_request(request)
+    kb = _get_kb_manager(workspace)
+    user_id, _role = _get_user_context(request)
+    kb_name = _resolve_kb_name(body.kb_name, user_id)
+
+    file_path = _Path(body.file_path)
+    if not file_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail=f"File not found: {body.file_path}",
+        )
+
+    # Security: ensure file_path is within the agent's workspace
+    workspace_dir = _Path(workspace.workspace_dir).resolve()
+    try:
+        resolved = file_path.resolve()
+        resolved.relative_to(workspace_dir)
+    except ValueError:
+        raise HTTPException(
+            status_code=403,
+            detail="File must be within the agent's workspace directory",
+        )
+
+    try:
+        doc = await kb.ingest_document(
+            file_path=resolved,
+            kb_name=kb_name,
+            owner=user_id,
+            original_name=body.original_name or resolved.name,
+        )
+    except Exception as exc:
+        logger.exception("Ingest-by-path failed for %s", body.file_path)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ingest failed: {exc}",
+        ) from exc
+
+    return {
+        "document_id": doc.id,
+        "filename": doc.filename,
+        "kb_name": doc.kb_name,
+        "status": doc.status.value,
+        "chunk_count": doc.chunk_count,
+        "message": (
+            "Document indexed successfully"
+            if doc.status.value == "ready"
+            else f"Indexing failed: {doc.error_message}"
+        ),
+    }

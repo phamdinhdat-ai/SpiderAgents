@@ -10,6 +10,7 @@ import uuid
 from pathlib import Path
 from typing import AsyncGenerator, Union
 
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from starlette.responses import StreamingResponse
 
@@ -396,3 +397,80 @@ async def get_push_messages(
     ]
 
     return {"messages": messages, "pending_approvals": approvals_data}
+
+
+# ---------------------------------------------------------------------------
+# File event & reading-config endpoints
+# ---------------------------------------------------------------------------
+
+
+class FileReadingConfigRequest(BaseModel):
+    """Request body for toggling file reading on/off."""
+    session_id: str = Field(..., description="Session ID")
+    file_path: str = Field(..., description="Absolute file path on server")
+    enabled: bool = Field(..., description="Whether the file is readable")
+
+
+@router.get(
+    "/file-events",
+    response_model=dict,
+    summary="Get file creation events for a session",
+)
+async def get_file_events(
+    session_id: str = Query(..., description="Session ID to get events for"),
+) -> dict:
+    """Return pending file creation events for a session (consumed on read).
+
+    The frontend polls this endpoint periodically to discover files created
+    by agent tools (write_file, edit_file, append_file) during the session.
+    """
+    from ..file_event_store import take
+    events = await take(session_id)
+    return {"files": events, "total": len(events)}
+
+
+@router.delete(
+    "/file-events",
+    response_model=dict,
+    summary="Remove a file event from the session",
+)
+async def delete_file_event(
+    session_id: str = Query(..., description="Session ID"),
+    file_path: str = Query(..., description="Absolute file path to remove"),
+) -> dict:
+    """Remove a single file event from the session's event store."""
+    from ..file_event_store import remove_event
+    removed = await remove_event(session_id, file_path)
+    return {"status": "deleted" if removed else "not_found"}
+
+
+@router.post(
+    "/file-reading-config",
+    response_model=dict,
+    summary="Update file reading enabled/disabled state",
+)
+async def update_file_reading_config(
+    body: FileReadingConfigRequest,
+) -> dict:
+    """Enable or disable reading for a file within a session.
+
+    Disabled files are excluded from the agent's workspace context so the
+    agent cannot read their contents during subsequent turns.
+    """
+    from ..file_reading_config import set_file_enabled
+    await set_file_enabled(body.session_id, body.file_path, body.enabled)
+    return {"status": "ok"}
+
+
+@router.get(
+    "/file-reading-config",
+    response_model=dict,
+    summary="Get disabled file paths for a session",
+)
+async def get_file_reading_config(
+    session_id: str = Query(..., description="Session ID"),
+) -> dict:
+    """Return the set of file paths currently disabled for reading."""
+    from ..file_reading_config import get_disabled_files
+    disabled = await get_disabled_files(session_id)
+    return {"disabled_files": list(disabled)}

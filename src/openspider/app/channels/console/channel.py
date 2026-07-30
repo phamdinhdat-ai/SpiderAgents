@@ -13,8 +13,10 @@ pretty-printed to the terminal.
 from __future__ import annotations
 
 import copy
+import json as _json
 import logging
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -28,6 +30,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 
 from ....config.config import ConsoleConfig as ConsoleChannelConfig
 from ...console_push_store import append as push_store_append
+from ...file_event_store import append as file_event_append
 from ....constant import DEFAULT_MEDIA_DIR
 from ..base import (
     BaseChannel,
@@ -58,6 +61,79 @@ _RESET = "\033[0m" if _USE_COLOR else ""
 
 def _ts() -> str:
     return datetime.now().strftime("%H:%M:%S")
+
+
+# ---------------------------------------------------------------------------
+# File creation event detection
+# ---------------------------------------------------------------------------
+
+# Tool names that create or modify files
+_FILE_WRITE_TOOLS = frozenset({"write_file", "edit_file", "append_file"})
+
+# Regex patterns to extract file path and byte count from tool output text.
+# write_file → "Wrote N bytes to /path/to/file.txt"
+# append_file → "Appended N bytes to /path/to/file.txt"
+# edit_file → "Successfully replaced text in /path/to/file.txt"
+_FILE_OP_PATTERNS = {
+    "write_file": re.compile(r"^Wrote (\d+) bytes to (.+?)(?:\.\s*)?$"),
+    "edit_file": re.compile(r"^Successfully replaced text in (.+?)(?:\.\s*)?$"),
+    "append_file": re.compile(r"^Appended (\d+) bytes to (.+?)(?:\.\s*)?$"),
+}
+
+# Map tool name → action label
+_TOOL_ACTION = {
+    "write_file": "created",
+    "edit_file": "modified",
+    "append_file": "appended",
+}
+
+
+def _parse_file_op_output(
+    tool_name: str,
+    output_text: str,
+) -> dict | None:
+    """Extract file path and size from a file-write tool output string.
+
+    Returns a dict with ``file_path``, ``size``, and ``action``, or ``None``
+    if the output does not match the expected format.
+    """
+    pattern = _FILE_OP_PATTERNS.get(tool_name)
+    if not pattern:
+        return None
+    match = pattern.match(output_text.strip())
+    if not match:
+        return None
+
+    if tool_name in ("write_file", "append_file"):
+        size = int(match.group(1))
+        file_path = match.group(2).strip()
+    else:
+        size = 0
+        file_path = match.group(1).strip()
+
+    action = _TOOL_ACTION.get(tool_name, "created")
+    return {"file_path": file_path, "size": size, "action": action}
+
+
+def _extract_tool_output_raw(output: Any) -> str:
+    """Extract human-readable text from a raw tool output value.
+
+    ``output`` may be a JSON-encoded string, a plain string, or a list of
+    ``{type, text}`` blocks (already decoded).
+    """
+    if isinstance(output, str):
+        try:
+            decoded = _json.loads(output)
+        except (_json.JSONDecodeError, ValueError):
+            return output
+        return _extract_tool_output_raw(decoded)
+    if isinstance(output, list):
+        texts: list[str] = []
+        for block in output:
+            if isinstance(block, dict) and block.get("type") == "text":
+                texts.append(str(block.get("text", "")))
+        return "\n".join(texts)
+    return str(output) if output else ""
 
 
 class ConsoleChannel(BaseChannel):
@@ -413,6 +489,43 @@ class ConsoleChannel(BaseChannel):
 
                     parts = self._message_to_content_parts(event)
                     self._print_parts(parts, ev_type)
+
+                    # ── detect file creation from tool output events ──
+                    # Inspect raw event.content (DataContent with .data dict),
+                    # NOT the rendered parts (TextContent) which have no .data.
+                    if ev_type in (
+                        MessageType.FUNCTION_CALL_OUTPUT,
+                        MessageType.PLUGIN_CALL_OUTPUT,
+                        MessageType.MCP_TOOL_CALL_OUTPUT,
+                    ):
+                        raw_contents = getattr(event, "content", None)
+                        if isinstance(raw_contents, list):
+                            for content_item in raw_contents:
+                                if getattr(content_item, "type", None) != ContentType.DATA:
+                                    continue
+                                data = getattr(content_item, "data", None)
+                                if not isinstance(data, dict):
+                                    continue
+                                tool_name = str(data.get("name", ""))
+                                if tool_name not in _FILE_WRITE_TOOLS:
+                                    continue
+                                output_text = _extract_tool_output_raw(
+                                    data.get("output", "")
+                                )
+                                if not output_text:
+                                    continue
+                                file_info = _parse_file_op_output(
+                                    tool_name,
+                                    output_text,
+                                )
+                                if file_info:
+                                    await file_event_append(
+                                        session_id=session_id,
+                                        file_path=file_info["file_path"],
+                                        tool_name=tool_name,
+                                        action=file_info["action"],
+                                        file_size=file_info.get("size", 0),
+                                    )
 
                 elif obj == "response":
                     last_response = event

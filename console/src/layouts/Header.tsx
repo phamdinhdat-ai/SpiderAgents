@@ -114,19 +114,19 @@ export default function Header() {
   const handleOpenUpdateModal = () => {
     setUpdateMarkdown("");
     setUpdateModalOpen(true);
-    const lang = i18n.language?.startsWith("zh")
-      ? "zh"
+    const lang = i18n.language?.startsWith("vi")
+      ? "vi"
       : i18n.language?.startsWith("ru")
       ? "ru"
       : "en";
-    const faqLang = lang === "zh" ? "zh" : "en";
+    const faqLang = lang === "vi" ? "vi" : "en";
     const url = `https://openspider.agentscope.io/docs/faq.${faqLang}.md`;
     fetch(url, { cache: "no-cache" })
       .then((res) => (res.ok ? res.text() : Promise.reject()))
       .then((text) => {
-        const zhPattern = /###\s*OpenSpider如何更新[\s\S]*?(?=\n###|$)/;
+        const viPattern = /###\s*OpenSpider[\s\S]*?(?=\n###|$)/;
         const enPattern = /###\s*How to update OpenSpider[\s\S]*?(?=\n###|$)/;
-        const match = text.match(faqLang === "zh" ? zhPattern : enPattern);
+        const match = text.match(faqLang === "vi" ? viPattern : enPattern);
         setUpdateMarkdown(
           match && lang !== "ru"
             ? match[0].trim()

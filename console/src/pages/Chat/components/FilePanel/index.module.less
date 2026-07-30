@@ -1,0 +1,630 @@
+.drawer {
+  :global {
+    .qwenpaw-drawer-body {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--colorBgBase, #fff);
+    }
+  }
+}
+
+/* Header bar */
+.header {
+  display: flex;
+  align-items: center;
+  padding: 16px 16px 16px 20px;
+  gap: 8px;
+  background-color: var(--colorBgBase, #fff);
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.headerTitle {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 32px;
+  color: var(--colorText, rgba(0, 0, 0, 0.88));
+}
+
+.headerCount {
+  font-size: 13px;
+  color: var(--colorTextSecondary, rgba(0, 0, 0, 0.45));
+  line-height: 32px;
+}
+
+/* Summary */
+.summary {
+  flex-shrink: 0;
+  padding: 0 16px 12px;
+  font-size: 13px;
+  color: var(--colorTextSecondary, rgba(0, 0, 0, 0.45));
+}
+
+/* File list container */
+.listWrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.list {
+  padding: 0 12px;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Individual file row */
+.fileRow {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 8px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  gap: 10px;
+
+  &:hover {
+    background: var(--colorBgTextHover, rgba(0, 0, 0, 0.04));
+  }
+}
+
+.fileRowSelected {
+  background: var(--colorPrimaryBg, rgba(22, 119, 255, 0.06));
+
+  &:hover {
+    background: var(--colorPrimaryBgHover, rgba(22, 119, 255, 0.1));
+  }
+}
+
+/* Multi-select checkbox */
+.fileCheckbox {
+  flex-shrink: 0;
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+}
+
+.fileIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--colorTextSecondary, rgba(0, 0, 0, 0.45));
+  font-size: 18px;
+}
+
+.fileInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.fileName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--colorText, rgba(0, 0, 0, 0.88));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filePath {
+  font-size: 12px;
+  color: var(--colorTextSecondary, rgba(0, 0, 0, 0.45));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+
+.fileMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.fileSize {
+  font-size: 12px;
+  color: var(--colorTextSecondary, rgba(0, 0, 0, 0.45));
+}
+
+.actionBadge {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.actionCreated {
+  background: #e6f4ff;
+  color: #1677ff;
+}
+
+.actionModified {
+  background: #fff7e6;
+  color: #d48806;
+}
+
+.actionAppended {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.fileActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ingestBtn {
+  font-size: 12px;
+}
+
+.ingestStatus {
+  font-size: 12px;
+  color: var(--colorTextSecondary, rgba(0, 0, 0, 0.45));
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.spinIcon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ingestSuccess {
+  font-size: 12px;
+  color: #52c41a;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ingestError {
+  font-size: 12px;
+  color: #ff4d4f;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.deleteBtn {
+  opacity: 0;
+  transition: opacity 0.15s;
+
+  .fileRow:hover & {
+    opacity: 1;
+  }
+}
+
+/* Preview section */
+.previewContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 8px;
+  border-bottom: 1px solid var(--colorBorderSecondary, rgba(0, 0, 0, 0.06));
+  flex-shrink: 0;
+}
+
+.previewBack {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  color: var(--colorTextSecondary, rgba(0, 0, 0, 0.45));
+  font-size: 13px;
+
+  &:hover {
+    color: var(--colorText, rgba(0, 0, 0, 0.88));
+  }
+}
+
+.previewFileName {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--colorText, rgba(0, 0, 0, 0.88));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.previewContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+
+  pre {
+    background: var(--colorBgContainer, rgba(0, 0, 0, 0.02));
+    border-radius: 8px;
+    padding: 12px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  code {
+    font-family: "SF Mono", "Monaco", "Menlo", "Consolas", monospace;
+    font-size: 12px;
+  }
+
+  :global {
+    .x-markdown {
+      font-size: 13px;
+      line-height: 1.6;
+    }
+  }
+}
+
+.previewLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.previewError {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 8px;
+  color: var(--colorTextSecondary, rgba(0, 0, 0, 0.45));
+  font-size: 13px;
+}
+
+.previewFileInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+}
+
+/* Empty state */
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--colorTextSecondary, rgba(0, 0, 0, 0.45));
+}
+
+.emptyIcon {
+  font-size: 36px;
+  opacity: 0.4;
+}
+
+.emptyText {
+  font-size: 14px;
+}
+
+.emptyHint {
+  font-size: 12px;
+  color: var(--colorTextQuaternary, rgba(0, 0, 0, 0.25));
+  text-align: center;
+}
+
+/* Batch actions bar */
+.batchBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-top: 1px solid var(--colorBorderSecondary, rgba(0, 0, 0, 0.06));
+  background: var(--colorBgBase, #fff);
+  flex-shrink: 0;
+}
+
+.batchLabel {
+  font-size: 13px;
+  color: var(--colorTextSecondary, rgba(0, 0, 0, 0.45));
+}
+
+/* Preview Modal styles */
+.modalTitleName {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.modalTitlePath {
+  font-size: 12px;
+  color: var(--colorTextSecondary, rgba(0, 0, 0, 0.45));
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modalContent {
+  padding: 24px;
+  font-size: 14px;
+  line-height: 1.7;
+
+  pre {
+    background: var(--colorBgContainer, rgba(0, 0, 0, 0.02));
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  code {
+    font-family: "SF Mono", "Monaco", "Menlo", "Consolas", monospace;
+    font-size: 13px;
+  }
+
+  :global {
+    .x-markdown {
+      font-size: 14px;
+      line-height: 1.7;
+    }
+  }
+}
+
+.modalDocx {
+  padding: 24px;
+  font-size: 14px;
+  line-height: 1.7;
+
+  :global {
+    .docx-preview {
+      h1, h2, h3, h4, h5, h6 {
+        margin-top: 1em;
+        margin-bottom: 0.5em;
+        font-weight: 600;
+      }
+      h1 { font-size: 1.6em; }
+      h2 { font-size: 1.4em; }
+      h3 { font-size: 1.2em; }
+      h4 { font-size: 1.1em; }
+
+      p {
+        margin: 0.5em 0;
+      }
+
+      strong {
+        font-weight: 600;
+      }
+
+      .docx-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1em 0;
+
+        td {
+          border: 1px solid var(--colorBorderSecondary, rgba(0, 0, 0, 0.1));
+          padding: 8px 12px;
+          font-size: 13px;
+        }
+
+        tr:nth-child(even) td {
+          background: var(--colorBgContainer, rgba(0, 0, 0, 0.02));
+        }
+      }
+    }
+  }
+}
+
+/* DOCX preview in drawer */
+.previewDocx {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+
+  :global {
+    .docx-preview {
+      h1, h2, h3, h4, h5, h6 {
+        margin-top: 1em;
+        margin-bottom: 0.5em;
+        font-weight: 600;
+      }
+      h1 { font-size: 1.5em; }
+      h2 { font-size: 1.3em; }
+      h3 { font-size: 1.15em; }
+
+      p { margin: 0.4em 0; }
+
+      strong { font-weight: 600; }
+
+      .docx-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0.8em 0;
+
+        td {
+          border: 1px solid var(--colorBorderSecondary, rgba(0, 0, 0, 0.1));
+          padding: 6px 10px;
+          font-size: 12px;
+        }
+      }
+    }
+  }
+}
+
+/* Ingest badges in modal title */
+.ingestSuccessBadge {
+  font-size: 12px;
+  color: #52c41a;
+}
+
+.ingestErrorBadge {
+  font-size: 12px;
+  color: #ff4d4f;
+}
+
+/* Dark mode */
+:global(.dark-mode) {
+  .drawer {
+    :global {
+      .qwenpaw-drawer-body {
+        background-color: #1f1f1f;
+      }
+    }
+  }
+
+  .header {
+    background-color: #1f1f1f;
+  }
+
+  .headerTitle {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .fileRow {
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+  }
+
+  .fileName {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .filePath {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .fileSize {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .actionCreated {
+    background: rgba(22, 119, 255, 0.15);
+    color: #91caff;
+  }
+
+  .actionModified {
+    background: rgba(212, 136, 6, 0.15);
+    color: #ffd666;
+  }
+
+  .actionAppended {
+    background: rgba(82, 196, 26, 0.15);
+    color: #95de64;
+  }
+
+  .previewHeader {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .previewFileName {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .previewContent {
+    pre {
+      background: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  .emptyState {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .fileRowSelected {
+    background: rgba(22, 119, 255, 0.1);
+
+    &:hover {
+      background: rgba(22, 119, 255, 0.15);
+    }
+  }
+
+  .ingestSuccess {
+    color: #95de64;
+  }
+
+  .ingestError {
+    color: #ff7875;
+  }
+
+  .batchBar {
+    border-top-color: rgba(255, 255, 255, 0.08);
+    background: #1f1f1f;
+  }
+
+  .batchLabel {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .modalTitlePath {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .modalContent {
+    pre {
+      background: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  .modalDocx {
+    :global {
+      .docx-preview .docx-table td {
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+      .docx-preview .docx-table tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.03);
+      }
+    }
+  }
+
+  .previewDocx {
+    :global {
+      .docx-preview .docx-table td {
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+
+  .ingestSuccessBadge {
+    color: #95de64;
+  }
+
+  .ingestErrorBadge {
+    color: #ff7875;
+  }
+}

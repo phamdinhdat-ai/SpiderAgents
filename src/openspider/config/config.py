@@ -1202,7 +1202,7 @@ class AgentProfileConfig(BaseModel):
         description="Active model for this agent (provider_id + model)",
     )
     language: str = Field(
-        default="zh",
+        default="en",
         description="Language setting for this agent",
     )
     approval_level: str = Field(
