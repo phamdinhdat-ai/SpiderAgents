@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from starlette.responses import FileResponse
 
+from ...constant import DEFAULT_MEDIA_DIR
+
 router = APIRouter(prefix="/files", tags=["files"])
 
 
@@ -27,6 +29,53 @@ def _normalize_filepath(filepath: str) -> Path:
     return path.resolve()
 
 
+async def _allowed_file_roots(request: Request) -> list[Path]:
+    """Return directory roots whose files may be served/previewed.
+
+    Files must live inside the active agent's workspace (uploads, media,
+    knowledge base files) or the default media dir (CLI console uploads).
+    """
+    roots: list[Path] = []
+    try:
+        from ..agent_context import get_agent_for_request
+
+        workspace = None
+        try:
+            workspace = await get_agent_for_request(request)
+        except HTTPException:
+            # No resolvable agent context (e.g. img-tag preview with no
+            # X-Agent-Id header) — fall back to allowed roots below.
+            pass
+        if workspace is not None:
+            roots.append(Path(workspace.workspace_dir).resolve())
+    except Exception:
+        pass
+    roots.append(Path(DEFAULT_MEDIA_DIR).resolve())
+    return roots
+
+
+async def _ensure_servable_file(path: Path, request: Request) -> Path:
+    """Return *path* when it may be previewed, else raise 403.
+
+    The file must be inside one of the allowed roots (workspace / default
+    media dir) so the preview endpoint cannot be used to read arbitrary
+    files from the user's local disk.
+    """
+    resolved = path.resolve()
+    if not resolved.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    for root in await _allowed_file_roots(request):
+        try:
+            resolved.relative_to(root)
+            return resolved
+        except ValueError:
+            continue
+    raise HTTPException(
+        status_code=403,
+        detail="File is outside the allowed workspace directories",
+    )
+
+
 @router.api_route(
     "/preview/{filepath:path}",
     methods=["GET", "HEAD"],
@@ -34,12 +83,14 @@ def _normalize_filepath(filepath: str) -> Path:
 )
 async def preview_file(
     filepath: str,
+    request: Request,
 ):
-    """Preview file."""
+    """Preview file (workspace files only)."""
     path = _normalize_filepath(filepath)
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail="Not found")
-    return FileResponse(path, filename=path.name)
+    return FileResponse(
+        await _ensure_servable_file(path, request),
+        filename=path.name,
+    )
 
 
 @router.get(
@@ -56,9 +107,7 @@ async def preview_docx(
     Uses python-docx to extract paragraphs, tables, and basic formatting.
     Falls back to plain text if conversion fails.
     """
-    path = _normalize_filepath(filepath)
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail="File not found")
+    path = await _ensure_servable_file(_normalize_filepath(filepath), request)
 
     ext = path.suffix.lower()
     if ext not in (".docx",):
@@ -148,20 +197,7 @@ async def delete_file(
 
     The file must be within the agent's workspace directory.
     """
-    path = _normalize_filepath(filepath)
-
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail="File not found")
-
-    # Security: verify the file is within a workspace-like directory.
-    # We check that the path contains "workspace" as a heuristic, since
-    # the full workspace resolution requires agent context unavailable here.
-    path_str = str(path).lower()
-    if "workspace" not in path_str:
-        raise HTTPException(
-            status_code=403,
-            detail="File must be within a workspace directory",
-        )
+    path = await _ensure_servable_file(_normalize_filepath(filepath), request)
 
     try:
         path.unlink()

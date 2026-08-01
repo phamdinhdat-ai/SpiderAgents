@@ -100,6 +100,13 @@ _SKIP_DIRS = frozenset(
         "build",
         ".next",
         ".nuxt",
+        # Legacy workspace uploads — documents now live in the knowledge
+        # base and are discovered via knowledge_base_search, not globbing.
+        "documents",
+        # Raw knowledge-base files — always searched through the KB tools,
+        # which enforce per-user ACLs.  Skipping the directory here keeps
+        # agents from bypassing those ACLs via file globbing.
+        "knowledge_base",
     },
 )
 

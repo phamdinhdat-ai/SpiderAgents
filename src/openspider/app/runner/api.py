@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 """Chat management API."""
 from __future__ import annotations
+
+import logging
 from typing import Optional
 from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from agentscope.memory import InMemoryMemory
+
+logger = logging.getLogger(__name__)
 
 from .session import SafeJSONSession
 from .manager import ChatManager
@@ -17,6 +21,68 @@ from .utils import agentscope_msg_to_message
 
 
 router = APIRouter(prefix="/chats", tags=["chats"])
+
+
+async def _authorize_chat(
+    request: Request,
+    mgr: ChatManager,
+    chat_id: str,
+) -> ChatSpec:
+    """Return the ChatSpec if the caller may access it, else raise 404.
+
+    - Auth disabled → allow any chat.
+    - Admin → allow any chat (consistent with list_chats admin access).
+    - Non-admin → only own chats; 404 is returned (not 403) so chat
+      existence is not leaked to unauthorized callers.
+    """
+    from ..auth import is_auth_enabled, get_current_user
+
+    chat_spec = await mgr.get_chat(chat_id)
+    if not chat_spec:
+        raise HTTPException(status_code=404, detail=f"Chat not found: {chat_id}")
+
+    if is_auth_enabled():
+        caller = get_current_user(request)
+        if caller is not None:
+            username, role = caller
+            if role != "admin" and chat_spec.user_id != username:
+                logger.debug(
+                    "User '%s' denied access to chat '%s' owned by '%s'",
+                    username,
+                    chat_id[:12],
+                    chat_spec.user_id,
+                )
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Chat not found: {chat_id}",
+                )
+
+    return chat_spec
+
+
+def _resolve_authoritative_user_id(
+    request: Request,
+    client_user_id: str,
+) -> str:
+    """Return the authoritative user_id for chat creation.
+
+    - Auth disabled → honor client-supplied value.
+    - Admin → honor client-supplied value (may create for any user).
+    - Non-admin → force caller's username.
+    """
+    from ..auth import is_auth_enabled, get_current_user
+
+    if not is_auth_enabled():
+        return client_user_id
+
+    caller = get_current_user(request)
+    if caller is None:
+        return client_user_id
+
+    username, role = caller
+    if role == "admin":
+        return client_user_id
+    return username
 
 
 async def get_workspace(request: Request):
@@ -104,28 +170,35 @@ async def list_chats(
 
 @router.post("", response_model=ChatSpec)
 async def create_chat(
-    request: ChatSpec,
+    body: ChatSpec,
+    fastapi_request: Request,
     mgr: ChatManager = Depends(get_chat_manager),
 ):
     """Create a new chat.
 
     Server generates chat_id (UUID) automatically.
+    Non-admin users cannot set an arbitrary user_id — it is forced
+    to the caller's username when auth is enabled.
 
     Args:
-        request: Chat creation request
+        body: Chat creation request payload
+        fastapi_request: FastAPI request (for auth context)
         mgr: Chat manager dependency
 
     Returns:
         Created chat spec with UUID
     """
+    # Enforce authoritative user_id (non-admin → own username)
+    user_id = _resolve_authoritative_user_id(fastapi_request, body.user_id)
+
     chat_id = str(uuid4())
     spec = ChatSpec(
         id=chat_id,
-        name=request.name,
-        session_id=request.session_id,
-        user_id=request.user_id,
-        channel=request.channel,
-        meta=request.meta,
+        name=body.name,
+        session_id=body.session_id,
+        user_id=user_id,
+        channel=body.channel,
+        meta=body.meta,
     )
     return await mgr.create_chat(spec)
 
@@ -133,17 +206,24 @@ async def create_chat(
 @router.post("/batch-delete", response_model=dict)
 async def batch_delete_chats(
     chat_ids: list[str],
+    request: Request,
     mgr: ChatManager = Depends(get_chat_manager),
 ):
     """Delete chats by chat IDs.
 
+    Each chat is authorized before deletion — if any chat is not owned
+    by the caller, the entire batch is rejected with a 404.
+
     Args:
         chat_ids: List of chat IDs
+        request: FastAPI request (for auth context)
         mgr: Chat manager dependency
     Returns:
         True if deleted, False if failed
-
     """
+    # Authorize all chats before deleting any (all-or-nothing)
+    for cid in chat_ids:
+        await _authorize_chat(request, mgr, cid)
     deleted = await mgr.delete_chats(chat_ids=chat_ids)
     return {"deleted": deleted}
 
@@ -151,6 +231,7 @@ async def batch_delete_chats(
 @router.get("/{chat_id}", response_model=ChatHistory)
 async def get_chat(
     chat_id: str,
+    request: Request,
     mgr: ChatManager = Depends(get_chat_manager),
     session: SafeJSONSession = Depends(get_session),
     workspace=Depends(get_workspace),
@@ -158,7 +239,7 @@ async def get_chat(
     """Get detailed information about a specific chat by UUID.
 
     Args:
-        request: FastAPI request (for agent context)
+        request: FastAPI request (for auth context)
         chat_id: Chat UUID
         mgr: Chat manager dependency
         session: SafeJSONSession dependency
@@ -167,14 +248,9 @@ async def get_chat(
         ChatHistory with messages and status (idle/running)
 
     Raises:
-        HTTPException: If chat not found (404)
+        HTTPException: If chat not found (404) or not owned by caller
     """
-    chat_spec = await mgr.get_chat(chat_id)
-    if not chat_spec:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Chat not found: {chat_id}",
-        )
+    chat_spec = await _authorize_chat(request, mgr, chat_id)
 
     state = await session.get_session_state_dict(
         chat_spec.session_id,
@@ -197,6 +273,7 @@ async def get_chat(
 async def update_chat(
     chat_id: str,
     spec: ChatUpdate,
+    request: Request,
     mgr: ChatManager = Depends(get_chat_manager),
 ):
     """Update an existing chat.
@@ -204,14 +281,16 @@ async def update_chat(
     Args:
         chat_id: Chat UUID
         spec: Partial chat update payload
+        request: FastAPI request (for auth context)
         mgr: Chat manager dependency
 
     Returns:
         Updated chat spec
 
     Raises:
-        HTTPException: If chat not found (404)
+        HTTPException: If chat not found (404) or not owned by caller
     """
+    await _authorize_chat(request, mgr, chat_id)
     updated = await mgr.patch_chat(chat_id, spec)
     if updated is None:
         raise HTTPException(
@@ -224,6 +303,7 @@ async def update_chat(
 @router.delete("/{chat_id}", response_model=dict)
 async def delete_chat(
     chat_id: str,
+    request: Request,
     mgr: ChatManager = Depends(get_chat_manager),
 ):
     """Delete a chat by UUID.
@@ -233,14 +313,16 @@ async def delete_chat(
 
     Args:
         chat_id: Chat UUID
+        request: FastAPI request (for auth context)
         mgr: Chat manager dependency
 
     Returns:
         True if deleted, False if failed
 
     Raises:
-        HTTPException: If chat not found (404)
+        HTTPException: If chat not found (404) or not owned by caller
     """
+    await _authorize_chat(request, mgr, chat_id)
     deleted = await mgr.delete_chats(chat_ids=[chat_id])
     if not deleted:
         raise HTTPException(

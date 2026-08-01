@@ -298,6 +298,83 @@ def _extract_paths_from_shell_command(command: str) -> list[str]:
     return deduped
 
 
+# ---------------------------------------------------------------------------
+# User personal folders (Documents, Desktop, Downloads, ...)
+# ---------------------------------------------------------------------------
+# These are always off-limits to agent tools, regardless of the configured
+# sensitive-file list.  The system prompt tells agents they do NOT have
+# access to the user's personal files, and tool-layer enforcement backs
+# that up (see execute_shell_command / view_media sandboxing).
+_PERSONAL_FOLDER_NAMES: tuple[str, ...] = (
+    "documents",
+    "desktop",
+    "downloads",
+    "pictures",
+    "music",
+    "videos",
+)
+
+_PERSONAL_FOLDER_SEGMENT_RE = re.compile(
+    r"(^|[\\/])("
+    + "|".join(re.escape(n) for n in _PERSONAL_FOLDER_NAMES)
+    + r")([\\/]|$)",
+    re.IGNORECASE,
+)
+
+
+def personal_folder_roots() -> list[str]:
+    """Return normalized absolute roots of the user's personal folders.
+
+    E.g. ``~/Documents``, ``~/Desktop``, ``~/Downloads``, ``~/Pictures``,
+    ``~/Music``, ``~/Videos`` (normalized per platform).
+    """
+    home = Path.home()
+    return [
+        _normalize_path(str(home / name))
+        for name in _PERSONAL_FOLDER_NAMES
+    ]
+
+
+def path_hits_personal_folder(path: str) -> bool:
+    """Return ``True`` when *path* resolves inside a personal folder."""
+    if not path:
+        return False
+    normalized = _normalize_path(_sanitize_path_candidate(path))
+    if not normalized:
+        return False
+    for root in personal_folder_roots():
+        if not root:
+            continue
+        if normalized == root:
+            return True
+        if normalized.startswith(root + "/") or normalized.startswith(root + "\\"):
+            return True
+    return False
+
+
+def command_hits_personal_folder(command: str) -> bool:
+    """Return ``True`` when a shell command references a personal folder.
+
+    Two checks:
+    1. Path tokens extracted from the command resolve inside a personal
+       folder root (handles ``C:\\Users\\x\\Documents\\...``, ``~/Documents``).
+    2. Path-like tokens that contain a personal folder *segment* — catches
+       env-var forms that cannot be resolved statically
+       (e.g. ``%USERPROFILE%\\Documents``, ``$HOME/Documents``).
+    """
+    if not command or not command.strip():
+        return False
+    for raw in _extract_paths_from_shell_command(command):
+        if path_hits_personal_folder(raw):
+            return True
+        candidate = _sanitize_path_candidate(raw)
+        if not _looks_like_path_token(candidate):
+            continue
+        if _PERSONAL_FOLDER_SEGMENT_RE.search(candidate):
+            return True
+    return False
+
+
 class FilePathToolGuardian(BaseToolGuardian):
     """Guardian that blocks access to configured sensitive files."""
 

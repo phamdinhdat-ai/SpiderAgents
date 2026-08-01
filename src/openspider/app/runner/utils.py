@@ -103,10 +103,13 @@ def build_env_context(
             "you are blocked.\n"
             "  4. You can ONLY access files within the Working directory "
             "above. You do NOT have access to the user's personal files "
-            "(Documents, Desktop, Downloads, etc.). When the user asks "
-            "about 'my files' or 'my documents', they mean the documents "
-            "they have uploaded or created in your workspace. Use "
-            "glob_search or read_file to find and retrieve their content.",
+            "(Documents, Desktop, Downloads, etc.) — commands or paths "
+            "that reference them are blocked. When the user asks about "
+            "'my files' or 'my documents', they mean the documents they "
+            "have uploaded to the knowledge base: use "
+            "knowledge_list_documents and knowledge_base_search to find "
+            "and retrieve their content. Use glob_search or read_file "
+            "only for files within your workspace.",
         )
 
     return (

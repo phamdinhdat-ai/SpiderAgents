@@ -32,6 +32,7 @@ from ...agents.memory.agent_md_manager import AgentMdManager
 from ...agents.templates import get_workspace_md_template_id
 from ...agents.utils import copy_workspace_md_files
 from ...constant import BUILTIN_QA_AGENT_ID, SUPPORTED_AGENT_LANGUAGES
+from ...knowledge.knowledge_base_manager import SUPPORTED_EXTENSIONS
 from ..agent_context import get_agent_for_request
 
 
@@ -123,12 +124,9 @@ async def list_working_files(
                 include_system=include_system,
             )
         ]
-        # Also include uploaded documents from documents/ subdirectory
-        doc_files = [
-            MdFileInfo.model_validate(doc)
-            for doc in workspace_manager.list_documents()
-        ]
-        return files + doc_files
+        # Note: uploaded documents no longer live in documents/ — they are
+        # ingested into the knowledge base and listed there instead.
+        return files
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -143,19 +141,19 @@ async def read_working_file(
     md_name: str,
     request: Request,
 ) -> MdFileContent:
-    """Read a working directory file (workspace .md or documents/ file)."""
+    """Read a working directory file (workspace .md or uploads/ file)."""
     try:
         workspace = await get_agent_for_request(request)
         workspace_manager = AgentMdManager(
             str(workspace.workspace_dir),
             agent_id=workspace.agent_id,
         )
-        # Try workspace .md first, then documents/ subdirectory
+        # Try workspace .md first, then uploads/ subdirectory
         try:
             content = workspace_manager.read_working_md(md_name)
         except FileNotFoundError:
-            # Try reading from documents/ as-is (no .md auto-append)
-            doc_path = workspace_manager.working_dir / "documents" / md_name
+            # Try reading from uploads/ as-is (no .md auto-append)
+            doc_path = workspace_manager.working_dir / "uploads" / md_name
             if doc_path.is_file():
                 content = doc_path.read_text(encoding="utf-8", errors="replace")
             else:
@@ -178,16 +176,16 @@ async def write_working_file(
     body: MdFileContent,
     request: Request,
 ) -> dict:
-    """Write a working file (workspace .md or documents/ file)."""
+    """Write a working file (workspace .md or uploads/ file)."""
     try:
         workspace = await get_agent_for_request(request)
         workspace_manager = AgentMdManager(
             str(workspace.workspace_dir),
             agent_id=workspace.agent_id,
         )
-        # If it's a document file (non-.md or in documents/), save there
+        # Non-markdown files are saved under uploads/
         if not md_name.endswith(".md"):
-            doc_path = workspace_manager.working_dir / "documents" / md_name
+            doc_path = workspace_manager.working_dir / "uploads" / md_name
             doc_path.parent.mkdir(parents=True, exist_ok=True)
             doc_path.write_text(body.content, encoding="utf-8")
         else:
@@ -794,7 +792,9 @@ async def download_workspace(request: Request):
     description=(
         "Upload one or more files to the agent workspace. "
         "ZIP archives are extracted and merged into the workspace. "
-        "Individual files are saved to the documents/ subdirectory. "
+        "Document files (PDF, DOCX, XLSX, MD, TXT, CSV, ...) are ingested "
+        "into the knowledge base so the agent can search their content. "
+        "Other files are saved to the uploads/ subdirectory. "
         "Use the 'files' field for multiple files."
     ),
 )
@@ -802,7 +802,7 @@ async def upload_workspace(
     request: Request,
     files: list[UploadFile] | None = File(
         default=None,
-        description="Files to upload (ZIP archives merged, others saved to documents/)",
+        description="Files to upload (ZIP archives merged, documents indexed into KB)",
     ),
     file: UploadFile | None = File(
         default=None,
@@ -812,7 +812,9 @@ async def upload_workspace(
     """Upload files to agent workspace.
 
     - ZIP archives: extracted and merged (files overwritten, dirs merged).
-    - Individual files: saved to ``documents/`` subdirectory.
+    - Document files: ingested into the knowledge base (searchable via
+      ``knowledge_base_search`` / ``knowledge_list_documents``).
+    - Other files: saved to the ``uploads/`` subdirectory.
 
     Supports both ``files`` (multiple) and ``file`` (single, legacy).
     """
@@ -829,8 +831,13 @@ async def upload_workspace(
 
     agent = await get_agent_for_request(request)
     workspace_dir = Path(agent.workspace_dir)
-    documents_dir = workspace_dir / "documents"
-    documents_dir.mkdir(parents=True, exist_ok=True)
+    uploads_dir = workspace_dir / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+
+    # Authenticated user context for knowledge-base ownership
+    from ..agent_context import get_current_auth_user_id
+
+    user_id = get_current_auth_user_id() or None
 
     uploaded: list[str] = []
     errors: list[str] = []
@@ -867,15 +874,57 @@ async def upload_workspace(
                     errors.append(f"{safe_name}: {exc}")
                 continue
 
-            # Individual file: save to documents/
-            dest = documents_dir / safe_name
+            # Individual file:
+            #  - Supported document types → ingest into the knowledge base
+            #    (the agent discovers them via knowledge_base_search).
+            #  - Everything else → saved to uploads/ for agent use.
+            suffix = Path(safe_name).suffix.lower()
+            if suffix in SUPPORTED_EXTENSIONS:
+                kb = agent.knowledge_base_manager
+                if kb is None:
+                    errors.append(
+                        f"{safe_name}: knowledge base not initialized",
+                    )
+                    continue
+
+                with tempfile.NamedTemporaryFile(
+                    suffix=suffix,
+                    delete=False,
+                ) as tmp:
+                    tmp.write(data)
+                    tmp_path = tmp.name
+                try:
+                    doc = await kb.ingest_document(
+                        file_path=Path(tmp_path),
+                        kb_name=user_id or "default",
+                        owner=user_id,
+                        original_name=safe_name,
+                    )
+                    if doc.status.value == "ready":
+                        uploaded.append(f"{safe_name} (indexed in KB)")
+                    else:
+                        errors.append(
+                            f"{safe_name}: indexing failed — "
+                            f"{doc.error_message or 'unknown error'}",
+                        )
+                except Exception as exc:
+                    logger.exception("KB ingest failed for %s", safe_name)
+                    errors.append(f"{safe_name}: {exc}")
+                finally:
+                    try:
+                        os.unlink(tmp_path)
+                    except OSError:
+                        pass
+                continue
+
+            dest = uploads_dir / safe_name
             # Avoid overwriting — append counter if file exists
             if dest.exists():
                 stem = dest.stem
                 suffix = dest.suffix
                 counter = 1
                 while dest.exists():
-                    dest = documents_dir / f"{stem}_{counter}{suffix}"
+                    dest = uploads_dir / f"{stem}_{counter}{suffix}"
                     counter += 1
 
             dest.write_bytes(data)

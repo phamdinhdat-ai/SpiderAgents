@@ -988,6 +988,24 @@ class AuthMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         """Check Bearer token on protected API routes; skip public paths."""
         if self._should_skip_auth(request):
+            # Even on the skip path (public paths, allow_no_auth_hosts,
+            # auth disabled), if the client sent a valid token, populate
+            # scope so AgentContextMiddleware and user-scoped routers can
+            # isolate data per-user. Anonymous access is still allowed
+            # (no token → no scope entry, no 401).
+            token = self._extract_token(request)
+            if token:
+                from ..constant import DATABASE_ENABLED as _DB_ENABLED
+
+                if _DB_ENABLED:
+                    result = await verify_token_async(token)
+                else:
+                    result = verify_token(token)
+                if result is not None:
+                    username, role = result
+                    request.state.user = username
+                    request.scope["auth_user"] = username
+                    request.scope["auth_role"] = role
             return await call_next(request)
 
         token = self._extract_token(request)

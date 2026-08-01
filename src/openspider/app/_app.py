@@ -617,12 +617,20 @@ app = FastAPI(
     openapi_url="/openapi.json" if DOCS_ENABLED else None,
 )
 
-# Add agent context middleware for agent-scoped routes
+# Middleware execution order (outermost → innermost):
+#   CORS → AuthMiddleware → CorrelationIDMiddleware → AgentContextMiddleware
+# Starlette prepends each add_middleware call and then wraps with reversed(),
+# so the LAST middleware added is OUTERMOST and runs FIRST.
+# AgentContextMiddleware must be INNERMOST so it runs AFTER AuthMiddleware
+# has populated request.scope["auth_user"] / ["auth_role"].
+
+# Add agent context middleware for agent-scoped routes (innermost)
 app.add_middleware(AgentContextMiddleware)
 
 # Stamp every request with a correlation ID (X-Request-Id header)
 app.add_middleware(CorrelationIDMiddleware)
 
+# AuthMiddleware: verifies Bearer token, sets scope identity (outermost)
 app.add_middleware(AuthMiddleware)
 
 # Apply CORS middleware if CORS_ORIGINS is set

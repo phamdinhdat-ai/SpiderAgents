@@ -26,14 +26,23 @@ def _extract_bearer_token_from_request(request: Request) -> str | None:
     return None
 
 
-def _verify_token_for_context(token: str) -> tuple[str, str] | None:
+async def _verify_token_for_context(token: str) -> tuple[str, str] | None:
     """Verify a token and return (username, role) or None.
 
     Used as a fallback when auth middleware skips auth (e.g. localhost
     in allow_no_auth_hosts) but the client still sends a valid token.
+
+    When ``OPENSPIDER_DATABASE_ENABLED`` is true, uses the async
+    PostgreSQL-backed verifier so tokens issued against the DB secret
+    are correctly resolved.
     """
     try:
         from ..auth import verify_token
+        from ..constant import DATABASE_ENABLED
+
+        if DATABASE_ENABLED:
+            from ..auth import verify_token_async
+            return await verify_token_async(token)
         return verify_token(token)
     except Exception:
         return None
@@ -50,67 +59,83 @@ class AgentContextMiddleware(BaseHTTPMiddleware):
         """Extract agentId, auth user, and root_session_id from path/headers."""
         import logging
         from ..agent_context import (
-            set_current_agent_id,
-            set_current_auth_user_id,
-            set_current_auth_user_role,
+            _current_agent_id,
+            _current_auth_user_id,
+            _current_auth_user_role,
         )
 
         logger = logging.getLogger(__name__)
         agent_id = None
 
-        # Propagate authenticated user from AuthMiddleware → ContextVar
-        auth_user = request.scope.get("auth_user")
-        auth_role = request.scope.get("auth_role")
+        tokens: list[tuple] = []
 
-        # When auth is skipped (e.g. localhost in allow_no_auth_hosts)
-        # but the client sends a Bearer token, extract user identity
-        # directly so multi-user isolation still works in dev.
-        if not auth_user:
-            token = _extract_bearer_token_from_request(request)
-            if token:
-                extracted = _verify_token_for_context(token)
-                if extracted:
-                    auth_user, auth_role = extracted
+        try:
+            # Propagate authenticated user from AuthMiddleware → ContextVar
+            auth_user = request.scope.get("auth_user")
+            auth_role = request.scope.get("auth_role")
 
-        if auth_user:
-            set_current_auth_user_id(auth_user)
-        if auth_role:
-            set_current_auth_user_role(auth_role)
+            # When auth is skipped (e.g. localhost in allow_no_auth_hosts)
+            # but the client sends a Bearer token, extract user identity
+            # directly so multi-user isolation still works in dev.
+            if not auth_user:
+                token = _extract_bearer_token_from_request(request)
+                if token:
+                    extracted = await _verify_token_for_context(token)
+                    if extracted:
+                        auth_user, auth_role = extracted
 
-        # Priority 1: Extract agentId from path: /api/agents/{agentId}/...
-        path_parts = request.url.path.split("/")
-        if len(path_parts) >= 4 and path_parts[1] == "api":
-            if path_parts[2] == "agents":
-                agent_id = path_parts[3]
-                request.state.agent_id = agent_id
-                logger.debug(
-                    f"AgentContextMiddleware: agent_id={agent_id} "
-                    f"from path={request.url.path}",
+            if auth_user:
+                tokens.append(
+                    (_current_auth_user_id, _current_auth_user_id.set(auth_user))
+                )
+            if auth_role:
+                tokens.append(
+                    (_current_auth_user_role, _current_auth_user_role.set(auth_role))
                 )
 
-        # Priority 2: Check X-Agent-Id header
-        if not agent_id:
-            agent_id = request.headers.get("X-Agent-Id")
+            # Priority 1: Extract agentId from path: /api/agents/{agentId}/...
+            path_parts = request.url.path.split("/")
+            if len(path_parts) >= 4 and path_parts[1] == "api":
+                if path_parts[2] == "agents":
+                    agent_id = path_parts[3]
+                    request.state.agent_id = agent_id
+                    logger.debug(
+                        "AgentContextMiddleware: agent_id=%s "
+                        "from path=%s",
+                        agent_id,
+                        request.url.path,
+                    )
 
-        # Set agent_id in context variable for use by runners
-        if agent_id:
-            set_current_agent_id(agent_id)
+            # Priority 2: Check X-Agent-Id header
+            if not agent_id:
+                agent_id = request.headers.get("X-Agent-Id")
 
-        # Extract X-Root-Session-Id header for cross-session approval routing
-        root_session_id = request.headers.get("X-Root-Session-Id")
-        if root_session_id:
-            # Inject into request.request_context for runner access
-            if not hasattr(request, "request_context"):
-                request.request_context = {}
-            request.request_context["root_session_id"] = root_session_id
-            logger.debug(
-                "AgentContextMiddleware: root_session_id=%s from "
-                "X-Root-Session-Id header",
-                root_session_id[:12],
-            )
+            # Set agent_id in context variable for use by runners
+            if agent_id:
+                tokens.append(
+                    (_current_agent_id, _current_agent_id.set(agent_id))
+                )
 
-        response = await call_next(request)
-        return response
+            # Extract X-Root-Session-Id header for cross-session approval routing
+            root_session_id = request.headers.get("X-Root-Session-Id")
+            if root_session_id:
+                # Inject into request.request_context for runner access
+                if not hasattr(request, "request_context"):
+                    request.request_context = {}
+                request.request_context["root_session_id"] = root_session_id
+                logger.debug(
+                    "AgentContextMiddleware: root_session_id=%s from "
+                    "X-Root-Session-Id header",
+                    root_session_id[:12],
+                )
+
+            response = await call_next(request)
+            return response
+        finally:
+            # Restore previous ContextVar values.  ContextVars are
+            # asyncio-local, so this only affects the current task.
+            for var, token in tokens:
+                var.reset(token)
 
 
 def create_agent_scoped_router() -> APIRouter:

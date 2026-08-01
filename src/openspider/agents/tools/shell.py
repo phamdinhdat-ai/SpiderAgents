@@ -384,6 +384,31 @@ async def execute_shell_command(
 
     cmd = _collapse_embedded_newlines((command or "").strip())
 
+    # Security: reject commands that reference the user's personal folders
+    # (Documents, Desktop, Downloads, Pictures, Music, Videos).  The agent
+    # may only access files inside its own workspace; user documents are
+    # served through the knowledge base tools instead.
+    from ...security.tool_guard.guardians.file_guardian import (
+        command_hits_personal_folder,
+    )
+
+    if command_hits_personal_folder(cmd):
+        return ToolResponse(
+            content=[
+                TextBlock(
+                    type="text",
+                    text=(
+                        "Access denied: the command references a personal "
+                        "folder (Documents, Desktop, Downloads, Pictures, "
+                        "Music, Videos), which the agent cannot access. "
+                        "Only files within the workspace are available; "
+                        "uploaded user documents are searchable through "
+                        "the knowledge base tools."
+                    ),
+                ),
+            ],
+        )
+
     if isinstance(timeout, str):
         try:
             timeout = float(timeout)

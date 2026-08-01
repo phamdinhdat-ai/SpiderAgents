@@ -63,10 +63,47 @@ def _extract_placeholder_name(content_parts: list) -> tuple[str, str]:
     return first_text[:10], first_text
 
 
-def _extract_session_and_payload(request_data: Union[AgentRequest, dict]):
+def _resolve_authoritative_sender_id(
+    request: Request,
+    client_sender_id: str,
+) -> str:
+    """Return the authoritative sender_id for this request.
+
+    - Auth disabled: honor client-supplied value (single-user mode).
+    - Auth enabled + non-admin caller: force caller's username, ignoring
+      client-supplied user_id (prevents session/chat attribution to
+      another user, including stale tokens).
+    - Auth enabled + admin caller: honor client-supplied value (admins
+      may act on behalf of a user, consistent with list_chats).
+    """
+    from ..auth import is_auth_enabled, get_current_user
+
+    if not is_auth_enabled():
+        return client_sender_id
+
+    caller = get_current_user(request)
+    if caller is None:
+        # Auth is enabled but no valid token — this is a protected route
+        # that AuthMiddleware should have rejected; guard anyway.
+        return client_sender_id
+
+    username, role = caller
+    if role == "admin":
+        return client_sender_id
+    return username
+
+
+def _extract_session_and_payload(
+    request_data: Union[AgentRequest, dict],
+    request: Request | None = None,
+):
     """Extract run_key (ChatSpec.id), session_id, and native payload.
 
     run_key must be ChatSpec.id (chat_id) so it matches list_chats/get_chat.
+
+    When *request* is provided and auth is enabled, the sender_id is
+    validated against the authenticated user to prevent cross-user
+    session attribution.
     """
     if isinstance(request_data, AgentRequest):
         channel_id = getattr(request_data, "channel", None) or "console"
@@ -86,6 +123,10 @@ def _extract_session_and_payload(request_data: Union[AgentRequest, dict]):
                 content_parts.extend(list(content_part.content or []))
             elif isinstance(content_part, dict) and "content" in content_part:
                 content_parts.extend(content_part["content"] or [])
+
+    # Enforce sender_id matches authenticated user
+    if request is not None:
+        sender_id = _resolve_authoritative_sender_id(request, sender_id)
 
     # Per-request tool execution level override (console chat mode selector)
     approval_level = None
@@ -156,7 +197,7 @@ async def post_console_chat(
             detail="Channel Console not found",
         )
     try:
-        native_payload = _extract_session_and_payload(request_data)
+        native_payload = _extract_session_and_payload(request_data, request)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     session_id = console_channel.resolve_session_id(

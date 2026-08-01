@@ -3,7 +3,6 @@
 
 import logging
 import mimetypes
-import os
 import unicodedata
 import urllib.parse
 from pathlib import Path
@@ -81,11 +80,23 @@ def _validate_media_path(
     Returns ``(resolved_path, None)`` on success or
     ``(_, error_response)`` on failure.
     """
-    file_path = unicodedata.normalize(
-        "NFC",
-        os.path.expanduser(file_path),
-    )
-    resolved = Path(file_path).resolve()
+    file_path = unicodedata.normalize("NFC", file_path)
+
+    # Sandbox: only files inside the agent workspace can be viewed.
+    # (Remote URLs are handled by the callers before reaching here.)
+    try:
+        from .file_io import _resolve_file_path
+
+        resolved = Path(_resolve_file_path(file_path))
+    except PermissionError as exc:
+        return Path(file_path), ToolResponse(
+            content=[
+                TextBlock(
+                    type="text",
+                    text=f"Error: {exc}",
+                ),
+            ],
+        )
 
     if not resolved.exists() or not resolved.is_file():
         return resolved, ToolResponse(

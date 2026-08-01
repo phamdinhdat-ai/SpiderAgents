@@ -321,11 +321,60 @@ def _get_user_data_store(request: Request):
 
 
 def _resolve_username(request: Request) -> str:
-    """Resolve the authenticated username, falling back to 'default'."""
+    """Resolve the authenticated username, falling back to 'default'.
+
+    Resolution order (same as ``knowledge._get_user_context``):
+    1. ContextVar (set by AgentContextMiddleware when auth enforced)
+    2. ``request.scope["auth_user"]`` (set by AuthMiddleware)
+    3. Manual Bearer-token decode from ``Authorization`` header
+       (handles the case where auth is skipped for localhost /
+       allow_no_auth_hosts but the frontend still sends a token).
+
+    Falls back to ``"default"`` only when no identity is available
+    (single-user / auth-disabled mode).
+    """
     from ..agent_context import get_current_auth_user_id
 
     user_id = get_current_auth_user_id()
-    return user_id or "default"
+    if user_id:
+        return user_id
+
+    # Tier 2: scope cached by AuthMiddleware
+    user_id = request.scope.get("auth_user")
+    if user_id:
+        return user_id
+
+    # Tier 3: manual token decode (localhost dev fallback)
+    token = _extract_bearer_token(request)
+    if token:
+        extracted = _verify_token_for_mcp(token)
+        if extracted:
+            return extracted[0]
+
+    return "default"
+
+
+def _extract_bearer_token(request: Request) -> str | None:
+    """Extract Bearer token from the Authorization header."""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        if token:
+            return token
+    return None
+
+
+def _verify_token_for_mcp(token: str) -> tuple[str, str] | None:
+    """Verify a token and return (username, role), or None.
+
+    Wraps :func:`openspider.app.auth.verify_token` with a broad
+    catch so token extraction never crashes the request.
+    """
+    try:
+        from ..auth import verify_token
+        return verify_token(token)
+    except Exception:
+        return None
 
 
 @router.get(
