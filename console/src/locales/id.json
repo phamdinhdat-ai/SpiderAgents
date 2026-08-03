@@ -70,21 +70,35 @@
     "docs": "Dokumentasi",
     "tutorial": "Tutorial",
     "faq": "FAQ",
-    "github": "GitHub",
-    "updateAvailable": "Pembaruan Tersedia"
+    "github": "GitHub"
   },
   "theme": {
     "dark": "Gelap",
     "light": "Terang",
     "system": "Sistem"
   },
-  "sidebar": {
-    "newVersion": "Versi baru tersedia: v{{version}}, klik untuk meningkatkan",
-    "updateModal": {
-      "title": "Versi baru tersedia: v{{version}}",
-      "viewReleases": "Lihat Rilis",
-      "close": "Tutup"
-    }
+  "appearance": {
+    "title": "Pengaturan Tampilan",
+    "preset": "Pratetap Tema",
+    "colors": "Warna",
+    "primaryColor": "Warna Utama",
+    "bgColor": "Warna Latar",
+    "sizing": "Ukuran",
+    "borderRadius": "Radius Sudut",
+    "fontSize": "Ukuran Font",
+    "background": {
+      "title": "Latar Belakang",
+      "solid": "Polos",
+      "gradientLinear": "Gradien Animasi",
+      "gradientRadial": "Gradien Radial",
+      "patternDots": "Pola Titik",
+      "patternGrid": "Pola Kisi",
+      "particles": "Partikel"
+    },
+    "effects": "Efek",
+    "glassmorphism": "Kaca Buram",
+    "animations": "Animasi",
+    "resetDefaults": "Kembalikan ke Default"
   },
   "login": {
     "title": "Masuk ke OpenSpider",

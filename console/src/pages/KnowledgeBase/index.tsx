@@ -10,17 +10,14 @@ import {
   message,
   Popconfirm,
   Tabs,
-  Spin,
   Empty,
   Typography,
   Card,
   Progress,
   Modal,
-  Select,
   Radio,
 } from "antd";
 import {
-  UploadOutlined,
   DeleteOutlined,
   SearchOutlined,
   ReloadOutlined,

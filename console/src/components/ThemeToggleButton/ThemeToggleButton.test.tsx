@@ -21,7 +21,14 @@ function renderWithTheme(mode: "light" | "dark" | "system" = "light") {
 describe("ThemeToggleButton", () => {
   it("renders the theme toggle button", () => {
     renderWithTheme("light");
-    expect(screen.getByRole("button")).toBeInTheDocument();
+    expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
+  });
+
+  it("renders the appearance settings button", () => {
+    renderWithTheme("light");
+    expect(
+      document.querySelector('[data-icon="SparkSettingLine"]'),
+    ).toBeInTheDocument();
   });
 
   it("shows sun icon when light mode is active", () => {

@@ -1,0 +1,46 @@
+/* ─── Glassmorphism (opt-in via ThemeContext.enableGlassmorphism) ───────── */
+
+@supports (backdrop-filter: blur(1px)) {
+  html.glassmorphism-on .header {
+    background: rgba(249, 248, 244, 0.72) !important;
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  html.glassmorphism-on .sider {
+    background: rgba(249, 248, 244, 0.6) !important;
+    backdrop-filter: blur(12px) saturate(130%);
+    -webkit-backdrop-filter: blur(12px) saturate(130%);
+  }
+
+  html.glassmorphism-on.dark-mode .header {
+    background: rgba(26, 26, 26, 0.72) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  html.glassmorphism-on.dark-mode .sider {
+    background: rgba(26, 26, 26, 0.6) !important;
+  }
+
+  /* Sticky agent selector sits inside the glass sider — keep it translucent */
+  html.glassmorphism-on .agentSelectorContainer {
+    background: transparent !important;
+  }
+}
+
+/* Fallback: fully opaque when backdrop-filter is unsupported */
+@supports not (backdrop-filter: blur(1px)) {
+  html.glassmorphism-on .header {
+    background: #f9f8f4 !important;
+  }
+  html.glassmorphism-on .sider {
+    background: #f9f8f4 !important;
+  }
+  html.glassmorphism-on.dark-mode .header {
+    background: #1a1a1a !important;
+  }
+  html.glassmorphism-on.dark-mode .sider {
+    background: #1a1a1a !important;
+  }
+}

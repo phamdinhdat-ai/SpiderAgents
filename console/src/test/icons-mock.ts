@@ -34,3 +34,4 @@ export const SparkPtLine = makeIcon("SparkPtLine");
 export const SparkMoonLine = makeIcon("SparkMoonLine");
 export const SparkSunLine = makeIcon("SparkSunLine");
 export const SparkComputerLine = makeIcon("SparkComputerLine");
+export const SparkSettingLine = makeIcon("SparkSettingLine");

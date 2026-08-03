@@ -4,11 +4,11 @@ body {
   overflow: hidden;
   margin: 0;
   padding: 0;
-  background: #f9f8f4;
+  background: var(--bg-solid, #f9f8f4);
 }
 
 .qwenpaw-layout {
-  background: #f9f8f4;
+  background: var(--bg-solid, #f9f8f4);
 }
 
 /* ─── Dark mode global token overrides ─────────────────────────────────────── */
@@ -29,7 +29,7 @@ html.dark-mode .qwenpaw-layout {
 
 html.dark-mode .ant-layout-content,
 html.dark-mode .qwenpaw-layout-content {
-  background: #141414 !important;
+  background: transparent !important;
 }
 
 /* Page content area background */
@@ -809,12 +809,12 @@ html.dark-mode [class*="chat-anywhere"] [class*="message"] a {
   min-height: 100vh;
   max-height: 100vh;
   overflow: hidden;
-  background: #f9f8f4;
+  background: var(--bg-solid, #f9f8f4);
 }
 
 .ant-layout-content {
   overflow: hidden;
-  background: #f9f8f4;
+  background: transparent;
 }
 
 .qwenpaw-bubble-list-wrapper {
@@ -1086,4 +1086,85 @@ html.dark-mode .debug-log-path strong {
 [class*="tool-call-block-content"] {
   max-height: 250px !important;
   overflow-y: auto !important;
+}
+
+/* ─── Micro-interactions ──────────────────────────────────────────────────── */
+
+/* Button press feedback */
+.ant-btn:active,
+.qwenpaw-btn:active {
+  transform: scale(0.97);
+}
+
+/* Primary button hover glow */
+.ant-btn-primary:not(:disabled):hover,
+.qwenpaw-btn-primary:not(:disabled):hover {
+  box-shadow: 0 4px 14px rgba(255, 127, 22, 0.3);
+}
+
+/* Input focus glow */
+.ant-input:focus,
+.qwenpaw-input:focus,
+.ant-input-affix-wrapper-focused,
+.qwenpaw-input-affix-wrapper-focused {
+  box-shadow: 0 0 0 3px rgba(255, 127, 22, 0.12) !important;
+}
+
+/* Card hover lift */
+.ant-card:not(.ant-card-bordered-disabled):hover,
+.qwenpaw-card:not(.qwenpaw-card-disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08) !important;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.25s ease;
+}
+
+/* ─── Custom scrollbars ───────────────────────────────────────────────────── */
+
+.page-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.page-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+.page-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+html.dark-mode .page-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+html.dark-mode .page-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ─── Animations master switch (ThemeContext.enableAnimations) ────────────── */
+
+html.animations-off *,
+html.animations-off *::before,
+html.animations-off *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* ─── Reduced motion (accessibility) ──────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

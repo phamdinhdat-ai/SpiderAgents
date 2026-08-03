@@ -28,7 +28,6 @@ import {
   SparkScanLine,
   SparkToolLine,
   SparkDataLine,
-  SparkMicLine,
   SparkAgentLine,
   SparkExitFullscreenLine,
   SparkSearchUserLine,

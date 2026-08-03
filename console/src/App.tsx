@@ -3,6 +3,8 @@ import {
   ConfigProvider,
   bailianDarkTheme,
   bailianTheme,
+  carbonDarkTheme,
+  carbonTheme,
 } from "@agentscope-ai/design";
 import { App as AntdApp } from "antd";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -35,6 +37,9 @@ import { languageApi } from "./api/modules/language";
 import { getApiUrl, getApiToken, clearAuthToken } from "./api/config";
 import "./styles/layout.css";
 import "./styles/form-override.css";
+import "./styles/animations.css";
+import "./styles/background.css";
+import "./styles/glassmorphism.css";
 
 const antdLocaleMap: Record<string, Locale> = {
   zh: zhCN,
@@ -120,12 +125,19 @@ function getRouterBasename(pathname: string): string | undefined {
   return /^\/console(?:\/|$)/.test(pathname) ? "/console" : undefined;
 }
 
+// Theme presets available in the appearance settings
+const THEME_PRESETS: Record<string, { light: any; dark: any }> = {
+  bailian: { light: bailianTheme, dark: bailianDarkTheme },
+  carbon: { light: carbonTheme, dark: carbonDarkTheme },
+};
+
 function AppInner() {
   const basename = getRouterBasename(window.location.pathname);
   const { i18n } = useTranslation();
-  const { isDark } = useTheme();
+  const { isDark, themePreset, customTokens } = useTheme();
   const { loading: pluginsLoading } = usePlugins();
-  const selectedTheme = isDark ? bailianDarkTheme : bailianTheme;
+  const preset = THEME_PRESETS[themePreset] ?? THEME_PRESETS.bailian;
+  const selectedTheme = isDark ? preset.dark : preset.light;
   const lang = i18n.resolvedLanguage || i18n.language || "en";
   const [antdLocale, setAntdLocale] = useState<Locale>(
     antdLocaleMap[lang] ?? enUS,
@@ -182,7 +194,16 @@ function AppInner() {
             ? antdTheme.darkAlgorithm
             : antdTheme.defaultAlgorithm,
           token: {
-            colorPrimary: "#FF7F16",
+            colorPrimary: customTokens.colorPrimary || "#FF7F16",
+            ...(customTokens.colorBgBase
+              ? { colorBgBase: customTokens.colorBgBase }
+              : {}),
+            ...(customTokens.borderRadius != null
+              ? { borderRadius: customTokens.borderRadius }
+              : {}),
+            ...(customTokens.fontSize != null
+              ? { fontSize: customTokens.fontSize }
+              : {}),
           },
         }}
       >

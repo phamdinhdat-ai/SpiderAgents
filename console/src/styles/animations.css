@@ -1,0 +1,152 @@
+/* ─── Shared keyframe animations ────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes subtlePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes bgFloat {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(255, 127, 22, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(255, 127, 22, 0.4);
+  }
+}
+
+@keyframes iconPopIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ─── Utility classes ───────────────────────────────────────────────────── */
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease both;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-subtle-pulse {
+  animation: subtlePulse 2s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 2.5s ease-in-out infinite;
+}
+
+.animate-icon-pop {
+  animation: iconPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Staggered entrance — apply to children with .animate-stagger-N */
+.animate-stagger-1 {
+  animation-delay: 0.05s;
+}
+.animate-stagger-2 {
+  animation-delay: 0.1s;
+}
+.animate-stagger-3 {
+  animation-delay: 0.15s;
+}
+.animate-stagger-4 {
+  animation-delay: 0.2s;
+}
+.animate-stagger-5 {
+  animation-delay: 0.25s;
+}
+
+/* ─── Page transition wrapper (MainLayout) ─────────────────────────────── */
+
+.page-transition {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.page-transition-fadeOut {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.page-transition-fadeIn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Icon hover scale (applied in sidebar / toolbar) ──────────────────── */
+
+.icon-hover-scale {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 0.2s ease;
+}
+
+.icon-hover-scale:hover {
+  transform: scale(1.15);
+}
+
+.icon-hover-scale:active {
+  transform: scale(0.9);
+}

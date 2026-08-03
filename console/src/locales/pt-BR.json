@@ -1517,21 +1517,35 @@
     "docs": "Doc",
     "tutorial": "Tutorial",
     "faq": "FAQ",
-    "github": "GitHub",
-    "updateAvailable": "Atualizar Available"
+    "github": "GitHub"
   },
   "theme": {
     "dark": "Dark",
     "light": "Light",
     "system": "System"
   },
-  "sidebar": {
-    "newVersion": "New version available: v{{version}}, click to upgrade",
-    "updateModal": {
-      "title": "Novo Versao available: v{{version}}",
-      "viewReleases": "Visualizar Releases",
-      "close": "Fechar"
-    }
+  "appearance": {
+    "title": "Configurações de Aparência",
+    "preset": "Predefinição de Tema",
+    "colors": "Cores",
+    "primaryColor": "Cor Primária",
+    "bgColor": "Cor de Fundo",
+    "sizing": "Tamanhos",
+    "borderRadius": "Raio da Borda",
+    "fontSize": "Tamanho da Fonte",
+    "background": {
+      "title": "Fundo",
+      "solid": "Sólido",
+      "gradientLinear": "Gradiente Animado",
+      "gradientRadial": "Gradiente Radial",
+      "patternDots": "Padrão de Pontos",
+      "patternGrid": "Padrão de Grade",
+      "particles": "Partículas"
+    },
+    "effects": "Efeitos",
+    "glassmorphism": "Vidro Fosco",
+    "animations": "Animações",
+    "resetDefaults": "Restaurar Padrões"
   },
   "chat": {
     "modelSelectTooltip": "Selecionar Modelo",

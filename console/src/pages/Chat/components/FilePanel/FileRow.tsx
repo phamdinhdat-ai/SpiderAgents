@@ -43,7 +43,9 @@ function getFileIcon(fileName: string, mimeType: string) {
   return <File size={18} />;
 }
 
-function getActionLabel(action: string, t: (key: string) => string) {
+import type { TFunction } from "i18next";
+
+function getActionLabel(action: string, t: TFunction) {
   switch (action) {
     case "created":
     case "overwritten":

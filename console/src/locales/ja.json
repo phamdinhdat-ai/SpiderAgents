@@ -1310,21 +1310,35 @@
     "docs": "ドキュメント",
     "tutorial": "チュートリアル",
     "faq": "よくある質問",
-    "github": "GitHub",
-    "updateAvailable": "利用可能な更新"
+    "github": "GitHub"
   },
   "theme": {
     "dark": "ダーク",
     "light": "ライト",
     "system": "システムに従う"
   },
-  "sidebar": {
-    "newVersion": "新しいバージョンが利用可能です: v{{version}}、クリックしてアップグレード",
-    "updateModal": {
-      "title": "新しいバージョンが利用可能です: v{{version}}",
-      "viewReleases": "リリースを見る",
-      "close": "閉じる"
-    }
+  "appearance": {
+    "title": "外観設定",
+    "preset": "テーマプリセット",
+    "colors": "カラー",
+    "primaryColor": "プライマリカラー",
+    "bgColor": "背景色",
+    "sizing": "サイズ",
+    "borderRadius": "角の丸み",
+    "fontSize": "フォントサイズ",
+    "background": {
+      "title": "背景",
+      "solid": "単色",
+      "gradientLinear": "アニメーショングラデーション",
+      "gradientRadial": "放射グラデーション",
+      "patternDots": "ドットパターン",
+      "patternGrid": "グリッドパターン",
+      "particles": "パーティクル"
+    },
+    "effects": "エフェクト",
+    "glassmorphism": "すりガラス効果",
+    "animations": "アニメーション",
+    "resetDefaults": "デフォルトに戻す"
   },
   "chat": {
     "modelSelectTooltip": "モデルを選択",

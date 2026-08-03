@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { Layout, Spin } from "antd";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -8,6 +8,9 @@ import ConsolePollService from "../../components/ConsolePollService";
 import { ChunkErrorBoundary } from "../../components/ChunkErrorBoundary";
 import { lazyImportWithRetry } from "../../utils/lazyWithRetry";
 import { usePlugins } from "../../plugins/PluginContext";
+import { useTheme } from "../../contexts/ThemeContext";
+import ParticleBackground from "../../components/ParticleBackground";
+import PageTransition from "../../components/PageTransition";
 import styles from "../index.module.less";
 
 // Chat is eagerly loaded (default landing page)
@@ -78,6 +81,14 @@ export default function MainLayout() {
   const location = useLocation();
   const currentPath = location.pathname;
   const { pluginRoutes } = usePlugins();
+  const { backgroundType, enableGlassmorphism } = useTheme();
+
+  // Toggle glassmorphism class on <html> so global CSS can apply it
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.toggle("glassmorphism-on", enableGlassmorphism);
+    return () => html.classList.remove("glassmorphism-on");
+  }, [enableGlassmorphism]);
 
   // Resolve selected key: check static routes first, then plugin routes
   let selectedKey = pathToKey[currentPath] || "";
@@ -92,6 +103,7 @@ export default function MainLayout() {
 
   return (
     <Layout className={styles.mainLayout}>
+      {backgroundType === "particles" && <ParticleBackground />}
       <Header />
       <Layout>
         <Sidebar selectedKey={selectedKey} />
@@ -107,6 +119,7 @@ export default function MainLayout() {
                   />
                 }
               >
+                <PageTransition>
                 <Routes>
                   <Route path="/" element={<Navigate to="/chat" replace />} />
                   <Route path="/chat/*" element={<Chat />} />
@@ -154,6 +167,7 @@ export default function MainLayout() {
                     />
                   ))}
                 </Routes>
+                </PageTransition>
               </Suspense>
             </ChunkErrorBoundary>
           </div>

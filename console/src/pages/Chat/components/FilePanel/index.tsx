@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 import { Drawer, Button } from "antd";
 import { IconButton } from "@agentscope-ai/design";
 import { SparkOperateRightLine } from "@agentscope-ai/icons";
-import { FileText, UploadOutlined } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   useFilePanelStore,

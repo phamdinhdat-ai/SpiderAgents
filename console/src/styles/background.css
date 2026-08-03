@@ -1,0 +1,111 @@
+/* ─── Background design system ──────────────────────────────────────────── */
+
+/* Default background colors (light) */
+:root {
+  --bg-solid: #f9f8f4;
+  --bg-gradient-start: #f9f8f4;
+  --bg-gradient-end: #efe9df;
+  --bg-gradient-mid: #f3eee6;
+  --bg-pattern-color: rgba(43, 18, 0, 0.05);
+  --bg-pattern-size: 22px;
+}
+
+/* Background colors (dark) */
+html.dark-mode {
+  --bg-solid: #141414;
+  --bg-gradient-start: #141414;
+  --bg-gradient-end: #1a1a2e;
+  --bg-gradient-mid: #16161f;
+  --bg-pattern-color: rgba(255, 255, 255, 0.04);
+}
+
+/* 1. Solid */
+html.bg-solid body,
+html.bg-solid .ant-layout,
+html.bg-solid .qwenpaw-layout {
+  background: var(--bg-solid);
+}
+
+/* 2. Linear animated gradient */
+html.bg-gradient-linear body,
+html.bg-gradient-linear .ant-layout,
+html.bg-gradient-linear .qwenpaw-layout {
+  background: linear-gradient(
+    -45deg,
+    var(--bg-gradient-start),
+    var(--bg-gradient-mid),
+    var(--bg-gradient-end),
+    var(--bg-gradient-mid)
+  );
+  background-size: 400% 400%;
+  animation: bgFloat 24s ease infinite;
+}
+
+/* 3. Radial gradient */
+html.bg-gradient-radial body,
+html.bg-gradient-radial .ant-layout,
+html.bg-gradient-radial .qwenpaw-layout {
+  background: radial-gradient(
+    ellipse at top left,
+    var(--bg-gradient-end),
+    var(--bg-gradient-start) 65%
+  );
+}
+
+/* 4. Dot pattern */
+html.bg-pattern-dots body,
+html.bg-pattern-dots .ant-layout,
+html.bg-pattern-dots .qwenpaw-layout {
+  background-color: var(--bg-solid);
+  background-image: radial-gradient(
+    circle,
+    var(--bg-pattern-color) 1px,
+    transparent 1px
+  );
+  background-size: var(--bg-pattern-size) var(--bg-pattern-size);
+}
+
+/* 5. Grid pattern */
+html.bg-pattern-grid body,
+html.bg-pattern-grid .ant-layout,
+html.bg-pattern-grid .qwenpaw-layout {
+  background-color: var(--bg-solid);
+  background-image: linear-gradient(
+      var(--bg-pattern-color) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, var(--bg-pattern-color) 1px, transparent 1px);
+  background-size: var(--bg-pattern-size) var(--bg-pattern-size);
+}
+
+/* 6. Particles — handled by the ParticleBackground component (fixed canvas).
+   Make the layout transparent so the canvas shows through between cards. */
+html.bg-particles body {
+  background: transparent;
+}
+html.bg-particles .ant-layout,
+html.bg-particles .qwenpaw-layout {
+  background: transparent !important;
+}
+
+/* Smooth transition when switching background styles */
+body,
+.ant-layout,
+.qwenpaw-layout {
+  transition: background-color 0.5s ease, background 0.5s ease;
+}
+
+/* Particles canvas is fixed behind everything */
+.particle-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Layout paints above the canvas but stays transparent itself */
+html.bg-particles .qwenpaw-layout,
+html.bg-particles .ant-layout {
+  position: relative;
+  z-index: 1;
+}

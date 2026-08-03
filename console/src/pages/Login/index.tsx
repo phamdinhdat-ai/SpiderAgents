@@ -9,8 +9,6 @@ import { setAuthToken, setCurrentUsername, setCurrentUserRole } from "../../api/
 import { useTheme } from "../../contexts/ThemeContext";
 import styles from "./index.module.less";
 
-const OPENSPIDER_VERSION = "2.0.0";
-
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -163,10 +161,6 @@ export default function LoginPage() {
             </Button>
           </Form.Item>
         </Form>
-
-        <div className={styles.version}>
-          OpenSpider v{OPENSPIDER_VERSION}
-        </div>
       </div>
     </div>
   );

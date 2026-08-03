@@ -5,7 +5,6 @@ import {
   Input,
   Space,
   message,
-  Popconfirm,
   Spin,
   Empty,
   Typography,
@@ -15,7 +14,6 @@ import {
 } from "antd";
 import {
   PlusOutlined,
-  DeleteOutlined,
   ReloadOutlined,
   SaveOutlined,
   UndoOutlined,

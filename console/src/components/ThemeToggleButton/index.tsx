@@ -1,12 +1,15 @@
 import { Dropdown, Button, type MenuProps } from "antd";
+import { useState } from "react";
 import {
   SparkMoonLine,
   SparkSunLine,
   SparkComputerLine,
+  SparkSettingLine,
 } from "@agentscope-ai/icons";
 import { useTheme, type ThemeMode } from "../../contexts/ThemeContext";
 import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
+import ThemeSettingsDrawer from "../ThemeSettingsDrawer";
 import styles from "./index.module.less";
 
 const ICONS: Record<ThemeMode, ReactNode> = {
@@ -18,6 +21,7 @@ const ICONS: Record<ThemeMode, ReactNode> = {
 export default function ThemeToggleButton() {
   const { themeMode, isDark, setThemeMode } = useTheme();
   const { t } = useTranslation();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const items: MenuProps["items"] = [
     {
@@ -41,12 +45,25 @@ export default function ThemeToggleButton() {
     themeMode === "system" ? ICONS.system : ICONS[isDark ? "dark" : "light"];
 
   return (
-    <Dropdown
-      menu={{ items, selectedKeys: [themeMode] }}
-      placement="bottomRight"
-      overlayClassName={styles.themeDropdown}
-    >
-      <Button className={styles.toggleBtn} type="text" icon={icon} />
-    </Dropdown>
+    <>
+      <Dropdown
+        menu={{ items, selectedKeys: [themeMode] }}
+        placement="bottomRight"
+        overlayClassName={styles.themeDropdown}
+      >
+        <Button className={styles.toggleBtn} type="text" icon={icon} />
+      </Dropdown>
+      <Button
+        className={styles.settingsBtn}
+        type="text"
+        icon={<SparkSettingLine />}
+        onClick={() => setSettingsOpen(true)}
+        title={t("appearance.title")}
+      />
+      <ThemeSettingsDrawer
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
+    </>
   );
 }
