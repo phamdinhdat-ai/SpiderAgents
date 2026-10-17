@@ -399,6 +399,11 @@ class AgentRunner(Runner):
                 default_shell=_default_shell,
             )
 
+            # Project briefs are resolved and authorized by the console endpoint.
+            project_context = channel_meta.get("_project_context")
+            if isinstance(project_context, str) and project_context:
+                env_context += "\n\n" + project_context
+
             # Get MCP clients from manager (hot-reloadable)
             mcp_clients = []
             if self._mcp_manager is not None:

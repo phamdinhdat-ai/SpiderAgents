@@ -20,7 +20,7 @@ interface Particle {
  */
 export default function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { isDark } = useTheme();
+  const { isDark, enableAnimations, spiderColors } = useTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -38,7 +38,11 @@ export default function ParticleBackground() {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const DPR = Math.min(window.devicePixelRatio || 1, 2);
-    const COLOR = isDark ? "255, 160, 90" : "255, 127, 22";
+    const COLOR = spiderColors.secondary
+      .slice(1)
+      .match(/.{2}/g)!
+      .map((value) => parseInt(value, 16))
+      .join(", ");
 
     const init = () => {
       width = window.innerWidth;
@@ -85,7 +89,7 @@ export default function ParticleBackground() {
     };
 
     init();
-    if (reducedMotion) {
+    if (reducedMotion || !enableAnimations) {
       draw(false);
     } else {
       draw(true);
@@ -93,14 +97,14 @@ export default function ParticleBackground() {
 
     const onResize = () => {
       init();
-      if (reducedMotion) draw(false);
+      if (reducedMotion || !enableAnimations) draw(false);
     };
     window.addEventListener("resize", onResize);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
     };
-  }, [isDark]);
+  }, [isDark, enableAnimations, spiderColors.secondary]);
 
   return <canvas ref={canvasRef} className="particle-bg" aria-hidden="true" />;
 }

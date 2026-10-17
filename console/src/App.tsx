@@ -40,6 +40,7 @@ import "./styles/form-override.css";
 import "./styles/animations.css";
 import "./styles/background.css";
 import "./styles/glassmorphism.css";
+import "./styles/spider-theme.css";
 
 const antdLocaleMap: Record<string, Locale> = {
   zh: zhCN,
@@ -134,7 +135,7 @@ const THEME_PRESETS: Record<string, { light: any; dark: any }> = {
 function AppInner() {
   const basename = getRouterBasename(window.location.pathname);
   const { i18n } = useTranslation();
-  const { isDark, themePreset, customTokens } = useTheme();
+  const { isDark, themePreset, customTokens, spiderColors } = useTheme();
   const { loading: pluginsLoading } = usePlugins();
   const preset = THEME_PRESETS[themePreset] ?? THEME_PRESETS.bailian;
   const selectedTheme = isDark ? preset.dark : preset.light;
@@ -194,7 +195,7 @@ function AppInner() {
             ? antdTheme.darkAlgorithm
             : antdTheme.defaultAlgorithm,
           token: {
-            colorPrimary: customTokens.colorPrimary || "#FF7F16",
+            colorPrimary: spiderColors.primary,
             ...(customTokens.colorBgBase
               ? { colorBgBase: customTokens.colorBgBase }
               : {}),

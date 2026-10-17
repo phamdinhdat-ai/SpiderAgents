@@ -1,0 +1,130 @@
+.spider-scene {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  margin: auto;
+  pointer-events: none;
+}
+.spider-scene-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.spider-web-threads {
+  stroke: var(--spider-web, #a2b4d1);
+  stroke-width: 0.65;
+  opacity: 0.64;
+}
+.spider-web-signals {
+  stroke: var(--spider-secondary, #2878de);
+  stroke-width: 1.5;
+  stroke-dasharray: 8 240;
+  animation: web-signal 8s linear infinite;
+}
+.spider-web-signals path:nth-child(2) {
+  stroke: var(--spider-primary, #dc304a);
+  opacity: 0.75;
+}
+.spider-web-node {
+  fill: var(--spider-secondary, #2878de);
+  animation: web-node-pulse 4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.spider-node-1 {
+  animation-delay: 1s;
+}
+.spider-node-2 {
+  animation-delay: 2s;
+}
+.spider-node-3 {
+  animation-delay: 3s;
+}
+.spider-swing {
+  transform-origin: 180px 0;
+  animation: spider-swing 7s ease-in-out infinite;
+}
+.spider-silk {
+  stroke: var(--spider-web, #a2b4d1);
+  stroke-width: 1;
+}
+.spider-character > path:first-child {
+  stroke: var(--spider-primary, #dc304a);
+  stroke-width: 3.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.spider-character ellipse {
+  fill: var(--spider-secondary, #2878de);
+  stroke: var(--spider-primary, #dc304a);
+  stroke-width: 2;
+}
+.spider-character circle {
+  fill: var(--spider-primary, #dc304a);
+}
+.spider-eyes {
+  fill: #fff;
+  stroke: #1b2333;
+  stroke-width: 0.6;
+}
+.spider-emblem {
+  stroke: var(--spider-primary, #dc304a);
+  stroke-width: 2;
+}
+.spider-scene-caption {
+  font-size: 7px;
+  letter-spacing: 1.5px;
+  fill: var(--spider-muted, #63718b);
+}
+.spider-web-background {
+  position: fixed;
+  inset: 56px 0 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.2;
+  overflow: hidden;
+}
+.spider-web-background .spider-scene-svg {
+  width: 100%;
+  height: 100%;
+}
+.spider-web-background .spider-character,
+.spider-web-background .spider-silk {
+  display: none;
+}
+@keyframes web-signal {
+  to {
+    stroke-dashoffset: -496;
+  }
+}
+@keyframes web-node-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+@keyframes spider-swing {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+html.animations-off .spider-scene *,
+html.animations-off .spider-web-background * {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spider-scene *,
+  .spider-web-background * {
+    animation: none !important;
+  }
+}

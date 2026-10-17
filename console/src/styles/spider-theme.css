@@ -1,0 +1,34 @@
+/* Shared SpiderAgents palette. The provider owns and persists these tokens. */
+.page-transition {
+  height: 100%;
+  min-height: 0;
+}
+html[data-spider-style] body {
+  color: var(--spider-ink);
+}
+html[data-spider-style] .page-content {
+  background: var(--spider-surface) !important;
+  border-color: var(--spider-line) !important;
+}
+html.bg-spiderweb body,
+html.bg-spiderweb .ant-layout,
+html.bg-spiderweb .qwenpaw-layout {
+  background: var(--spider-canvas);
+}
+html.bg-spiderweb .ant-layout,
+html.bg-spiderweb .qwenpaw-layout {
+  position: relative;
+}
+html[data-spider-style] .qwenpaw-btn-primary {
+  color: var(--spider-on-primary);
+}
+html[data-spider-style] .qwenpaw-btn-primary:not(:disabled):hover {
+  color: var(--spider-on-primary);
+}
+html[data-spider-style] .qwenpaw-drawer-content {
+  background: var(--spider-surface);
+  color: var(--spider-ink);
+}
+html[data-spider-style] ::selection {
+  background: color-mix(in srgb, var(--spider-secondary) 25%, transparent);
+}

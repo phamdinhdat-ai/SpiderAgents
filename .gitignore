@@ -97,7 +97,8 @@ CLAUDE.md
 *.tmp
 
 # Build cache
-.cache/  # Includes conda_unpack_wheels/ for Windows packaging workaround
+# Includes conda_unpack_wheels/ for Windows packaging workaround
+.cache/
 
 # Hypothesis test cache
 .hypothesis/
@@ -113,3 +114,19 @@ src/.hypothesis/
 .worktrees/
 src/openspider/console/
 proxy_http.txt
+
+*.key
+*.pem
+*.p12
+*.pfx
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.secret
+*.secret/
+auth.json
+credentials.json
+credentials.local.*
+/runtime/
+.gitnexus/

@@ -433,15 +433,16 @@ class UserDataStore:
         if self._conn is None:
             raise RuntimeError("UserDataStore not started")
         cur = self._conn.execute(sql, params)
+        # INSERT/UPDATE/DELETE normally return no rows. Commit before the
+        # empty-result check, otherwise closing the connection rolls them back.
+        if not sql.lstrip().upper().startswith(("SELECT", "PRAGMA")):
+            self._conn.commit()
+            return None
         if many:
             rows = cur.fetchall()
             return [_row_to_dict(r) for r in rows]
         row = cur.fetchone()
         if row is None:
-            return None
-        # For non-SELECT statements, return None after commit
-        if not sql.lstrip().upper().startswith(("SELECT", "PRAGMA")):
-            self._conn.commit()
             return None
         return _row_to_dict(row)
 

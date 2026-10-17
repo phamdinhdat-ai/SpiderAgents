@@ -5,13 +5,13 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@agentscope-ai/design";
 import styles from "./index.module.less";
 import { getDocsUrl } from "./constants";
-import { useTheme } from "../contexts/ThemeContext";
+import { Link, NavLink } from "react-router-dom";
+import { Network } from "lucide-react";
 
 const { Header: AntHeader } = Layout;
 
 export default function Header() {
   const { t, i18n } = useTranslation();
-  const { isDark } = useTheme();
 
   const handleNavClick = (url: string) => {
     if (url) {
@@ -26,14 +26,37 @@ export default function Header() {
 
   return (
     <AntHeader className={styles.header}>
-      <div className={styles.logoWrapper}>
-        <img
-          src={isDark ? "/logo-dark.svg" : "/logo-light.svg"}
-          alt="OpenSpider"
-          className={styles.logoImg}
-        />
-        <div className={styles.logoDivider} />
-      </div>
+      <Link
+        to="/projects"
+        className={styles.spiderBrand}
+        aria-label="SpiderAgents home"
+      >
+        <span className={styles.spiderMark}>
+          <Network size={23} strokeWidth={1.7} />
+        </span>
+        <span>
+          Spider<span className={styles.brandLight}>Agents</span>
+        </span>
+        <span className={styles.studioBadge}>STUDIO</span>
+      </Link>
+      <nav className={styles.studioNavigation} aria-label="Main navigation">
+        {[
+          ["/projects", "Projects"],
+          ["/chat", "Chat"],
+          ["/cron-jobs", "Jobs"],
+          ["/mcp", "Connections"],
+        ].map(([path, label]) => (
+          <NavLink
+            key={path}
+            to={path}
+            className={({ isActive }) =>
+              isActive ? styles.studioNavigationActive : ""
+            }
+          >
+            {label}
+          </NavLink>
+        ))}
+      </nav>
       <Space size="middle">
         <Tooltip title={t("header.docs")}>
           <Button

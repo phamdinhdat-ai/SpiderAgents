@@ -4,7 +4,7 @@
 
 Usage::
 
-    OPENSPIDER_DATABASE_URL=postgresql+asyncpg://5gai:Vht%402025@localhost:5433/5gai \\
+    # Set OPENSPIDER_DATABASE_URL in your environment before running.
     python scripts/migrate_to_postgres.py
 
 Reads all existing data from the legacy backends and writes it into
@@ -26,7 +26,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 import sqlite3
 import sys
 from datetime import datetime, timezone
@@ -51,13 +50,8 @@ logger = logging.getLogger("migrate_to_postgres")
 # Configuration
 # ---------------------------------------------------------------------------
 
-DATABASE_URL = os.environ.get(
-    "OPENSPIDER_DATABASE_URL",
-    "postgresql+asyncpg://openspider:spiderman@192.168.100.26:5433/openspider",
-)
-
 # Resolve WORKING_DIR and SECRET_DIR
-from openspider.constant import WORKING_DIR, SECRET_DIR, USERS_DIR
+from openspider.constant import DATABASE_URL, WORKING_DIR, SECRET_DIR, USERS_DIR
 
 SQLITE_DB = WORKING_DIR / "user_data" / "user_data.db"
 AUTH_FILE = SECRET_DIR / "auth.json"

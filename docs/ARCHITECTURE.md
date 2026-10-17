@@ -1,5 +1,10 @@
 # OpenSpider — Architecture Documentation
 
+> **Cập nhật 16/10/2026:** Xem [Kiến trúc hệ thống hiện tại](20-kien-truc-he-thong.md)
+> cho Projects, giao diện Spider, luồng model/KB, persistence thực tế và giới hạn
+> triển khai. [Hướng dẫn sử dụng](19-huong-dan-su-dung.md) có lệnh chạy Windows.
+> Phân tích chi tiết bên dưới là bản ngày 25/06/2026; không bao gồm mọi thay đổi mới.
+
 > Auto-generated analysis of the `src/openspider/` codebase.  
 > **Date**: 2026-06-25 | **Package**: `openspider` | **Active source**: `src/openspider/`
 

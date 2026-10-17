@@ -4,6 +4,24 @@
   gap: 10px;
 }
 
+.spiderPreview {
+  height: 175px;
+  margin: -12px 0 20px;
+  overflow: hidden;
+  border: 1px solid var(--spider-line);
+  border-radius: 16px;
+  background: var(--spider-canvas);
+  :global(.spider-scene) {
+    height: 180px;
+  }
+}
+.styleHint {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--spider-muted);
+  margin: 0;
+}
+
 .sectionTitle {
   font-size: 13px;
   font-weight: 600;
@@ -33,7 +51,9 @@
   cursor: pointer;
   font-size: 13px;
   color: rgba(0, 0, 0, 0.75);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 
   &:hover {
     border-color: rgba(255, 127, 22, 0.5);
@@ -41,8 +61,9 @@
 }
 
 .presetCardActive {
-  border-color: #ff7f16;
-  box-shadow: 0 0 0 2px rgba(255, 127, 22, 0.2);
+  border-color: var(--spider-primary);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--spider-primary) 20%, transparent);
 }
 
 :global(.dark-mode) .presetCard {

@@ -4,8 +4,15 @@ import {
   useEffect,
   useState,
   useCallback,
+  useMemo,
   type ReactNode,
 } from "react";
+import {
+  SPIDER_STYLES,
+  resolveSpiderColors,
+  type SpiderColors,
+  type SpiderStyle,
+} from "./spiderTheme";
 
 export type ThemeMode = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
@@ -17,10 +24,13 @@ export type BackgroundType =
   | "gradient-radial"
   | "pattern-dots"
   | "pattern-grid"
-  | "particles";
+  | "particles"
+  | "spiderweb";
 
 export interface CustomThemeTokens {
   colorPrimary?: string;
+  colorSecondary?: string;
+  colorWeb?: string;
   colorBgBase?: string;
   borderRadius?: number;
   fontSize?: number;
@@ -32,8 +42,12 @@ const CUSTOM_KEY = "openspider-theme-custom";
 const BACKGROUND_KEY = "openspider-background-type";
 const GLASS_KEY = "openspider-glassmorphism";
 const ANIM_KEY = "openspider-animations";
+const SPIDER_STYLE_KEY = "openspider-spider-style";
 
 interface ThemeContextValue {
+  spiderStyle: SpiderStyle;
+  setSpiderStyle: (style: SpiderStyle) => void;
+  spiderColors: SpiderColors;
   /** User selected preference: light / dark / system */
   themeMode: ThemeMode;
   /** Resolved final theme after applying system preference */
@@ -61,6 +75,9 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
+  spiderStyle: "classic",
+  setSpiderStyle: () => {},
+  spiderColors: resolveSpiderColors("classic", false),
   themeMode: "light",
   isDark: false,
   setThemeMode: () => {},
@@ -69,7 +86,7 @@ const ThemeContext = createContext<ThemeContextValue>({
   setThemePreset: () => {},
   customTokens: {},
   setCustomTokens: () => {},
-  backgroundType: "solid",
+  backgroundType: "spiderweb",
   setBackgroundType: () => {},
   enableGlassmorphism: false,
   setEnableGlassmorphism: () => {},
@@ -125,6 +142,7 @@ function getInitialBackground(): BackgroundType {
     "pattern-dots",
     "pattern-grid",
     "particles",
+    "spiderweb",
   ];
   try {
     const stored = localStorage.getItem(BACKGROUND_KEY);
@@ -134,7 +152,18 @@ function getInitialBackground(): BackgroundType {
   } catch {
     // ignore storage errors
   }
-  return "solid";
+  return "spiderweb";
+}
+
+function getInitialSpiderStyle(): SpiderStyle {
+  try {
+    const stored = localStorage.getItem(SPIDER_STYLE_KEY);
+    if (stored && Object.prototype.hasOwnProperty.call(SPIDER_STYLES, stored))
+      return stored as SpiderStyle;
+  } catch {
+    /* Storage may be unavailable in private browsing. */
+  }
+  return "classic";
 }
 
 function getInitialBool(key: string, fallback: boolean): boolean {
@@ -156,13 +185,15 @@ function resolveIsDark(mode: ThemeMode): boolean {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [spiderStyle, setSpiderStyleState] = useState<SpiderStyle>(
+    getInitialSpiderStyle,
+  );
   const [themeMode, setThemeModeState] = useState<ThemeMode>(getInitialMode);
   const [isDark, setIsDark] = useState<boolean>(() =>
     resolveIsDark(getInitialMode()),
   );
-  const [themePreset, setThemePresetState] = useState<ThemePreset>(
-    getInitialPreset,
-  );
+  const [themePreset, setThemePresetState] =
+    useState<ThemePreset>(getInitialPreset);
   const [customTokens, setCustomTokensState] = useState<CustomThemeTokens>(
     getInitialCustomTokens,
   );
@@ -174,6 +205,44 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [enableAnimations, setEnableAnimationsState] = useState<boolean>(() =>
     getInitialBool(ANIM_KEY, true),
   );
+  const spiderColors = useMemo(
+    () => resolveSpiderColors(spiderStyle, isDark, customTokens),
+    [spiderStyle, isDark, customTokens],
+  );
+  const setSpiderStyle = useCallback((style: SpiderStyle) => {
+    setSpiderStyleState(style);
+    try {
+      localStorage.setItem(SPIDER_STYLE_KEY, style);
+    } catch {
+      /* Optional persistence. */
+    }
+  }, []);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const variables: Record<string, string> = Object.fromEntries(
+      Object.entries(spiderColors).map(([key, value]) => [
+        `--spider-${key.replace(
+          /[A-Z]/g,
+          (match) => `-${match.toLowerCase()}`,
+        )}`,
+        value,
+      ]),
+    );
+    variables["--bg-solid"] = spiderColors.canvas;
+    variables["--bg-gradient-start"] = spiderColors.canvas;
+    variables["--bg-gradient-mid"] = spiderColors.surface;
+    variables[
+      "--bg-gradient-end"
+    ] = `color-mix(in srgb, ${spiderColors.secondary} 12%, ${spiderColors.canvas})`;
+    html.dataset.spiderStyle = spiderStyle;
+    for (const [key, value] of Object.entries(variables))
+      html.style.setProperty(key, value);
+    return () => {
+      Object.keys(variables).forEach((key) => html.style.removeProperty(key));
+      delete html.dataset.spiderStyle;
+    };
+  }, [spiderColors, spiderStyle]);
 
   // Apply dark/light class to <html> element for global CSS variable overrides
   useEffect(() => {
@@ -195,6 +264,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       "pattern-dots",
       "pattern-grid",
       "particles",
+      "spiderweb",
     ];
     valid.forEach((t) => html.classList.remove(`bg-${t}`));
     html.classList.add(`bg-${backgroundType}`);
@@ -282,7 +352,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setIsDark(resolveIsDark("system"));
     setThemePresetState("bailian");
     setCustomTokensState({});
-    setBackgroundTypeState("solid");
+    setSpiderStyleState("classic");
+    setBackgroundTypeState("spiderweb");
     setEnableGlassmorphismState(false);
     setEnableAnimationsState(true);
     try {
@@ -292,6 +363,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(BACKGROUND_KEY);
       localStorage.removeItem(GLASS_KEY);
       localStorage.removeItem(ANIM_KEY);
+      localStorage.removeItem(SPIDER_STYLE_KEY);
     } catch {
       // ignore
     }
@@ -300,6 +372,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
     <ThemeContext.Provider
       value={{
+        spiderStyle,
+        setSpiderStyle,
+        spiderColors,
         themeMode,
         isDark,
         setThemeMode,

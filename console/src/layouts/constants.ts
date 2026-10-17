@@ -1,6 +1,7 @@
 // ── URLs ──────────────────────────────────────────────────────────────────
 
-export const GITHUB_URL = "https://github.com/agentscope-ai/OpenSpider" as const;
+export const GITHUB_URL =
+  "https://github.com/agentscope-ai/OpenSpider" as const;
 
 // ── Navigation ────────────────────────────────────────────────────────────
 
@@ -12,6 +13,7 @@ export const DEFAULT_OPEN_KEYS = [
 ];
 
 export const KEY_TO_PATH: Record<string, string> = {
+  projects: "/projects",
   chat: "/chat",
   channels: "/channels",
   sessions: "/sessions",
@@ -37,6 +39,7 @@ export const KEY_TO_PATH: Record<string, string> = {
 };
 
 export const KEY_TO_LABEL: Record<string, string> = {
+  projects: "nav.projects",
   chat: "nav.chat",
   channels: "nav.channels",
   sessions: "nav.sessions",

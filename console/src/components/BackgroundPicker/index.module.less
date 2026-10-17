@@ -14,7 +14,10 @@
   border-radius: 10px;
   background: transparent;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.15s;
 
   &:hover {
     border-color: rgba(255, 127, 22, 0.5);
@@ -46,16 +49,27 @@
   background: #f9f8f4;
 }
 
+.thumb-spiderweb {
+  background-color: var(--spider-canvas);
+  background-image: repeating-conic-gradient(
+      from 0deg at 50% 50%,
+      transparent 0deg 28deg,
+      var(--spider-web) 29deg 30deg
+    ),
+    repeating-radial-gradient(
+      circle,
+      transparent 0 9px,
+      var(--spider-web) 10px 10.5px,
+      transparent 11px 19px
+    );
+}
+
 .thumb-gradient-linear {
   background: linear-gradient(-45deg, #f9f8f4, #efe9df, #f3eee6);
 }
 
 .thumb-gradient-radial {
-  background: radial-gradient(
-    ellipse at top left,
-    #efe9df,
-    #f9f8f4 65%
-  );
+  background: radial-gradient(ellipse at top left, #efe9df, #f9f8f4 65%);
 }
 
 .thumb-pattern-dots {
@@ -100,7 +114,8 @@
     height: 3px;
     top: 55%;
     left: 60%;
-    box-shadow: 8px -8px 0 rgba(255, 127, 22, 0.25),
+    box-shadow:
+      8px -8px 0 rgba(255, 127, 22, 0.25),
       -5px 6px 0 rgba(255, 127, 22, 0.2);
   }
 }

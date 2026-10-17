@@ -1,8 +1,8 @@
 # docker-compose.postgres.yaml
 #
 # Standalone PostgreSQL + pgAdmin for local development.
-# Credentials match .env DATABASE_URL:
-#   postgresql+asyncpg://openspider:spiderman@localhost:5433/openspider
+# Set OPENSPIDER_POSTGRES_PASSWORD and OPENSPIDER_PGADMIN_PASSWORD in .env.
+# Set OPENSPIDER_DATABASE_URL separately with the same database credentials.
 #
 # Usage:
 #   docker compose -f docker-compose.postgres.yaml up -d
@@ -16,7 +16,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: "openspider"
-      POSTGRES_PASSWORD: "spiderman"
+      POSTGRES_PASSWORD: "${OPENSPIDER_POSTGRES_PASSWORD:?Set OPENSPIDER_POSTGRES_PASSWORD in .env}"
       POSTGRES_DB: "openspider"
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
     ports:
@@ -38,7 +38,7 @@ services:
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: "admin@openspider.local"
-      PGADMIN_DEFAULT_PASSWORD: "spiderman"
+      PGADMIN_DEFAULT_PASSWORD: "${OPENSPIDER_PGADMIN_PASSWORD:?Set OPENSPIDER_PGADMIN_PASSWORD in .env}"
       PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False"
       PGADMIN_CONFIG_SERVER_MODE: "False"
     ports:

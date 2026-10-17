@@ -1,42 +1,39 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface PageTransitionProps {
   children: ReactNode;
 }
 
 /**
- * Wraps route content with a quick fade + slide transition on path change.
- * The previous page fades out (150ms), then the new page fades in.
+ * Animate the incoming route without caching router elements or hiding content.
+ * Parent rerenders must never cancel navigation or leave a chat transparent.
  */
 export default function PageTransition({ children }: PageTransitionProps) {
   const location = useLocation();
-  const lastPath = useRef(location.pathname);
-  const [displayChildren, setDisplayChildren] = useState(children);
-  const [stage, setStage] = useState<"in" | "out">("in");
+  const element = useRef<HTMLDivElement>(null);
+  const { enableAnimations } = useTheme();
 
   useEffect(() => {
-    if (location.pathname === lastPath.current) {
+    if (
+      !enableAnimations ||
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    )
       return;
-    }
-    lastPath.current = location.pathname;
-
-    // Fade out current page
-    setStage("out");
-    const timer = setTimeout(() => {
-      setDisplayChildren(children);
-      setStage("in");
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [location.pathname, children]);
+    const animation = element.current?.animate?.(
+      [
+        { opacity: 0.65, transform: "translateY(5px)" },
+        { opacity: 1, transform: "translateY(0)" },
+      ],
+      { duration: 180, easing: "ease-out" },
+    );
+    return () => animation?.cancel();
+  }, [location.pathname, enableAnimations]);
 
   return (
-    <div
-      className={`page-transition page-transition-${
-        stage === "in" ? "fadeIn" : "fadeOut"
-      }`}
-    >
-      {displayChildren}
+    <div ref={element} className="page-transition page-transition-fadeIn">
+      {children}
     </div>
   );
 }

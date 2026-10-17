@@ -26,6 +26,7 @@ from .plugins import router as plugins_router
 from .backup import router as backup_router
 from .plan import router as plan_router
 from .knowledge import router as knowledge_router
+from .projects import router as projects_router
 
 router = APIRouter()
 
@@ -52,6 +53,7 @@ router.include_router(plugins_router)
 router.include_router(backup_router)
 router.include_router(plan_router)
 router.include_router(knowledge_router)
+router.include_router(projects_router)
 
 
 def create_agent_scoped_router() -> APIRouter:

@@ -350,43 +350,12 @@ class KnowledgeBaseManager:
         self._document_registry[doc_id] = doc
         self._save_registry()
 
-        # Persist file via storage backend (local or MinIO)
-        if self._storage_backend is not None:
-            stored_path_str = await self._storage_backend.store(
-                file_path,
-                owner or "_unowned",
-                stored_path.name,
-            )
-            doc.file_path = stored_path_str
-
         try:
-            # Parse → chunk → embed → store
-            if self._chunker is None:
-                raise RuntimeError("Chunker not initialized")
-
-            # Chunk from the original file (always local; stored copy is
-            # for retrieval)
-            chunks = self._chunker.chunk_document(file_path, doc_id)
-            if not chunks:
-                raise ValueError("Document produced no text content")
-
-            # Propagate ACL metadata to every chunk
-            for chunk in chunks:
-                chunk.metadata["owner"] = owner or ""
-                chunk.metadata["scope"] = "private"
-                chunk.metadata["shared_with"] = ""
-
-            # Embed all chunks
-            chunk_texts = [c.text for c in chunks]
-            embeddings = await self._embed_texts(chunk_texts)
-
-            # Store in vector DB
-            if self._vector_store is None:
-                raise RuntimeError("Vector store not initialized")
-            await self._vector_store.add(chunks, embeddings)
-
-            doc.status = DocumentStatus.READY
-            doc.chunk_count = len(chunks)
+            if self._storage_backend is not None:
+                doc.file_path = await self._storage_backend.store(
+                    file_path, owner or "_unowned", stored_path.name,
+                )
+            await self._index_document(doc, file_path)
         except Exception as exc:
             doc.status = DocumentStatus.ERROR
             doc.error_message = str(exc)
@@ -398,6 +367,37 @@ class KnowledgeBaseManager:
         doc.metadata["content_hash"] = content_hash
         self._save_registry()
         return doc
+
+    async def _index_document(
+        self, doc: KnowledgeDocument, file_path: Path,
+    ) -> None:
+        """Build chunks for an existing record, preserving its identity and ACL."""
+        if self._chunker is None:
+            raise RuntimeError("Chunker not initialized")
+        if self._vector_store is None:
+            raise RuntimeError("Vector store not initialized")
+
+        doc.status = DocumentStatus.INDEXING
+        doc.error_message = None
+        chunks = await asyncio.to_thread(
+            self._chunker.chunk_document, file_path, doc.id,
+        )
+        if not chunks:
+            raise ValueError("Document produced no text content")
+        for chunk in chunks:
+            chunk.metadata.update({
+                "owner": doc.owner or "",
+                "scope": doc.scope.value,
+                "shared_with": ",".join(doc.shared_with),
+                "kb_name": doc.kb_name,
+            })
+        embeddings = await self._embed_texts([c.text for c in chunks])
+        await self._vector_store.delete(doc.id)
+        await self._vector_store.add(chunks, embeddings)
+        doc.chunk_count = len(chunks)
+        doc.status = DocumentStatus.READY
+        doc.metadata["content_hash"] = self._hash_file(file_path)
+        doc.metadata["last_indexed"] = datetime.now(timezone.utc).isoformat()
 
     async def remove_document(
         self,
@@ -586,31 +586,29 @@ class KnowledgeBaseManager:
             user_id=user_id,
             user_role=user_role,
         )
-        # Delete all vectors
-        for doc in docs:
-            if self._vector_store is not None:
-                await self._vector_store.delete(doc.id)
+        if user_id is not None and user_role != "admin":
+            docs = [doc for doc in docs if doc.owner == user_id]
 
         # Re-ingest each document
         succeeded = 0
         failed = 0
         for doc in docs:
             try:
-                stored = Path(doc.file_path)
-                if stored.exists():
-                    await self.ingest_document(
-                        stored,
-                        kb_name=kb_name,
-                        owner=doc.owner,
-                    )
-                    succeeded += 1
-                else:
-                    doc.status = DocumentStatus.ERROR
-                    doc.error_message = "Source file missing"
-                    failed += 1
+                stored = (
+                    await self._storage_backend.retrieve(doc.file_path)
+                    if self._storage_backend is not None
+                    else Path(doc.file_path)
+                )
+                if not stored.is_file():
+                    raise FileNotFoundError("Source file missing")
+                await self._index_document(doc, stored)
+                succeeded += 1
             except Exception as exc:
                 doc.status = DocumentStatus.ERROR
                 doc.error_message = str(exc)
+                doc.chunk_count = 0
+                if self._vector_store is not None:
+                    await self._vector_store.delete(doc.id)
                 failed += 1
 
         self._save_registry()
@@ -667,6 +665,26 @@ class KnowledgeBaseManager:
         """Semantic search across accessible documents."""
         if self._vector_store is None:
             return []
+
+        if self._embedding_fn is None and isinstance(
+            self._vector_store, LocalVectorStore,
+        ):
+            accessible = await self.list_documents(
+                user_id=user_id, user_role=user_role,
+            )
+            document_ids = {
+                doc.id for doc in accessible
+                if doc.status == DocumentStatus.READY
+                and (kb_names is None or doc.kb_name in kb_names)
+            }
+            results = await self._vector_store.keyword_search(
+                self._tokenize_query(query), document_ids, top_k,
+            )
+            for result in results:
+                doc = self._document_registry[result.document_id]
+                result.filename = doc.filename
+                result.kb_name = doc.kb_name
+            return results
 
         # Tokenize query (CJK-aware, same logic as ReMeLightMemoryManager)
         query_tokens = " ".join(self._tokenize_query(query))

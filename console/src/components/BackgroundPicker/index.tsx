@@ -3,6 +3,7 @@ import { useTheme, type BackgroundType } from "../../contexts/ThemeContext";
 import styles from "./index.module.less";
 
 const OPTIONS: Array<{ key: BackgroundType; labelKey: string }> = [
+  { key: "spiderweb", labelKey: "appearance.background.spiderweb" },
   { key: "solid", labelKey: "appearance.background.solid" },
   { key: "gradient-linear", labelKey: "appearance.background.gradientLinear" },
   { key: "gradient-radial", labelKey: "appearance.background.gradientRadial" },
@@ -26,10 +27,13 @@ export default function BackgroundPicker() {
             className={`${styles.item} ${active ? styles.itemActive : ""}`}
             onClick={() => setBackgroundType(opt.key)}
           >
-            <span
-              className={`${styles.thumb} ${styles[`thumb-${opt.key}`]}`}
-            />
-            <span className={styles.label}>{t(opt.labelKey)}</span>
+            <span className={`${styles.thumb} ${styles[`thumb-${opt.key}`]}`} />
+            <span className={styles.label}>
+              {t(
+                opt.labelKey,
+                opt.key === "spiderweb" ? "Spider web" : opt.key,
+              )}
+            </span>
           </button>
         );
       })}

@@ -12,6 +12,8 @@ import json
 import logging
 import math
 import os
+import re
+import unicodedata
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
@@ -305,6 +307,46 @@ class LocalVectorStore(VectorStore):
         self._embeddings.extend(embeddings)
         await self._save()
         return len(chunks)
+
+    async def keyword_search(
+        self,
+        query_tokens: list[str],
+        document_ids: set[str],
+        top_k: int = 5,
+    ) -> list[SearchResult]:
+        """Rank text matches when no embedding provider is configured."""
+        import asyncio
+
+        def normalize(text: str) -> str:
+            return "".join(
+                char for char in unicodedata.normalize("NFKD", text.casefold())
+                if not unicodedata.combining(char)
+            ).replace("đ", "d")
+
+        tokens = set(re.findall(r"\w+", normalize(" ".join(query_tokens))))
+        if not tokens or top_k <= 0:
+            return []
+
+        def rank() -> list[SearchResult]:
+            results = []
+            for chunk in self._chunks:
+                if chunk.document_id not in document_ids:
+                    continue
+                words = set(re.findall(r"\w+", normalize(chunk.text)))
+                score = len(tokens & words) / len(tokens)
+                if score:
+                    results.append(SearchResult(
+                        document_id=chunk.document_id,
+                        filename="",
+                        text=chunk.text,
+                        score=score,
+                        chunk_id=chunk.chunk_id,
+                        page_number=chunk.page_number,
+                        metadata=chunk.metadata,
+                    ))
+            return sorted(results, key=lambda r: r.score, reverse=True)[:top_k]
+
+        return await asyncio.to_thread(rank)
 
     async def search(
         self,

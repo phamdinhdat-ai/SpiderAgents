@@ -204,6 +204,14 @@ async def post_console_chat(
         sender_id=native_payload["sender_id"],
         channel_meta=native_payload["meta"],
     )
+    from ..projects import project_context_for_session
+
+    project_context = await project_context_for_session(request, session_id)
+    if project_context is not None:
+        owner, context = project_context
+        native_payload["sender_id"] = owner
+        native_payload["meta"]["user_id"] = owner
+        native_payload["meta"]["_project_context"] = context
     name, first_text = _extract_placeholder_name(
         native_payload["content_parts"],
     )

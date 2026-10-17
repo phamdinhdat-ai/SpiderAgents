@@ -7,6 +7,8 @@ import {
 } from "../../contexts/ThemeContext";
 import BackgroundPicker from "../BackgroundPicker";
 import styles from "./index.module.less";
+import { SPIDER_STYLES, type SpiderStyle } from "../../contexts/spiderTheme";
+import SpiderScene from "../SpiderScene";
 
 interface ThemeSettingsDrawerProps {
   open: boolean;
@@ -33,6 +35,10 @@ export default function ThemeSettingsDrawer({
     enableAnimations,
     setEnableAnimations,
     resetAppearance,
+    spiderStyle,
+    setSpiderStyle,
+    spiderColors,
+    setThemeMode,
   } = useTheme();
 
   const updateTokens = (patch: Partial<CustomThemeTokens>) => {
@@ -43,10 +49,58 @@ export default function ThemeSettingsDrawer({
     <Drawer
       title={t("appearance.title")}
       placement="right"
-      width={380}
+      width="min(420px, 100vw)"
       open={open}
       onClose={onClose}
     >
+      <div className={styles.spiderPreview}>
+        <SpiderScene />
+      </div>
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>
+          {t("appearance.spiderStyle", "Spider identity")}
+        </div>
+        <p className={styles.styleHint}>
+          {t(
+            "appearance.spiderHint",
+            "Choose your universe. Make every thread your own.",
+          )}
+        </p>
+        <div className={styles.presetCards}>
+          {(
+            Object.entries(SPIDER_STYLES) as Array<
+              [SpiderStyle, (typeof SPIDER_STYLES)[SpiderStyle]]
+            >
+          ).map(([key, option]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={spiderStyle === key}
+              className={`${styles.presetCard} ${
+                spiderStyle === key ? styles.presetCardActive : ""
+              }`}
+              onClick={() => {
+                setSpiderStyle(key);
+                setCustomTokens({
+                  borderRadius: customTokens.borderRadius,
+                  fontSize: customTokens.fontSize,
+                });
+                if (key === "symbiote") setThemeMode("dark");
+              }}
+              title={option.description}
+            >
+              <span
+                className={styles.presetSwatch}
+                style={{
+                  background: `linear-gradient(135deg, ${option.primary} 50%, ${option.secondary} 50%)`,
+                }}
+              />
+              <span>{option.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <Divider />
       {/* ── Theme preset ── */}
       <div className={styles.section}>
         <div className={styles.sectionTitle}>{t("appearance.preset")}</div>
@@ -63,7 +117,9 @@ export default function ThemeSettingsDrawer({
                 onClick={() => setThemePreset(opt.value)}
               >
                 <span
-                  className={`${styles.presetSwatch} ${styles[`swatch-${opt.value}`]}`}
+                  className={`${styles.presetSwatch} ${
+                    styles[`swatch-${opt.value}`]
+                  }`}
                 />
                 <span>{opt.label}</span>
                 {active && <span className={styles.check}>✓</span>}
@@ -79,19 +135,49 @@ export default function ThemeSettingsDrawer({
       <div className={styles.section}>
         <div className={styles.sectionTitle}>{t("appearance.colors")}</div>
         <div className={styles.colorRow}>
-          <label>{t("appearance.primaryColor")}</label>
+          <label htmlFor="spider-primary-color">
+            {t("appearance.primaryColor")}
+          </label>
           <input
+            id="spider-primary-color"
             type="color"
-            value={customTokens.colorPrimary || "#FF7F16"}
+            value={spiderColors?.primary || "#dc304a"}
             onChange={(e) => updateTokens({ colorPrimary: e.target.value })}
             className={styles.colorInput}
           />
         </div>
         <div className={styles.colorRow}>
-          <label>{t("appearance.bgColor")}</label>
+          <label htmlFor="spider-secondary-color">
+            {t("appearance.secondaryColor", "Secondary color")}
+          </label>
           <input
+            id="spider-secondary-color"
             type="color"
-            value={customTokens.colorBgBase || "#f9f8f4"}
+            value={spiderColors?.secondary || "#2878de"}
+            onChange={(e) => updateTokens({ colorSecondary: e.target.value })}
+            className={styles.colorInput}
+          />
+        </div>
+        <div className={styles.colorRow}>
+          <label htmlFor="spider-web-color">
+            {t("appearance.webColor", "Web thread color")}
+          </label>
+          <input
+            id="spider-web-color"
+            type="color"
+            value={spiderColors?.web || "#a2b4d1"}
+            onChange={(e) => updateTokens({ colorWeb: e.target.value })}
+            className={styles.colorInput}
+          />
+        </div>
+        <div className={styles.colorRow}>
+          <label htmlFor="spider-background-color">
+            {t("appearance.bgColor")}
+          </label>
+          <input
+            id="spider-background-color"
+            type="color"
+            value={spiderColors?.canvas || "#f7f8fc"}
             onChange={(e) => updateTokens({ colorBgBase: e.target.value })}
             className={styles.colorInput}
           />
@@ -127,7 +213,9 @@ export default function ThemeSettingsDrawer({
 
       {/* ── Background ── */}
       <div className={styles.section}>
-        <div className={styles.sectionTitle}>{t("appearance.background.title")}</div>
+        <div className={styles.sectionTitle}>
+          {t("appearance.background.title")}
+        </div>
         <BackgroundPicker />
       </div>
 
@@ -145,7 +233,11 @@ export default function ThemeSettingsDrawer({
         </div>
         <div className={styles.toggleRow}>
           <label>{t("appearance.animations")}</label>
-          <Switch checked={enableAnimations} onChange={setEnableAnimations} />
+          <Switch
+            aria-label={t("appearance.animations")}
+            checked={enableAnimations}
+            onChange={setEnableAnimations}
+          />
         </div>
       </div>
 

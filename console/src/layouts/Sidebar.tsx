@@ -38,7 +38,7 @@ import {
   SparkDebugLine,
   SparkSaveLine,
 } from "@agentscope-ai/icons";
-import { Package } from "lucide-react";
+import { FolderOpen, Package } from "lucide-react";
 import { clearAuthToken, getApiUrl } from "../api/config";
 import { authApi } from "../api/modules/auth";
 import { usePlugins } from "../plugins/PluginContext";
@@ -96,9 +96,11 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
             fetch(getApiUrl("/auth/verify"), {
               headers: { Authorization: `Bearer ${token}` },
             })
-              .then((r) => r.json().then((data) => {
-                if (data.role) setUserRole(data.role);
-              }))
+              .then((r) =>
+                r.json().then((data) => {
+                  if (data.role) setUserRole(data.role);
+                }),
+              )
               .catch(() => {});
           }
         }
@@ -190,6 +192,12 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
   // ── Collapsed nav items (all leaf pages) ──────────────────────────────
 
   const collapsedNavItems = [
+    {
+      key: "projects",
+      icon: <FolderOpen size={18} />,
+      path: "/projects",
+      label: t("nav.projects", "Projects"),
+    },
     {
       key: "chat",
       icon: <SparkChatTabFill size={18} />,
@@ -370,12 +378,16 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       children: [
         {
           key: "knowledge-base",
-          label: collapsed ? null : (t("nav.knowledgeBase", "Knowledge Base") as string),
+          label: collapsed
+            ? null
+            : (t("nav.knowledgeBase", "Knowledge Base") as string),
           icon: <SparkOtherLine size={16} />,
         },
         {
           key: "core-instruction",
-          label: collapsed ? null : (t("nav.coreInstruction", "Core Instruction") as string),
+          label: collapsed
+            ? null
+            : (t("nav.coreInstruction", "Core Instruction") as string),
           icon: <SparkBrowseLine size={16} />,
         },
         {
@@ -531,6 +543,16 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
         </nav>
       ) : (
         <>
+          <button
+            className={`${styles.projectsNav}${
+              selectedKey === "projects" ? ` ${styles.projectsNavActive}` : ""
+            }`}
+            onClick={() => navigate("/projects")}
+          >
+            <FolderOpen size={18} />
+            <span>{t("nav.projects", "Projects")}</span>
+            <span className={styles.projectsNavBadge}>STUDIO</span>
+          </button>
           {/* Agent-scoped section: selector + Chat + Control + Workspace */}
           <div className={styles.agentScopedSection}>
             <div className={styles.agentSelectorContainer}>

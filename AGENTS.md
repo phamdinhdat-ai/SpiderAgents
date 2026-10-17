@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **SpiderAgents** (51961 symbols, 83755 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **SpiderAgents** (33053 symbols, 55836 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -46,6 +46,69 @@ This project is indexed by GitNexus as **SpiderAgents** (51961 symbols, 83755 re
 
 # SpiderAgents / OpenSpider — Project Instructions
 
+## Product Direction: AgentSpider
+
+AgentSpider is the owner's long-term platform for bringing conversational AI,
+executable commands and jobs, and infrastructure integrations into one coherent
+experience. Treat this product direction as the basis for feature decisions.
+The repository is named SpiderAgents; the active implementation is OpenSpider.
+Keep existing package names, CLI commands, and `OPENSPIDER_*` configuration unless
+a branding migration is explicitly requested.
+
+The three product pillars are:
+
+- **Chat**: users express intent, retain conversation context, and follow agent
+  progress through streaming responses and clear tool feedback.
+- **Commands and jobs**: turn intent into executable tasks, plans, and scheduled
+  work with visible status, results, failures, and approval requests.
+- **Infrastructure connections**: connect agents to external tools, services,
+  and infrastructure through MCP and existing extension mechanisms. Describe
+  supported integrations from code; distinguish proposed capabilities from
+  those already implemented.
+
+Prefer complete user journeys: request in chat, inspect the intended action,
+approve when required, execute through the existing runner and tool guard,
+and receive a traceable result. Preserve user and agent isolation, protect
+credentials, and make failures actionable when adding infrastructure actions.
+Never treat an LLM response as proof that a job or infrastructure action succeeded.
+
+## Working Map
+
+| Area | Starting point |
+|------|----------------|
+| Web console (React, TypeScript, Vite) | `console/` |
+| Application and API | `src/openspider/app/` |
+| Conversation execution | `src/openspider/app/runner/`, `src/openspider/agents/` |
+| Plans and scheduled jobs | `src/openspider/plan/`, `src/openspider/app/crons/` |
+| MCP and extensions | `src/openspider/app/mcp/`, `src/openspider/plugins/` |
+| Messaging channels | `src/openspider/app/channels/` |
+| Model providers | `src/openspider/providers/` |
+| Approvals and tool security | `src/openspider/app/approvals/`, `src/openspider/security/` |
+| Persistence and configuration | `src/openspider/db/`, `src/openspider/config/` |
+| Tests | `tests/unit/`, `tests/contract/`, `tests/integration/` |
+
+For backend changes, use `src/openspider/`; update the shared console, tests,
+deployment files, or documentation when the feature requires them. The frozen
+`src/qwenpaw/` baseline must remain untouched unless explicitly requested.
+
+## Collaboration and Verification
+
+- Communicate in Vietnamese by default with this owner; keep code identifiers
+  and established technical terminology consistent with the repository.
+- Read existing implementation and applicable instructions before changing it.
+  Keep changes focused on the requested outcome and preserve unrelated work.
+- For chat, job, or integration changes, check the relevant API, execution path,
+  persistence, and console behavior rather than stopping at an isolated helper.
+- Use the existing approval gate for privileged actions. Do not log or embed
+  real credentials in code, examples, or documentation.
+- Run checks relevant to the change and report what passed and what could not
+  run. On Windows without Make, use `python -m pytest tests/unit/ -x -q --tb=line`
+  for the equivalent of `make quick`; scope tests to affected behavior as needed.
+- For console changes, use the scripts in `console/package.json`: `npm run lint`,
+  `npm run build`, and relevant Vitest tests (`npx vitest run <test-path>`), from
+  `console/`.
+- Report the delivered behavior, verification results, and remaining limitations.
+
 ## Critical Rule: OpenSpider is the Active Target
 
 **OpenSpider** (`src/openspider/`) is the active development branch. **QwenPaw** legacy baseline (`src/qwenpaw/`) is the legacy baseline — structurally identical but frozen.
@@ -79,7 +142,7 @@ To switch to **PostgreSQL**, set these environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OPENSPIDER_DATABASE_ENABLED` | `false` | Set to `true` to use PostgreSQL for all storage |
-| `OPENSPIDER_DATABASE_URL` | `postgresql+asyncpg://5gai:Vht%402025@localhost:5433/5gai` | PostgreSQL connection URL (asyncpg driver) |
+| `OPENSPIDER_DATABASE_URL` | `postgresql+asyncpg://localhost:5433/openspider` | PostgreSQL connection URL (asyncpg driver) |
 
 ### Quick Start with PostgreSQL
 

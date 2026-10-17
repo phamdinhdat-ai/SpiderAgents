@@ -10,7 +10,9 @@ import { lazyImportWithRetry } from "../../utils/lazyWithRetry";
 import { usePlugins } from "../../plugins/PluginContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import ParticleBackground from "../../components/ParticleBackground";
+import SpiderScene from "../../components/SpiderScene";
 import PageTransition from "../../components/PageTransition";
+import ProjectChatBanner from "../../pages/Projects/ProjectChatBanner";
 import styles from "../index.module.less";
 
 // Chat is eagerly loaded (default landing page)
@@ -18,6 +20,7 @@ import Chat from "../../pages/Chat";
 
 // All other pages are lazily loaded with automatic retry on chunk failure
 const ChannelsPage = lazyImportWithRetry("../../pages/Control/Channels");
+const ProjectsPage = lazyImportWithRetry("../../pages/Projects");
 const SessionsPage = lazyImportWithRetry("../../pages/Control/Sessions");
 const CronJobsPage = lazyImportWithRetry("../../pages/Control/CronJobs");
 const HeartbeatPage = lazyImportWithRetry("../../pages/Control/Heartbeat");
@@ -42,9 +45,7 @@ const AdminSettingsPage = lazyImportWithRetry("../../pages/Settings/Admin");
 const UserManagementPage = lazyImportWithRetry(
   "../../pages/Settings/UserManagement",
 );
-const KnowledgeBasePage = lazyImportWithRetry(
-  "../../pages/KnowledgeBase",
-);
+const KnowledgeBasePage = lazyImportWithRetry("../../pages/KnowledgeBase");
 const CoreInstructionPage = lazyImportWithRetry(
   "../../pages/Agent/CoreInstruction",
 );
@@ -52,6 +53,7 @@ const CoreInstructionPage = lazyImportWithRetry(
 const { Content } = Layout;
 
 const pathToKey: Record<string, string> = {
+  "/projects": "projects",
   "/chat": "chat",
   "/channels": "channels",
   "/sessions": "sessions",
@@ -91,7 +93,9 @@ export default function MainLayout() {
   }, [enableGlassmorphism]);
 
   // Resolve selected key: check static routes first, then plugin routes
-  let selectedKey = pathToKey[currentPath] || "";
+  let selectedKey = currentPath.startsWith("/projects/")
+    ? "projects"
+    : pathToKey[currentPath] || "";
   if (!selectedKey) {
     const matchedPlugin = pluginRoutes.find(
       (route) => currentPath === route.path,
@@ -104,11 +108,13 @@ export default function MainLayout() {
   return (
     <Layout className={styles.mainLayout}>
       {backgroundType === "particles" && <ParticleBackground />}
+      {backgroundType === "spiderweb" && <SpiderScene background />}
       <Header />
       <Layout>
         <Sidebar selectedKey={selectedKey} />
         <Content className="page-container">
           <ConsolePollService />
+          <ProjectChatBanner />
           <div className="page-content">
             <ChunkErrorBoundary resetKey={currentPath}>
               <Suspense
@@ -120,53 +126,70 @@ export default function MainLayout() {
                 }
               >
                 <PageTransition>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/chat" replace />} />
-                  <Route path="/chat/*" element={<Chat />} />
-                  <Route path="/channels" element={<ChannelsPage />} />
-                  <Route path="/sessions" element={<SessionsPage />} />
-                  <Route path="/cron-jobs" element={<CronJobsPage />} />
-                  <Route path="/heartbeat" element={<HeartbeatPage />} />
-                  <Route path="/skills" element={<SkillsPage />} />
-                  <Route path="/skill-pool" element={<SkillPoolPage />} />
-                  <Route path="/tools" element={<ToolsPage />} />
-                  <Route path="/mcp" element={<MCPPage />} />
-                  <Route path="/acp" element={<ACPPage />} />
-                  <Route path="/ACP" element={<Navigate to="/acp" replace />} />
-                  <Route path="/core-instruction" element={<CoreInstructionPage />} />
-                  <Route path="/agents" element={<AgentsPage />} />
-                  <Route path="/models" element={<ModelsPage />} />
-                  <Route path="/environments" element={<EnvironmentsPage />} />
-                  <Route path="/agent-config" element={<AgentConfigPage />} />
-                  <Route path="/token-usage" element={<TokenUsagePage />} />
-                  <Route path="/agent-stats" element={<AgentStatsPage />} />
-                  <Route path="/backups" element={<BackupsPage />} />
-                  <Route
-                    path="/plugin-manager"
-                    element={<PluginManagerPage />}
-                  />
-                  <Route
-                    path="/admin-settings"
-                    element={<AdminSettingsPage />}
-                  />
-                  <Route
-                    path="/user-management"
-                    element={<UserManagementPage />}
-                  />
-                  <Route
-                    path="/knowledge-base"
-                    element={<KnowledgeBasePage />}
-                  />
-
-                  {/* Plugin routes — dynamically injected at runtime */}
-                  {pluginRoutes.map((route) => (
+                  <Routes>
                     <Route
-                      key={route.path}
-                      path={route.path}
-                      element={<route.component />}
+                      path="/"
+                      element={<Navigate to="/projects" replace />}
                     />
-                  ))}
-                </Routes>
+                    <Route path="/projects" element={<ProjectsPage />} />
+                    <Route
+                      path="/projects/:projectId"
+                      element={<ProjectsPage />}
+                    />
+                    <Route path="/chat/*" element={<Chat />} />
+                    <Route path="/channels" element={<ChannelsPage />} />
+                    <Route path="/sessions" element={<SessionsPage />} />
+                    <Route path="/cron-jobs" element={<CronJobsPage />} />
+                    <Route path="/heartbeat" element={<HeartbeatPage />} />
+                    <Route path="/skills" element={<SkillsPage />} />
+                    <Route path="/skill-pool" element={<SkillPoolPage />} />
+                    <Route path="/tools" element={<ToolsPage />} />
+                    <Route path="/mcp" element={<MCPPage />} />
+                    <Route path="/acp" element={<ACPPage />} />
+                    <Route
+                      path="/ACP"
+                      element={<Navigate to="/acp" replace />}
+                    />
+                    <Route
+                      path="/core-instruction"
+                      element={<CoreInstructionPage />}
+                    />
+                    <Route path="/agents" element={<AgentsPage />} />
+                    <Route path="/models" element={<ModelsPage />} />
+                    <Route
+                      path="/environments"
+                      element={<EnvironmentsPage />}
+                    />
+                    <Route path="/agent-config" element={<AgentConfigPage />} />
+                    <Route path="/token-usage" element={<TokenUsagePage />} />
+                    <Route path="/agent-stats" element={<AgentStatsPage />} />
+                    <Route path="/backups" element={<BackupsPage />} />
+                    <Route
+                      path="/plugin-manager"
+                      element={<PluginManagerPage />}
+                    />
+                    <Route
+                      path="/admin-settings"
+                      element={<AdminSettingsPage />}
+                    />
+                    <Route
+                      path="/user-management"
+                      element={<UserManagementPage />}
+                    />
+                    <Route
+                      path="/knowledge-base"
+                      element={<KnowledgeBasePage />}
+                    />
+
+                    {/* Plugin routes — dynamically injected at runtime */}
+                    {pluginRoutes.map((route) => (
+                      <Route
+                        key={route.path}
+                        path={route.path}
+                        element={<route.component />}
+                      />
+                    ))}
+                  </Routes>
                 </PageTransition>
               </Suspense>
             </ChunkErrorBoundary>

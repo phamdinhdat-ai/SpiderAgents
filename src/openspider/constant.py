@@ -858,12 +858,12 @@ PLAN_PLAN_DESC_LIMIT = EnvVarLoader.get_int(
 
 DATABASE_URL: str = EnvVarLoader.get_str(
     "OPENSPIDER_DATABASE_URL",
-    "postgresql+asyncpg://5gai:Vht%402025@localhost:5433/5gai",
+    "postgresql+asyncpg://localhost:5433/openspider",
 )
 """PostgreSQL connection URL (asyncpg driver).
 
-Set ``OPENSPIDER_DATABASE_URL`` to override.  The default matches the
-standalone ``docker-compose.postgres.yaml`` shipped in the repo root.
+The default contains no credentials. Set ``OPENSPIDER_DATABASE_URL`` to the
+connection URL for your deployment before enabling PostgreSQL.
 """
 
 DATABASE_ENABLED: bool = EnvVarLoader.get_bool(

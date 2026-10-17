@@ -379,6 +379,19 @@ function clearLastActiveChat(): void {
 
 class SessionApi implements IAgentScopeRuntimeWebUISessionAPI {
   private sessionList: IAgentScopeRuntimeWebUISession[] = [];
+  private requestedSessionId: string | null = null;
+
+  /** Hand off canonical metadata before navigating from a project to its chat. */
+  adoptChat(chat: ChatSpec): void {
+    const session = chatSpecToSession(chat);
+    this.sessionList = [
+      session,
+      ...this.sessionList.filter((item) => item.id !== chat.id),
+    ];
+    this.preferredChatId = chat.id;
+    this.requestedSessionId = chat.id;
+    this.updateWindowVariables(session);
+  }
 
   /**
    * Pending resolvers waiting for a specific session's realId.
@@ -561,6 +574,14 @@ class SessionApi implements IAgentScopeRuntimeWebUISessionAPI {
       .map(chatSpecToSession)
       .reverse();
 
+    // An older list request may have started before the project created a chat.
+    // Preserve the explicit handoff until a fresh snapshot includes it.
+    const preferred = this.sessionList.find(
+      (item) => item.id === this.preferredChatId,
+    );
+    if (preferred && !newList.some((item) => item.id === preferred.id))
+      newList.unshift(preferred as ExtendedSession);
+
     // Track which existing sessions have already been matched so that
     // sessions sharing the same sessionId (channel:user_id) don't all
     // resolve to the same existing entry — the root cause of #3843.
@@ -629,6 +650,7 @@ class SessionApi implements IAgentScopeRuntimeWebUISessionAPI {
   private lastSelectedSessionId: string | null = null;
 
   async getSession(sessionId: string) {
+    this.requestedSessionId = sessionId;
     const existingRequest = this.sessionRequests.get(sessionId);
     if (existingRequest) return existingRequest;
 
@@ -637,6 +659,10 @@ class SessionApi implements IAgentScopeRuntimeWebUISessionAPI {
 
     try {
       const session = await requestPromise;
+      // A slow response from the previous chat must not replace the active
+      // session globals (which are also used by the message sender).
+      if (this.requestedSessionId !== sessionId) return session;
+      this.updateWindowVariables(session as ExtendedSession);
       // Trigger onSessionSelected only when session actually changes
       if (sessionId !== this.lastSelectedSessionId) {
         this.lastSelectedSessionId = sessionId;
@@ -676,7 +702,6 @@ class SessionApi implements IAgentScopeRuntimeWebUISessionAPI {
       realId: listEntry?.realId,
       generating,
     };
-    this.updateWindowVariables(session);
     return session;
   }
 
